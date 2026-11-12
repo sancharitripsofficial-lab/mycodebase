@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Next.js
+.next/
+out/
+build/
+
+# Environment files (never commit secrets)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs & OS
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# Coverage & Test artifacts
+coverage/
+.vitest/
+
+# Local reference image from setup
+WhatsApp Image *.jpeg
+
+
+# Supabase CLI local state and the Sanchari-only CLI token (never commit)
+supabase/.temp/
+supabase/.branches/
+.supabase-token.local
+.claude/
+
+# TypeScript build cache
+*.tsbuildinfo
