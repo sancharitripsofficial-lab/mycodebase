@@ -44,7 +44,7 @@ See `.env.example` for safe placeholders:
 | `NEXT_PUBLIC_SITE_URL` | Public | Canonical site origin (e.g., `https://sanchari.example.com`) |
 | `NEXT_PUBLIC_SUPABASE_URL` | Public | Supabase Dashboard → Project Settings → API → Project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public | Supabase Dashboard → Project Settings → API → `anon` / publishable key (safe only with RLS enabled) |
-| `SUPABASE_SERVICE_ROLE_KEY` | **Server-only** | Supabase Dashboard → Project Settings → API → `service_role` secret key |
+| `SANCHARI_SUPABASE_SECRET_KEY` | **Server-only** | Supabase Dashboard → Project Settings → API Keys → secret key (`sb_secret_…`). Project-specific name on purpose: a system-wide `SUPABASE_SERVICE_ROLE_KEY` from another project would otherwise override `.env.local`. |
 | `PAYMENT_PROVIDER` | Server-only | `sandbox` (default) or `razorpay` |
 | `RAZORPAY_KEY_ID` | Server / Public ID | Razorpay Dashboard → Account & Settings → API Keys |
 | `RAZORPAY_KEY_SECRET` | **Server-only** | Razorpay Dashboard → API Keys |

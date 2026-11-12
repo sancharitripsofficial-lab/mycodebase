@@ -48,11 +48,12 @@ export async function getAuthenticatedActor(): Promise<AuthenticatedActor | null
   let staffRole: StaffRole | null = null;
   if (isServiceRoleConfigured()) {
     const admin = createSupabaseAdminClient();
-    const { data } = await admin
+    const { data, error } = await admin
       .from("staff_roles")
       .select("role")
       .eq("user_id", user.id)
       .maybeSingle();
+    if (error) console.error("[auth] staff_roles lookup failed:", error.message);
     if (data?.role && ["owner", "ops", "support"].includes(data.role)) {
       staffRole = data.role as StaffRole;
     }

@@ -1,6 +1,7 @@
 import { createServerClient, type SetAllCookies } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
+import { getServerSecretKey } from "@/lib/env";
 
 export async function createSupabaseServerClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -31,12 +32,12 @@ export async function createSupabaseServerClient() {
 }
 
 /**
- * Strictly server-only admin client using SUPABASE_SERVICE_ROLE_KEY.
+ * Strictly server-only admin client using the project's secret key (see getServerSecretKey).
  * NEVER import or invoke from Client Components or expose to browser bundles.
  */
 export function createSupabaseAdminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const serviceKey = getServerSecretKey();
 
   if (!url || !serviceKey) {
     throw new Error("Supabase URL or Service Role Key is not configured.");

@@ -69,11 +69,23 @@ export async function POST(request: NextRequest) {
   let staffRole: string | null = null;
   if (isServiceRoleConfigured()) {
     const admin = createSupabaseAdminClient();
-    const { data: staffRow } = await admin
+    const { data: staffRow, error: staffError } = await admin
       .from("staff_roles")
       .select("role")
       .eq("user_id", data.user.id)
       .maybeSingle();
+    if (staffError) {
+      // Never report a server/key problem as "no staff role".
+      console.error("[admin-auth] staff_roles lookup failed:", staffError.message);
+      await supabase.auth.signOut();
+      return NextResponse.json(
+        {
+          error:
+            "Signed in, but the server can't read staff access (database key problem). Check SANCHARI_SUPABASE_SECRET_KEY in .env.local.",
+        },
+        { status: 503 }
+      );
+    }
     staffRole = staffRow?.role ?? null;
   } else {
     const { data: staffRow } = await supabase

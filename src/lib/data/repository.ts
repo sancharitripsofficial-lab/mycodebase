@@ -1135,6 +1135,7 @@ export async function getUpiPaymentSettings(): Promise<UpiPaymentSettings> {
     .select("is_enabled, upi_id, payee_name, support_phone, updated_at")
     .eq("id", 1)
     .maybeSingle();
+  if (error) console.error("[upi] settings lookup failed (treating UPI as off):", error.message);
   if (error || !data) return DISABLED_UPI;
   return {
     isEnabled: Boolean(data.is_enabled),
