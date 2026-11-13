@@ -1221,7 +1221,7 @@ export function RoadTrip3D({ labels, className, variant = "scene", quality = "au
       }
       // Frame-rate governor: step quality down rather than stutter. Frames longer than 100 ms are
       // ignored (a throttled or stalled tab, not our steady state) and a step needs three slow windows in a row.
-      if (frames > 45 && rawDt < 0.1) {
+      if (frames > 45 && rawDt < 0.1 && document.hasFocus()) {
         acc += rawDt;
         accN++;
         if (accN >= 60) {

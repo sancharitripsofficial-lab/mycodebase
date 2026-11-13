@@ -22,6 +22,11 @@ export interface ErtigaOptions {
   /** Max anisotropy for the blueprint textures. */
   anisotropy?: number;
   castShadow?: boolean;
+  /**
+   * Cutaway: slice the body off at this height (metres) so the cabin is open from above. Roof rails,
+   * antenna and mirrors are left out. Pair with `buildErtigaInterior` for the cabin itself.
+   */
+  cutHeight?: number;
 }
 
 export interface ErtigaHandles {
@@ -117,6 +122,11 @@ const bottomProfile = pchip(
 const beltProfile = pchip([-2.2, -1.9, 0.9, 2.2], [1.06, 1.05, 0.985, 0.95]);
 
 /** Half width of the body at its widest height, seen from above. */
+export function ertigaPlanHalfWidth(x: number): number {
+  return planHalfWidth(x);
+}
+export const ERTIGA_HALF_LENGTH = 2.2;
+
 function planHalfWidth(x: number): number {
   let w = HALF_W * (1 - 0.03 * Math.pow((x + 0.2) / 2.4, 2));
   if (x > XS_F) {
@@ -847,6 +857,7 @@ export function buildErtiga(options: ErtigaOptions = {}): ErtigaHandles {
     uBrake: { value: 0 },
     uHead: { value: 1 },
     uArch: { value: new THREE.Vector4(FRONT_AXLE_X, REAR_AXLE_X, WHEEL_R, ARCH_R) },
+    uCut: { value: options.cutHeight ?? 99 },
   };
 
   /* ---- shell ---- */
@@ -875,12 +886,13 @@ export function buildErtiga(options: ErtigaOptions = {}): ErtigaHandles {
         uniform sampler2D tTopA; uniform sampler2D tTopP;
         uniform sampler2D tFrontA; uniform sampler2D tFrontP;
         uniform sampler2D tRearA; uniform sampler2D tRearP;
-        uniform float uBrake; uniform float uHead; uniform vec4 uArch;
+        uniform float uBrake; uniform float uHead; uniform vec4 uArch; uniform float uCut;
         vec3 carAlb; vec3 carProp;`,
       )
       .replace(
         "#include <clipping_planes_fragment>",
         `#include <clipping_planes_fragment>
+        if (vCarPos.y > uCut) discard;
         if (abs(vCarPos.z) > 0.5 && (distance(vCarPos.xy, vec2(uArch.x, uArch.z)) < uArch.w || distance(vCarPos.xy, vec2(uArch.y, uArch.z)) < uArch.w)) discard;`,
       )
       .replace(
@@ -925,7 +937,7 @@ export function buildErtiga(options: ErtigaOptions = {}): ErtigaHandles {
         #endif`,
       );
   };
-  shellMat.customProgramCacheKey = () => "ertiga-shell";
+  shellMat.customProgramCacheKey = () => "ertiga-shell-2";
   const shellGeo = buildShellGeometry();
   disposables.push(shellGeo);
   const shell = new THREE.Mesh(shellGeo, shellMat);
@@ -956,6 +968,7 @@ export function buildErtiga(options: ErtigaOptions = {}): ErtigaHandles {
     }
   }
 
+  if (options.cutHeight === undefined) {
   /* ---- mirrors ---- */
   const mirrorShell = new THREE.SphereGeometry(1, 20, 14);
   const mirrorArm = new THREE.BoxGeometry(0.05, 0.03, 0.09);
@@ -997,6 +1010,8 @@ export function buildErtiga(options: ErtigaOptions = {}): ErtigaHandles {
   fin.position.set(-1.64, topProfile(-1.64) + 0.035, 0);
   fin.rotation.z = 0.25;
   body.add(fin);
+
+  }
 
   /* ---- number plates ---- */
   const plateTex = plateTexture(options.plate ?? "KA 01 SM 0006");

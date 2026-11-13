@@ -12,6 +12,7 @@ import {
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { ErtigaSeatMap, SEAT_INFO } from "@/components/booking/ErtigaSeatMap";
+import { CarSeatPicker3D } from "@/components/three/CarSeatPicker3D";
 import { UpiPayPanel, UpiSubmittedNotice } from "@/components/UpiPayPanel";
 import { calculateBookingPricing, formatINR } from "@/lib/currency";
 import type {
@@ -878,7 +879,7 @@ export function BookingWidget({
               {selectedDep.departureCode} &bull; Driver sits on the right
             </p>
           </div>
-          <ErtigaSeatMap
+          <CarSeatPicker3D
             mode={bookingMode === "batch_seats" && seatsRemainingNow > 0 ? "pick" : "view"}
             takenSeats={liveTaken ?? []}
             selectedSeats={bookingMode === "batch_seats" ? pickedSeats : []}
