@@ -1,3 +1,4 @@
+import { DEFAULT_HOME_CONTENT } from "@/lib/home-content";
 import crypto from "node:crypto";
 import { calculateBookingPricing } from "@/lib/currency";
 import { getSafeComfortCustomerLabel } from "@/lib/privacy";
@@ -710,6 +711,7 @@ function createInitialDemoState(): DemoDatabaseState {
       },
     ],
     socialLinks: { instagramUrl: "", youtubeUrl: "", facebookUrl: "", whatsappNumber: "", whatsappChannelUrl: "" },
+    homePage: DEFAULT_HOME_CONTENT,
     legalDrafts: {
       ownerReviewRequired: true,
       termsSummary:

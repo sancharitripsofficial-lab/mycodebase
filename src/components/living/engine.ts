@@ -376,13 +376,19 @@ class Engine {
   /** Compiles every shader without blocking the page; resolves when they are ready (or on failure). */
   warm(): Promise<void> {
     if (!this.warmed) {
-      this.warmed = Promise.all([
-        this.renderer.compileAsync(this.bgScene, this.bgCam),
-        this.renderer.compileAsync(this.fxScene, this.fxCam),
-      ]).then(
-        () => undefined,
-        () => undefined
-      );
+      // Never wait more than 1.2 s: if a driver reports compile progress oddly, the first frame
+      // simply finishes the job instead of the photos staying still.
+      const compile = (async () => {
+        try {
+          await Promise.all([
+            this.renderer.compileAsync(this.bgScene, this.bgCam),
+            this.renderer.compileAsync(this.fxScene, this.fxCam),
+          ]);
+        } catch {
+          /* fall through to the first frame */
+        }
+      })();
+      this.warmed = Promise.race([compile, new Promise<void>((r) => setTimeout(r, 1200))]);
     }
     return this.warmed;
   }
@@ -670,7 +676,24 @@ class Engine {
         if (!img.naturalWidth || !img.naturalHeight) return null;
         const built = buildMask(img, scene);
         if (!built) return null;
-        const texture = new THREE.Texture(img);
+        // Resize off the main thread before the GPU upload: uploading a full-size photo (and its
+        // mipmaps) on the page thread froze scrolling for a few hundred ms per photo.
+        let source: HTMLImageElement | ImageBitmap = img;
+        if (typeof createImageBitmap === "function") {
+          try {
+            const k = Math.min(1, 1280 / img.naturalWidth);
+            source = await createImageBitmap(img, {
+              resizeWidth: Math.max(1, Math.round(img.naturalWidth * k)),
+              resizeHeight: Math.max(1, Math.round(img.naturalHeight * k)),
+              resizeQuality: "medium",
+              imageOrientation: "flipY",
+            });
+          } catch {
+            source = img;
+          }
+        }
+        const texture = new THREE.Texture(source);
+        if (source !== img) texture.flipY = false; // already flipped while resizing
         texture.colorSpace = THREE.NoColorSpace;
         texture.minFilter = THREE.LinearMipmapLinearFilter;
         texture.magFilter = THREE.LinearFilter;

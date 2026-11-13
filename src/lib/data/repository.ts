@@ -1,3 +1,4 @@
+import { mergeHomeContent } from "@/lib/home-content";
 import crypto from "node:crypto";
 import { calculateBookingPricing } from "@/lib/currency";
 import {
@@ -83,6 +84,7 @@ export async function getSiteSettings(): Promise<{ settings: SiteSettings; isDem
           ...fallback.socialLinks,
           ...((map.get("social_links") as Partial<SiteSettings["socialLinks"]> | undefined) ?? {}),
         },
+        homePage: mergeHomeContent(map.get("home_page")),
       },
     };
   } catch {

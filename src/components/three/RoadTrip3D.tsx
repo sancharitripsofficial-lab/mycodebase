@@ -1337,8 +1337,8 @@ export function RoadTrip3D({ labels, className, variant = "scene", quality = "au
     };
     canvas.addEventListener("webglcontextlost", onLost);
     canvas.addEventListener("webglcontextrestored", onRestored);
-    renderer
-      .compileAsync(scene, camera)
+    // Never wait more than 2 s for the background compile: the first frame finishes any rest.
+    Promise.race([renderer.compileAsync(scene, camera), new Promise((r) => setTimeout(r, 2000))])
       .catch(() => undefined)
       .finally(() => {
         compiled = true;

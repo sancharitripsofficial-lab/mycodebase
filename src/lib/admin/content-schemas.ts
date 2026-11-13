@@ -1,3 +1,4 @@
+import { ICON_KEYS, THEME_KEYS, TILE_COLOURS } from "@/lib/home-content";
 import { z } from "zod";
 
 /** Local file (/media/x.jpg) or an https link. Never http, javascript:, data: or protocol-relative. */
@@ -213,12 +214,66 @@ export const socialLinksSchema = z.object({
     .default(""),
 });
 
+const sectionText = z.object({
+  show: z.boolean(),
+  eyebrow: z.string().trim().max(80),
+  title: z.string().trim().max(140),
+  body: z.string().trim().max(600),
+});
+const homeLink = z
+  .string()
+  .trim()
+  .max(200)
+  .refine((v) => v === "" || v.startsWith("/") || v.startsWith("#") || /^https:\/\//.test(v), "Link: a page like /trips, a section like #plan, or https://…");
+const homeCard = z.object({
+  title: z.string().trim().min(2, "Card title needs at least 2 characters").max(80),
+  body: z.string().trim().max(300),
+  colour: z.enum(TILE_COLOURS),
+  icon: z.enum(ICON_KEYS),
+  href: homeLink,
+});
+
+export const homePageSchema = z.object({
+  kannadaLine: z.string().trim().max(80),
+  heroChip: z.string().trim().max(90),
+  categoriesSection: sectionText,
+  categories: z
+    .array(
+      z.object({
+        id: z
+          .string()
+          .trim()
+          .regex(/^[a-z0-9-]{2,40}$/, "Category short name: small letters, numbers and dashes"),
+        name: z.string().trim().min(2, "Category name needs at least 2 characters").max(60),
+        description: z.string().trim().max(240),
+        theme: z.enum(THEME_KEYS),
+        tripSlugs: z.array(z.string().trim().max(120)).max(40),
+      })
+    )
+    .max(12)
+    .refine((cats) => new Set(cats.map((c) => c.id)).size === cats.length, "Two categories have the same short name"),
+  travellerCards: z.array(homeCard).max(8),
+  departuresSection: sectionText,
+  compareSection: sectionText.extend({ usLabel: z.string().trim().min(1).max(40), themLabel: z.string().trim().min(1).max(40) }),
+  compareRows: z
+    .array(z.object({ label: z.string().trim().min(1).max(60), us: z.string().trim().min(1).max(160), them: z.string().trim().min(1).max(160) }))
+    .max(10),
+  howSection: sectionText,
+  howCards: z.array(homeCard).max(8),
+  routesSection: sectionText,
+  safetySection: sectionText,
+  reviewsSection: sectionText,
+  planSection: sectionText,
+  faqSection: sectionText,
+});
+
 export const settingsSaveSchema = z.discriminatedUnion("key", [
   z.object({ key: z.literal("brand_identity"), value: brandIdentitySchema }),
   z.object({ key: z.literal("booking_policy"), value: bookingPolicySchema }),
   z.object({ key: z.literal("faqs"), value: faqsSchema }),
   z.object({ key: z.literal("legal_drafts"), value: legalDraftsSchema }),
   z.object({ key: z.literal("social_links"), value: socialLinksSchema }),
+  z.object({ key: z.literal("home_page"), value: homePageSchema }),
 ]);
 
 export const reviewSaveSchema = z

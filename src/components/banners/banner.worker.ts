@@ -141,7 +141,10 @@ async function init(msg: Extract<InMsg, { type: "init" }>) {
     });
     scene.resize(width, height, msg.focus);
     // Compile every shader before the first frame, in parallel where the GPU driver allows it.
-    await renderer.compileAsync(scene.scene, scene.camera);
+    await Promise.race([
+      renderer.compileAsync(scene.scene, scene.camera).catch(() => undefined),
+      new Promise((r) => setTimeout(r, 2500)),
+    ]);
   } catch (error) {
     console.warn("[banner worker] scene could not be built", error);
     scene = null;

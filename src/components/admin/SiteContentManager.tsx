@@ -8,13 +8,15 @@ import { TextArea } from "@astryxdesign/core/TextArea";
 import { TextInput } from "@astryxdesign/core/TextInput";
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { HomePageForm } from "@/components/admin/HomePageForm";
 import { Notice, Panel, useAdminContent } from "@/components/admin/kit";
 import type { SiteSettings } from "@/lib/types";
 
 type Editor = ReturnType<typeof useAdminContent>;
-type Tab = "brand" | "social" | "policy" | "faqs" | "legal";
+type Tab = "home" | "brand" | "social" | "policy" | "faqs" | "legal";
 
 const TABS: { key: Tab; label: string }[] = [
+  { key: "home", label: "Home page" },
   { key: "brand", label: "Brand & contact" },
   { key: "social", label: "Social & WhatsApp" },
   { key: "policy", label: "Booking rules" },
@@ -25,12 +27,12 @@ const TABS: { key: Tab; label: string }[] = [
 /** Website words, contact details, booking rules, FAQs and legal text. */
 export function SiteContentManager({ editor }: { editor: Editor }) {
   const { content } = editor;
-  const [tab, setTab] = useState<Tab>("brand");
+  const [tab, setTab] = useState<Tab>("home");
   if (!content) return <p className="text-sm text-stone-600">Loading…</p>;
   const canEdit = content.editable && (content.actorRole === "owner" || content.actorRole === "ops");
 
   return (
-    <Panel title="Website text & policies" description="Changes show on the website on the next page load. Every save is kept in the audit log.">
+    <Panel title="Website text & policies" description="Home page sections and categories, brand words, booking rules, FAQs and legal text. Changes show on the website on the next page load. Every save is kept in the audit log.">
       {!content.editable && <Banner status="warning" title="Preview mode is read-only" collapsible={false} />}
       <nav className="flex gap-1 overflow-x-auto border-b border-stone-200" aria-label="Website sections">
         {TABS.map((t) => (
@@ -46,6 +48,9 @@ export function SiteContentManager({ editor }: { editor: Editor }) {
           </button>
         ))}
       </nav>
+      {tab === "home" && (
+        <HomePageForm key="h" initial={content.settings.homePage} trips={content.trips.map((t) => t.trip)} save={editor.save} canEdit={canEdit} />
+      )}
       {tab === "brand" && <BrandForm key="b" initial={content.settings.brandIdentity} editor={editor} canEdit={canEdit} />}
       {tab === "social" && <SocialForm key="s" initial={content.settings.socialLinks} editor={editor} canEdit={canEdit} />}
       {tab === "policy" && <PolicyForm key="p" initial={content.settings.bookingPolicy} editor={editor} canEdit={canEdit} />}

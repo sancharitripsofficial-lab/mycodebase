@@ -904,20 +904,46 @@ export function BookingWidget({
             onToggleSeat={toggleSeat}
           />
           {seatNote && (
-            <p role="status" className="rounded-lg bg-sunset-400/15 px-3 py-2 text-xs font-medium text-copper-700">
-              {seatNote}
-            </p>
+            <div role="status" className="flex flex-wrap items-center gap-2 rounded-lg bg-sunset-400/15 px-3 py-2 text-xs font-medium text-copper-700">
+              <span>{seatNote}</span>
+              {/* Tried to take all six on a shared trip: offer the whole car in one tap. */}
+              {bookingMode === "batch_seats" && privateEligible && pickedSeats.length >= maxBatchSelectable && maxBatchSelectable === 5 && (
+                <button
+                  type="button"
+                  onClick={() => handleModeChange("private_vehicle")}
+                  className="rounded-full bg-copper-600 px-3 py-1 text-[11px] font-bold text-white"
+                >
+                  Book the whole car instead
+                </button>
+              )}
+            </div>
           )}
           {bookingMode === "batch_seats" && seatsRemainingNow > 0 && (
-            <p className="text-xs text-stone-600">
-              {pickedSeats.length > 0
-                ? `Your seats: ${pickedSeats
-                    .slice()
-                    .sort((a, b) => a - b)
-                    .map((s) => `${s} (${SEAT_INFO[s]?.label ?? "seat"})`)
-                    .join(", ")}. They are locked for you only when you continue to payment.`
-                : "Skip this and we seat your group together automatically."}
-            </p>
+            <div className="space-y-1 text-xs text-stone-600">
+              {pickedSeats.length > 0 ? (
+                <>
+                  <p>
+                    <span className="font-semibold text-ink-900">Your seats: </span>
+                    {pickedSeats
+                      .slice()
+                      .sort((a, b) => a - b)
+                      .map((s) => `${s} (${SEAT_INFO[s]?.label ?? "seat"})`)
+                      .join(", ")}
+                  </p>
+                  {selectedDep && (
+                    <p className="font-semibold text-forest-900">
+                      {pickedSeats.length} {pickedSeats.length === 1 ? "seat" : "seats"} ×{" "}
+                      {formatINR(selectedDep.priceOverridePaise ?? trip.basePricePaise)} ={" "}
+                      {formatINR((selectedDep.priceOverridePaise ?? trip.basePricePaise) * pickedSeats.length)}
+                      <span className="font-normal text-stone-600"> before any coupon</span>
+                    </p>
+                  )}
+                  <p>Seats are locked for you only when you continue to payment.</p>
+                </>
+              ) : (
+                <p>Skip this and we seat your group together automatically.</p>
+              )}
+            </div>
           )}
         </section>
       )}

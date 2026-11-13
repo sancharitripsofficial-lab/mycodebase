@@ -504,8 +504,8 @@ export function CarSeatScene({ states, tappable, focusSeat, onSeat, onStatus, tu
     canvas.addEventListener("webglcontextlost", onLost);
     L.dirty = true;
     applyStates();
-    renderer
-      .compileAsync(scene, camera)
+    // Never wait more than 2 s for the background compile: the first frame finishes any rest.
+    Promise.race([renderer.compileAsync(scene, camera), new Promise((r) => setTimeout(r, 2000))])
       .catch(() => undefined)
       .finally(() => {
         compiled = true;

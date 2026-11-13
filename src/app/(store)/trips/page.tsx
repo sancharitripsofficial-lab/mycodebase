@@ -4,7 +4,7 @@ import { EnquiryForm } from "@/components/EnquiryForm";
 import { TripsCatalogClient } from "@/components/TripsCatalogClient";
 import { PromoBanner } from "@/components/promo/PromoBanner";
 import { forPlacement, getLivePromotions } from "@/lib/data/promotions";
-import { getPublishedTripsWithDetails } from "@/lib/data/repository";
+import { getPublishedTripsWithDetails, getSiteSettings } from "@/lib/data/repository";
 
 // Served from the CDN; refreshed every 30 s and immediately after bookings / admin edits.
 export const revalidate = 30;
@@ -17,7 +17,11 @@ export const metadata: Metadata = {
 
 export default async function TripsPage() {
   // ?mode=private is read in the browser (TripsCatalogClient) so this page stays cacheable.
-  const [{ trips }, promotions] = await Promise.all([getPublishedTripsWithDetails(), getLivePromotions()]);
+  const [{ trips }, promotions, { settings }] = await Promise.all([
+    getPublishedTripsWithDetails(),
+    getLivePromotions(),
+    getSiteSettings(),
+  ]);
   const offers = forPlacement(promotions, "trips_banner");
 
   return (
@@ -31,7 +35,7 @@ export default async function TripsPage() {
       />
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12 space-y-8">
         {offers.length > 0 && <PromoBanner promotions={offers} />}
-        <TripsCatalogClient trips={trips} />
+        <TripsCatalogClient trips={trips} categories={settings.homePage.categories} />
 
         <div id="ask" className="mx-auto max-w-2xl scroll-mt-24">
           <EnquiryForm />

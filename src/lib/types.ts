@@ -1,3 +1,4 @@
+import type { HomePageContent } from "@/lib/home-content";
 export type Difficulty = "Easy" | "Moderate" | "Active";
 
 export type DepartureType = "open_batch" | "women_only" | "private_charter";
@@ -267,6 +268,8 @@ export interface SiteSettings {
   };
   faqs: { id: string; question: string; answer: string }[];
   socialLinks: SocialLinks;
+  /** Home page words, cards and trip categories (Admin → Website text → Home page). */
+  homePage: HomePageContent;
   legalDrafts: {
     ownerReviewRequired: boolean;
     termsSummary: string;
