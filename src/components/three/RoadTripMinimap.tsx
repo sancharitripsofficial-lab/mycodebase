@@ -88,17 +88,20 @@ export function RoadTripMinimap({ labels, meta, className }: RoadTripMinimapProp
     <div
       role="img"
       aria-label={`Live route map: ${short.join(" to ")}`}
-      className={`pointer-events-none select-none rounded-2xl border border-white/30 bg-white/10 p-1 shadow-[0_14px_34px_-14px_rgba(8,62,96,0.75)] backdrop-blur-md md:p-1.5 ${className ?? ""}`}
+      className={`pointer-events-none select-none rounded-2xl border border-white/20 p-1 md:p-1.5 ${className ?? ""}`}
     >
-      <div className="relative aspect-square overflow-hidden rounded-xl bg-[#0B5683]/25 ring-1 ring-inset ring-white/20">
-        {!covered && (
-          <div className="absolute inset-0 flex items-center justify-center p-1">
-            <div style={{ height: "100%", aspectRatio: "360 / 420" }}>
-              <RoadTripRoute tone="onDark" />
+      <div className="relative aspect-square overflow-hidden rounded-xl ring-1 ring-inset ring-white/15">
+        {/* Watermark: the map is see-through and dissolves at the edges, so the hero film shows behind it. */}
+        <div className="absolute inset-0 opacity-[0.58] [mask-image:radial-gradient(closest-side,#000_62%,transparent_100%)] [-webkit-mask-image:radial-gradient(closest-side,#000_62%,transparent_100%)]">
+          {!covered && (
+            <div className="absolute inset-0 flex items-center justify-center p-1">
+              <div style={{ height: "100%", aspectRatio: "360 / 420" }}>
+                <RoadTripRoute tone="onDark" />
+              </div>
             </div>
-          </div>
-        )}
-        {show3d && <RoadTrip3D variant="minimap" labels={labels} className="absolute inset-0" onStatus={onStatus} />}
+          )}
+          {show3d && <RoadTrip3D variant="minimap" labels={labels} className="absolute inset-0" onStatus={onStatus} />}
+        </div>
         {/* compass tick */}
         <span className="absolute left-1 top-1 flex flex-col items-center text-[8px] font-bold leading-none text-white drop-shadow md:left-1.5 md:top-1.5 md:text-[10px]">
           <span aria-hidden="true" className="mb-px h-0 w-0 border-x-[3px] border-b-[5px] border-x-transparent border-b-[#FF8A3D] md:border-x-4 md:border-b-[7px]" />
@@ -107,7 +110,7 @@ export function RoadTripMinimap({ labels, meta, className }: RoadTripMinimapProp
         {/* live dot */}
         <span aria-hidden="true" className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-[#FF8A3D] shadow-[0_0_0_3px_rgba(255,138,61,0.3)] motion-safe:animate-pulse" />
       </div>
-      <p className="truncate px-0.5 pt-1 text-center text-[9px] font-semibold leading-tight tracking-wide text-white md:pt-1.5 md:text-xs">
+      <p className="truncate px-0.5 pt-1 text-center text-[9px] font-semibold leading-tight tracking-wide text-white [text-shadow:0_1px_3px_rgb(10_40_30/0.7)] md:pt-1.5 md:text-xs">
         {route}
         {meta ? <span className="font-medium text-white/75"> {"\u00b7"} {meta}</span> : null}
       </p>
