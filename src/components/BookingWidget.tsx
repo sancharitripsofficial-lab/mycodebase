@@ -172,6 +172,20 @@ export function BookingWidget({
     ? seatsTakenNow === 0 && selectedDep.maxCapacity === 6 && selectedDep.status !== "cancelled"
     : false;
 
+  // The chat guide's "Book whole car" links add &mode=private: open the whole-car form once,
+  // after the ?date preselect, and only if that date can still be booked as a whole car.
+  const wantPrivate = useRef<boolean | null>(null);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (wantPrivate.current === null) wantPrivate.current = params.get("mode") === "private";
+    if (!wantPrivate.current || !privateEligible) return;
+    const wanted = params.get("date");
+    if (wanted && departures.some((d) => d.departureId === wanted) && wanted !== departureId) return;
+    wantPrivate.current = false;
+    handleModeChange("private_vehicle");
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run when the date / eligibility settles
+  }, [privateEligible, departureId, departures]);
+
   // Load the live seat map whenever the date changes (and again after a seat clash).
   useEffect(() => {
     if (!departureId) return;

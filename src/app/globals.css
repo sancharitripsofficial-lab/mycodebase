@@ -481,3 +481,13 @@
     transform: none;
   }
 }
+
+/* Admin: grid and flex children may shrink below their content, so a long title or link can
+   never push the page wider than a phone screen (text wraps or truncates instead). */
+.admin-shell :where(.grid) > *,
+.admin-shell :where(.flex) > :where(.min-w-0, .flex-1) {
+  min-width: 0;
+}
+.admin-shell main {
+  overflow-wrap: anywhere;
+}

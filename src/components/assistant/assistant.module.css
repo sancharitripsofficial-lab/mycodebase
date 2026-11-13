@@ -1,0 +1,542 @@
+/* Sanchari chat guide: avatar motion, launcher, chat window details.
+   Motion uses transform / opacity only (GPU friendly). Every animation stops under
+   prefers-reduced-motion and while the avatar is paused (chat closed, tab hidden). */
+
+@property --guide-ring {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #1ba3b3;
+}
+@property --guide-ring2 {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #8fe0d0;
+}
+
+/* =========================================================================
+ * Guide avatar
+ * ======================================================================= */
+.avatar {
+  position: relative;
+  display: inline-block;
+  flex: none;
+  --guide-ring: #1ba3b3;
+  --guide-ring2: #8fe0d0;
+  transition:
+    --guide-ring 350ms ease,
+    --guide-ring2 350ms ease;
+}
+.avatar[data-emotion="listening"] { --guide-ring: #12807a; --guide-ring2: #4fc3cf; }
+.avatar[data-emotion="thinking"] { --guide-ring: #f5a524; --guide-ring2: #ffd98a; }
+.avatar[data-emotion="talking"] { --guide-ring: #0b7a6a; --guide-ring2: #3cc0b0; }
+.avatar[data-emotion="happy"] { --guide-ring: #2f9e5b; --guide-ring2: #a6e3b8; }
+.avatar[data-emotion="sorry"] { --guide-ring: #d9536a; --guide-ring2: #f6b3bf; }
+.avatar[data-emotion="wave"] { --guide-ring: #ff8a3d; --guide-ring2: #f5c04a; }
+.avatar[data-emotion="pointing"] { --guide-ring: #e8600f; --guide-ring2: #ffb37a; }
+
+/* Soft coloured glow behind the guide. */
+.halo {
+  position: absolute;
+  inset: -14%;
+  border-radius: 9999px;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--guide-ring) 42%, transparent), transparent);
+  opacity: 0.6;
+  pointer-events: none;
+  animation: guide-halo 3.6s ease-in-out infinite;
+}
+
+/* Everything that moves with the guide's body. */
+.motion {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 88%;
+  will-change: transform;
+}
+
+.ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: conic-gradient(from 210deg, var(--guide-ring), var(--guide-ring2), var(--guide-ring) 70%, var(--guide-ring2), var(--guide-ring));
+  box-shadow: 0 6px 18px -8px color-mix(in srgb, var(--guide-ring) 70%, transparent);
+}
+
+.face {
+  position: absolute;
+  inset: var(--ring-w, 3px);
+  overflow: hidden;
+  border-radius: 9999px;
+  background:
+    radial-gradient(circle at 30% 22%, #ffffff 0%, #eef8f5 55%, #d6eee8 100%);
+  /* Keeps the circle crop on Safari while children transform. */
+  isolation: isolate;
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 18%;
+  opacity: 0;
+  transition: opacity 350ms ease;
+}
+.layer[data-ready="true"] {
+  opacity: 1;
+}
+/* iOS draws a big play button on a video that may not autoplay (Low Power Mode): never show it. */
+.layer::-webkit-media-controls,
+.layer::-webkit-media-controls-start-playback-button {
+  display: none !important;
+  -webkit-appearance: none;
+}
+
+/* Fallback badge: the official Sanchari mark inside the ring. */
+.mark {
+  position: absolute;
+  inset: 13%;
+  width: 74%;
+  height: 74%;
+  object-fit: contain;
+}
+
+/* ---- Per-emotion body motion ---- */
+.avatar[data-emotion="idle"] .motion { animation: guide-breathe 4s ease-in-out infinite; }
+.avatar[data-emotion="listening"] .motion { animation: guide-lean 650ms cubic-bezier(0.2, 0.8, 0.2, 1) both, guide-lean-hold 3.2s 650ms ease-in-out infinite; }
+.avatar[data-emotion="thinking"] .motion { animation: guide-tilt 3.4s ease-in-out infinite; }
+.avatar[data-emotion="thinking"] .ring { animation: guide-spin 2.6s linear infinite; }
+.avatar[data-emotion="talking"] .motion { animation: guide-bob 520ms ease-in-out infinite alternate; }
+.avatar[data-emotion="happy"] .motion { animation: guide-bounce 900ms cubic-bezier(0.3, 1.5, 0.5, 1) 2, guide-breathe 4s 1.8s ease-in-out infinite; }
+.avatar[data-emotion="sorry"] .motion { animation: guide-nod 2.8s ease-in-out infinite; }
+.avatar[data-emotion="wave"] .motion { animation: guide-wiggle 1.2s ease-in-out 2, guide-breathe 4s 2.4s ease-in-out infinite; }
+.avatar[data-emotion="pointing"] .motion { animation: guide-point 1.6s ease-in-out infinite; }
+
+/* ---- Effect overlays (outside the circle) ---- */
+.fx {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Thinking: three thought dots rising at the top right. */
+.thought {
+  position: absolute;
+  top: -6%;
+  right: -10%;
+  display: flex;
+  gap: 3px;
+  padding: 3px 5px;
+  border-radius: 9999px;
+  background: #fffefc;
+  box-shadow: 0 2px 8px -2px rgb(13 95 107 / 0.35);
+}
+.thought span {
+  width: 5px;
+  height: 5px;
+  border-radius: 9999px;
+  background: #e8600f;
+  animation: guide-dot 1.1s ease-in-out infinite;
+}
+.thought span:nth-child(2) { animation-delay: 160ms; background: #f5a524; }
+.thought span:nth-child(3) { animation-delay: 320ms; background: #1ba3b3; }
+
+/* Talking: soundwave bars beside the mouth. */
+.wave {
+  position: absolute;
+  right: -8%;
+  bottom: 22%;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 14px;
+  padding: 2px 4px;
+  border-radius: 9999px;
+  background: #fffefc;
+  box-shadow: 0 2px 8px -2px rgb(13 95 107 / 0.35);
+}
+.wave span {
+  width: 2.5px;
+  height: 100%;
+  border-radius: 2px;
+  background: #0b7a6a;
+  transform-origin: 50% 50%;
+  animation: guide-bar 640ms ease-in-out infinite;
+}
+.wave span:nth-child(2) { animation-delay: 120ms; background: #1ba3b3; }
+.wave span:nth-child(3) { animation-delay: 240ms; }
+.wave span:nth-child(4) { animation-delay: 360ms; background: #e8600f; }
+
+/* Happy: sparkle pop. */
+.sparkle {
+  position: absolute;
+  top: -8%;
+  left: -8%;
+  color: #f5a524;
+  filter: drop-shadow(0 1px 2px rgb(194 71 10 / 0.35));
+  animation: guide-sparkle 1.4s ease-out both, guide-twinkle 2.2s 1.4s ease-in-out infinite;
+}
+
+/* Wave: a waving hand. */
+.hand {
+  position: absolute;
+  right: -10%;
+  top: -4%;
+  display: grid;
+  place-items: center;
+  border-radius: 9999px;
+  background: #fffefc;
+  color: #e8600f;
+  box-shadow: 0 2px 8px -2px rgb(194 71 10 / 0.4);
+  transform-origin: 50% 90%;
+  animation: guide-hand 1s ease-in-out infinite;
+}
+
+/* Pointing: arrow toward the answer cards. */
+.point {
+  position: absolute;
+  right: -10%;
+  bottom: -4%;
+  display: grid;
+  place-items: center;
+  border-radius: 9999px;
+  background: #e8600f;
+  color: #fff;
+  box-shadow: 0 2px 8px -2px rgb(194 71 10 / 0.5);
+  animation: guide-nudge 1.2s ease-in-out infinite;
+}
+
+/* Paused (chat closed / tab hidden) */
+.avatar[data-paused="true"] .halo,
+.avatar[data-paused="true"] .motion,
+.avatar[data-paused="true"] .ring,
+.avatar[data-paused="true"] .fx * {
+  animation-play-state: paused !important;
+}
+
+/* Mini avatar in message bubbles: still, no glow, no effects. */
+.avatar[data-mini="true"] .motion,
+.avatar[data-mini="true"] .ring {
+  animation: none !important;
+}
+
+/* Mood chip (status line in the chat header). */
+.moodChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 9999px;
+  padding: 0.12rem 0.55rem 0.12rem 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.35;
+  white-space: nowrap;
+  background: rgb(255 255 255 / 0.94);
+  color: #0d5f6b;
+  box-shadow: 0 2px 8px -4px rgb(13 95 107 / 0.5);
+}
+.moodChip[data-emotion="thinking"] { color: #8a4b00; }
+.moodChip[data-emotion="happy"] { color: #1d6b40; }
+.moodChip[data-emotion="sorry"] { color: #a3263a; }
+.moodChip[data-emotion="wave"],
+.moodChip[data-emotion="pointing"] { color: #b4430a; }
+.moodDot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background: var(--mood, #22a35a);
+}
+.moodChip[data-emotion="idle"] { --mood: #22a35a; }
+.moodChip[data-emotion="listening"] { --mood: #12807a; }
+.moodChip[data-emotion="thinking"] { --mood: #f5a524; }
+.moodChip[data-emotion="talking"] { --mood: #0b7a6a; }
+.moodChip[data-emotion="happy"] { --mood: #2f9e5b; }
+.moodChip[data-emotion="sorry"] { --mood: #d9536a; }
+.moodChip[data-emotion="wave"] { --mood: #ff8a3d; }
+.moodChip[data-emotion="pointing"] { --mood: #e8600f; }
+.moodChip .moodDot { animation: guide-online 2s ease-in-out infinite; }
+
+/* =========================================================================
+ * Launcher + teaser
+ * ======================================================================= */
+.launcherPulse {
+  position: absolute;
+  inset: -6px;
+  border-radius: 9999px;
+  border: 2px solid rgb(27 163 179 / 0.55);
+  pointer-events: none;
+  animation: guide-launch-pulse 2.8s ease-out infinite;
+}
+.onlineDot {
+  position: absolute;
+  right: 1px;
+  bottom: 1px;
+  width: 13px;
+  height: 13px;
+  border-radius: 9999px;
+  background: #22a35a;
+  border: 2.5px solid #fffefc;
+}
+.teaser {
+  animation: guide-teaser-in 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.teaser::after {
+  content: "";
+  position: absolute;
+  right: 26px;
+  bottom: -7px;
+  width: 14px;
+  height: 14px;
+  background: #fffefc;
+  border-right: 1px solid #dbe7e3;
+  border-bottom: 1px solid #dbe7e3;
+  transform: rotate(45deg);
+}
+
+/* =========================================================================
+ * Chat window
+ * ======================================================================= */
+.header {
+  background-color: #12705f;
+  background-image:
+    radial-gradient(260px 150px at 100% -10%, rgb(255 138 61 / 0.26), transparent 70%),
+    radial-gradient(240px 160px at -10% 120%, rgb(245 165 36 / 0.16), transparent 70%),
+    var(--pat-contour-light),
+    linear-gradient(135deg, #1a6a4c 0%, #116d62 52%, #0f7480 100%);
+  background-size: auto, auto, 180px 90px, auto;
+}
+.body {
+  background-color: #f6faf7;
+  background-image:
+    radial-gradient(420px 260px at 100% 0%, rgb(27 163 179 / 0.08), transparent 70%),
+    radial-gradient(380px 240px at 0% 100%, rgb(255 138 61 / 0.07), transparent 70%),
+    var(--pat-kolam);
+  background-size: auto, auto, 56px 56px;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.panelIn {
+  transform-origin: 100% 100%;
+  animation: guide-panel-in 300ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.panelOut {
+  transform-origin: 100% 100%;
+  animation: guide-panel-out 190ms ease-in both;
+}
+@media (max-width: 639px) {
+  .panelIn { animation-name: guide-sheet-in; }
+  .panelOut { animation-name: guide-sheet-out; }
+}
+/* Phones held sideways (wider than 639 px but short): the chat is a full sheet, like portrait. */
+@media (min-width: 640px) and (pointer: coarse) and (max-height: 500px) {
+  .panel {
+    top: 0 !important;
+    right: 0 !important;
+    bottom: auto !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100dvh;
+    border-radius: 0 !important;
+    border-width: 0 !important;
+  }
+  .panelIn { animation-name: guide-sheet-in; }
+  .panelOut { animation-name: guide-sheet-out; }
+}
+/* The site's orange focus ring is too faint on the teal header: use white there. */
+.header :focus-visible {
+  outline: 3px solid #ffffff;
+  outline-offset: 2px;
+}
+
+.msgIn {
+  animation: guide-msg-in 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* Typing indicator dots. */
+.typing {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+.typing span {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: #1ba3b3;
+  animation: guide-dot 1s ease-in-out infinite;
+}
+.typing span:nth-child(2) { animation-delay: 150ms; background: #f5a524; }
+.typing span:nth-child(3) { animation-delay: 300ms; background: #e8600f; }
+
+/* Text caret while an answer is being written. */
+.caret {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: -0.15em;
+  border-radius: 1px;
+  background: #1ba3b3;
+  animation: guide-caret 900ms steps(2, start) infinite;
+}
+
+/* Horizontal card rail. */
+.rail {
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+  overscroll-behavior-x: contain;
+}
+.rail > * {
+  scroll-snap-align: start;
+}
+
+/* Seat dots on a departure card. */
+.seat {
+  width: 0.62rem;
+  height: 0.62rem;
+  border-radius: 0.2rem;
+}
+.seatFree {
+  background: color-mix(in srgb, var(--th, #12737d) 18%, white);
+  border: 1.5px solid var(--th, #12737d);
+}
+.seatTaken {
+  background: #c0d4cf;
+  border: 1.5px solid #c0d4cf;
+}
+
+/* =========================================================================
+ * Keyframes
+ * ======================================================================= */
+@keyframes guide-halo {
+  0%, 100% { opacity: 0.45; transform: scale(0.96); }
+  50% { opacity: 0.85; transform: scale(1.04); }
+}
+@keyframes guide-breathe {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  25% { transform: scale(1.01) rotate(-0.8deg); }
+  50% { transform: scale(1.02) rotate(0deg); }
+  75% { transform: scale(1.01) rotate(0.8deg); }
+}
+@keyframes guide-lean {
+  from { transform: rotate(0deg) translate3d(0, 0, 0); }
+  to { transform: rotate(4deg) translate3d(2px, 1px, 0); }
+}
+@keyframes guide-lean-hold {
+  0%, 100% { transform: rotate(4deg) translate3d(2px, 1px, 0) scale(1); }
+  50% { transform: rotate(3deg) translate3d(2px, 0, 0) scale(1.015); }
+}
+@keyframes guide-tilt {
+  0%, 100% { transform: rotate(0deg); }
+  30% { transform: rotate(-6deg) translate3d(-1px, 0, 0); }
+  60% { transform: rotate(-4deg) translate3d(-1px, -1px, 0); }
+}
+@keyframes guide-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes guide-bob {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(0, -1.5px, 0) scale(1.012); }
+}
+@keyframes guide-bounce {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  35% { transform: translate3d(0, -6px, 0) scale(1.04); }
+  60% { transform: translate3d(0, 0, 0) scale(0.99); }
+}
+@keyframes guide-nod {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
+  35%, 65% { transform: translate3d(0, 3px, 0) rotate(-3deg) scale(0.98); }
+}
+@keyframes guide-wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  15% { transform: rotate(-8deg); }
+  30% { transform: rotate(6deg); }
+  45% { transform: rotate(-6deg); }
+  60% { transform: rotate(4deg); }
+  75% { transform: rotate(-2deg); }
+}
+@keyframes guide-point {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
+  50% { transform: translate3d(3px, 2px, 0) rotate(3deg); }
+}
+@keyframes guide-dot {
+  0%, 100% { transform: translate3d(0, 0, 0); opacity: 0.35; }
+  40% { transform: translate3d(0, -3px, 0); opacity: 1; }
+}
+@keyframes guide-bar {
+  0%, 100% { transform: scaleY(0.3); }
+  50% { transform: scaleY(1); }
+}
+@keyframes guide-sparkle {
+  0% { transform: scale(0) rotate(-40deg); opacity: 0; }
+  60% { transform: scale(1.2) rotate(10deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+@keyframes guide-twinkle {
+  0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  50% { transform: scale(0.82) rotate(12deg); opacity: 0.7; }
+}
+@keyframes guide-hand {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(18deg); }
+  50% { transform: rotate(-8deg); }
+  75% { transform: rotate(14deg); }
+}
+@keyframes guide-nudge {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(2px, 2px, 0); }
+}
+@keyframes guide-online {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.55; transform: scale(0.82); }
+}
+@keyframes guide-launch-pulse {
+  0% { transform: scale(0.94); opacity: 0.9; }
+  70%, 100% { transform: scale(1.22); opacity: 0; }
+}
+@keyframes guide-teaser-in {
+  from { opacity: 0; transform: translate3d(0, 8px, 0) scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes guide-panel-in {
+  from { opacity: 0; transform: translate3d(0, 14px, 0) scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes guide-panel-out {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translate3d(0, 12px, 0) scale(0.97); }
+}
+@keyframes guide-sheet-in {
+  from { opacity: 0.4; transform: translate3d(0, 40px, 0); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes guide-sheet-out {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translate3d(0, 40px, 0); }
+}
+@keyframes guide-msg-in {
+  from { opacity: 0; transform: translate3d(0, 6px, 0); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes guide-caret {
+  to { visibility: hidden; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avatar,
+  .avatar *,
+  .launcherPulse,
+  .teaser,
+  .panelIn,
+  .panelOut,
+  .msgIn,
+  .typing span,
+  .caret,
+  .moodChip .moodDot {
+    animation: none !important;
+    transition: none !important;
+  }
+  .launcherPulse {
+    display: none;
+  }
+}

@@ -47,6 +47,13 @@ export interface AdminContentSnapshot {
   reviews: VerifiedReview[];
   /** False in offline preview mode: content can be viewed but not saved. */
   editable: boolean;
+  /** True when ANTHROPIC_API_KEY is set on the server, so the chat guide's smart answers can run. The key itself is never sent. */
+  assistantAiReady: boolean;
+}
+
+/** Only says whether the key exists; never returns or logs it. */
+function isAssistantAiReady(): boolean {
+  return Boolean(process.env.ANTHROPIC_API_KEY?.trim());
 }
 
 const OFFLINE_MESSAGE =
@@ -98,6 +105,7 @@ export async function getAdminContent(): Promise<AdminContentSnapshot> {
     const state = getDemoState();
     return {
       editable: false,
+      assistantAiReady: isAssistantAiReady(),
       settings,
       reviews: state.reviews,
       trips: state.trips
@@ -238,6 +246,7 @@ export async function getAdminContent(): Promise<AdminContentSnapshot> {
 
   return {
     editable: true,
+    assistantAiReady: isAssistantAiReady(),
     settings,
     trips,
     reviews: (reviewRows ?? []).map((r) => ({

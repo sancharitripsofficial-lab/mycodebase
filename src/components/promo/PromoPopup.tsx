@@ -20,6 +20,8 @@ export function PromoPopup({ promotions }: { promotions: Promotion[] }) {
   const pathname = usePathname();
   const [promo, setPromo] = useState<Promotion | null>(null);
   const closeRef = useRef<HTMLButtonElement | null>(null);
+  /** Where focus was before the offer opened, so closing it puts the visitor back there. */
+  const returnFocus = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (promotions.length === 0 || QUIET_PATHS.some((p) => pathname.startsWith(p))) return;
@@ -32,11 +34,19 @@ export function PromoPopup({ promotions }: { promotions: Promotion[] }) {
     if (!next) return;
     const chosen = next;
     let done = false;
+    let retry = 0;
     const show = () => {
       if (done) return;
       // Not while the booking form is open or someone is typing.
       if (window.location.hash === "#book" || document.activeElement?.matches("input, textarea, select")) return;
+      // Never on top of the chat guide or another open dialog: try again a little later.
+      if (document.querySelector('[data-chat-window], [role="dialog"][aria-modal="true"]')) {
+        window.clearTimeout(retry);
+        retry = window.setTimeout(show, 15000);
+        return;
+      }
       done = true;
+      returnFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
       setPromo(chosen);
       trackPromo(chosen.id, "view");
       try {
@@ -54,6 +64,7 @@ export function PromoPopup({ promotions }: { promotions: Promotion[] }) {
     return () => {
       done = true;
       window.clearTimeout(timer);
+      window.clearTimeout(retry);
       window.removeEventListener("scroll", onScroll);
     };
   }, [promotions, pathname]);
@@ -65,7 +76,13 @@ export function PromoPopup({ promotions }: { promotions: Promotion[] }) {
       if (e.key === "Escape") setPromo(null);
     };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      // Back to where the visitor was (if it is still on the page).
+      const back = returnFocus.current;
+      returnFocus.current = null;
+      if (back && back.isConnected) back.focus({ preventScroll: true });
+    };
   }, [promo]);
 
   if (!promo) return null;

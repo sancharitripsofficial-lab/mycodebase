@@ -94,22 +94,22 @@ export function TripsManager({ editor }: { editor: Editor }) {
       {!content.editable && (
         <Banner status="warning" title="Preview mode is read-only" description="Connect the database to edit trips." collapsible={false} />
       )}
-      <ul className="grid gap-3 md:grid-cols-2">
+      <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
         {content.trips.map(({ trip, departures, itinerary, pickupPoints }) => (
-          <li key={trip.id}>
+          <li key={trip.id} className="min-w-0">
             <button
               type="button"
               onClick={() => setOpenId(trip.id)}
-              className="card-lift flex w-full gap-4 rounded-2xl border border-stone-200 bg-white p-3 text-left"
+              className="card-lift flex w-full min-w-0 gap-3 rounded-2xl border border-stone-200 bg-white p-3 text-left sm:gap-4"
             >
               {/* eslint-disable-next-line @next/next/no-img-element -- admin thumbnail */}
-              <img src={trip.heroImageUrl} alt="" className="h-20 w-24 shrink-0 rounded-xl object-cover" />
+              <img src={trip.heroImageUrl} alt="" className="h-20 w-20 shrink-0 rounded-xl object-cover sm:w-24" />
               <span className="min-w-0 flex-1 space-y-1">
                 <span className="flex flex-wrap items-center gap-1.5">
                   <Badge variant={trip.isPublished ? "success" : "neutral"} label={trip.isPublished ? "Live" : "Hidden"} />
                   {trip.isSampleDemo && <Badge variant="orange" label="Sample" />}
                 </span>
-                <span className="block truncate font-display text-base font-semibold text-forest-900">{trip.title}</span>
+                <span className="line-clamp-2 block font-display text-base leading-snug font-semibold break-words text-forest-900">{trip.title}</span>
                 <span className="block text-xs text-stone-600">
                   {rupees(trip.basePricePaise)} / seat • {trip.durationDays}D/{trip.durationNights}N • {departures.length} date
                   {departures.length === 1 ? "" : "s"} • {itinerary.length} days planned • {pickupPoints.length} pickups

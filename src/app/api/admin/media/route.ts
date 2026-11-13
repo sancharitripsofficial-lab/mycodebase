@@ -60,6 +60,12 @@ async function usageIndex(): Promise<Map<string, string[]>> {
     if (p.media_url) add(String(p.media_url), `Offer “${String(p.title)}”`);
     if (p.poster_url) add(String(p.poster_url), `Offer “${String(p.title)}” (cover)`);
   }
+  // The chat guide's character pictures / videos (Admin → Website text → Chat guide).
+  const { data: assistant } = await admin.from("site_settings").select("value").eq("key", "assistant").maybeSingle();
+  const media = (assistant?.value as { guideMedia?: Record<string, unknown> } | null)?.guideMedia ?? {};
+  for (const [emotion, url] of Object.entries(media)) {
+    if (typeof url === "string" && url) add(url, `Chat guide (${emotion})`);
+  }
   return index;
 }
 

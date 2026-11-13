@@ -1,8 +1,11 @@
+import { ChatAssistant } from "@/components/assistant/ChatAssistant";
+import type { ChatAssistantConfig } from "@/components/assistant/chat-config";
 import { PromoPopup } from "@/components/promo/PromoPopup";
 import { PromoTopBar } from "@/components/promo/PromoTopBar";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { WhatsAppFloat } from "@/components/WhatsAppFloat";
+import { displayPhone, mergeAssistantSettings } from "@/lib/assistant/settings";
 import { forPlacement, getLivePromotions } from "@/lib/data/promotions";
 import { getSiteSettings } from "@/lib/data/repository";
 import { buildClickToWhatsAppUrl } from "@/lib/messaging/provider";
@@ -19,6 +22,22 @@ export default async function StoreLayout({ children }: { children: React.ReactN
     ? `https://wa.me/${settings.socialLinks.whatsappNumber}?text=${encodeURIComponent(message)}`
     : buildClickToWhatsAppUrl(message);
 
+  // Chat guide (Admin → Website text → Chat guide). Only public, display-ready fields go to the browser.
+  const assistant = mergeAssistantSettings((settings as { assistant?: unknown }).assistant);
+  const chatConfig: ChatAssistantConfig | null = assistant.enabled
+    ? {
+        guideName: assistant.guideName,
+        guideRole: assistant.guideRole,
+        greeting: assistant.greeting,
+        quickQuestions: assistant.quickQuestions,
+        careNumber: assistant.customerCareNumber,
+        careDisplay: displayPhone(assistant.customerCareNumber),
+        careHours: assistant.customerCareHours,
+        whatsappUrl: whatsappUrl ?? null,
+        guideMedia: assistant.guideMedia,
+      }
+    : null;
+
   return (
     <div className="flex min-h-screen flex-col">
       <a
@@ -34,6 +53,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
       </main>
       <SiteFooter social={settings.socialLinks} brand={settings.brandIdentity} />
       {whatsappUrl && <WhatsAppFloat href={whatsappUrl} />}
+      {chatConfig && <ChatAssistant config={chatConfig} />}
       <PromoPopup promotions={forPlacement(promotions, "popup")} />
     </div>
   );

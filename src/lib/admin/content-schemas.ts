@@ -1,3 +1,4 @@
+import { GUIDE_EMOTIONS, type GuideEmotion } from "@/lib/assistant/types";
 import { ICON_KEYS, THEME_KEYS, TILE_COLOURS } from "@/lib/home-content";
 import { z } from "zod";
 
@@ -267,6 +268,64 @@ export const homePageSchema = z.object({
   faqSection: sectionText,
 });
 
+/**
+ * A picture or video link for the chat guide character: an https link or a site path
+ * (/media/guide-wave.mp4). Never http:, javascript:, data:, protocol-relative (//host or /\host),
+ * "..", spaces, quotes or angle brackets — the link ends up in src="" and CSS url().
+ */
+export function isSafeGuideMediaLink(v: string): boolean {
+  if (/[\s"'<>\\`]/.test(v) || v.includes("..")) return false;
+  if (/^https:\/\/[^/]/i.test(v)) return true;
+  return v.startsWith("/") && !v.startsWith("//") && v.length > 1;
+}
+
+const guideMediaLink = z
+  .string()
+  .trim()
+  .max(600, "Link is too long")
+  .refine((v) => v === "" || isSafeGuideMediaLink(v), "Guide picture/video: use an https:// link or a site path like /media/guide-wave.mp4");
+
+const guideMediaShape: Record<GuideEmotion, z.ZodOptional<typeof guideMediaLink>> = {
+  idle: guideMediaLink.optional(),
+  wave: guideMediaLink.optional(),
+  listening: guideMediaLink.optional(),
+  thinking: guideMediaLink.optional(),
+  talking: guideMediaLink.optional(),
+  happy: guideMediaLink.optional(),
+  sorry: guideMediaLink.optional(),
+  pointing: guideMediaLink.optional(),
+};
+
+/** Website chat guide (Admin → Website text → Chat guide). Matches AssistantSettings in lib/assistant/settings.ts. */
+export const assistantSettingsSchema = z.object({
+  enabled: z.boolean(),
+  guideName: z.string().trim().min(2, "Guide name needs at least 2 characters").max(40, "Guide name: at most 40 characters"),
+  guideRole: z.string().trim().max(80, "Line under the name: at most 80 characters"),
+  greeting: z.string().trim().min(10, "Greeting needs at least 10 characters").max(400, "Greeting: at most 400 characters"),
+  customerCareNumber: z
+    .string()
+    .trim()
+    .transform((v) => v.replace(/\D/g, ""))
+    // 91 + 10 digits (mobile, or landline with its STD code without the leading 0). Indian numbers never start with 0 after 91.
+    .refine((v) => v === "" || /^91[1-9]\d{9}$/.test(v), "Customer care number: 91 followed by the 10-digit number"),
+  customerCareHours: z.string().trim().max(80, "Customer care hours: at most 80 characters"),
+  quickQuestions: z
+    .array(z.string().trim().min(3, "Each quick question needs at least 3 characters").max(80, "Each quick question: at most 80 characters"))
+    .max(8, "At most 8 quick questions"),
+  smartAnswers: z.boolean(),
+  guideMedia: z
+    .object(guideMediaShape)
+    .default({})
+    .transform((m) => {
+      const out: Partial<Record<GuideEmotion, string>> = {};
+      for (const e of GUIDE_EMOTIONS) {
+        const v = m[e];
+        if (v) out[e] = v;
+      }
+      return out;
+    }),
+});
+
 export const settingsSaveSchema = z.discriminatedUnion("key", [
   z.object({ key: z.literal("brand_identity"), value: brandIdentitySchema }),
   z.object({ key: z.literal("booking_policy"), value: bookingPolicySchema }),
@@ -274,6 +333,7 @@ export const settingsSaveSchema = z.discriminatedUnion("key", [
   z.object({ key: z.literal("legal_drafts"), value: legalDraftsSchema }),
   z.object({ key: z.literal("social_links"), value: socialLinksSchema }),
   z.object({ key: z.literal("home_page"), value: homePageSchema }),
+  z.object({ key: z.literal("assistant"), value: assistantSettingsSchema }),
 ]);
 
 export const reviewSaveSchema = z

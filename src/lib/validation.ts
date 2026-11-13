@@ -236,6 +236,10 @@ export const ownerOpsActionSchema = z.discriminatedUnion("kind", [
     status: z.enum(["new", "contacted", "converted", "closed"]),
     staffNote: z.string().trim().max(500),
   }),
+  z.object({
+    kind: z.literal("delete_enquiries"),
+    ids: z.array(z.string().uuid()).min(1, "Pick at least one enquiry.").max(200),
+  }),
 ]);
 
 export const enquirySchema = z.object({

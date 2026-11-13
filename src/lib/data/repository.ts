@@ -1,3 +1,4 @@
+import { mergeAssistantSettings } from "@/lib/assistant/settings";
 import { mergeHomeContent } from "@/lib/home-content";
 import crypto from "node:crypto";
 import { calculateBookingPricing } from "@/lib/currency";
@@ -85,6 +86,7 @@ export async function getSiteSettings(): Promise<{ settings: SiteSettings; isDem
           ...((map.get("social_links") as Partial<SiteSettings["socialLinks"]> | undefined) ?? {}),
         },
         homePage: mergeHomeContent(map.get("home_page")),
+        assistant: mergeAssistantSettings(map.get("assistant")),
       },
     };
   } catch {

@@ -344,3 +344,37 @@ export async function updateEnquiry(
   });
   return mapEnquiry(data);
 }
+
+/**
+ * Deletes enquiries for good (the customer's name, phone and message go with them).
+ * The audit log keeps only how many were deleted and when, not the personal details.
+ */
+export async function deleteEnquiries(ids: string[], actor: OwnerActor): Promise<{ deleted: number }> {
+  const unique = Array.from(new Set(ids));
+  if (!hasDatabase()) {
+    let deleted = 0;
+    for (const id of unique) {
+      const i = previewEnquiries.findIndex((x) => x.id === id);
+      if (i >= 0) {
+        previewEnquiries.splice(i, 1);
+        deleted++;
+      }
+    }
+    return { deleted };
+  }
+  const admin = createSupabaseAdminClient();
+  const { data, error } = await admin.from("enquiries").delete().in("id", unique).select("id");
+  if (error) throw new Error(cleanDbError(error.message, "Could not delete the enquiries."));
+  const deleted = data?.length ?? 0;
+  await admin.from("audit_logs").insert({
+    actor_user_id: actor.userId,
+    actor_role: actor.staffRole,
+    action: "enquiries_deleted",
+    entity_type: "enquiry",
+    entity_id: unique.length === 1 ? unique[0] : "bulk",
+    reason: "Deleted " + deleted + (deleted === 1 ? " enquiry" : " enquiries"),
+    before_state: null,
+    after_state: { deleted, ids: unique },
+  });
+  return { deleted };
+}

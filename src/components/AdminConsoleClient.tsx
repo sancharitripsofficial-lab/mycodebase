@@ -432,7 +432,7 @@ function Workspace({
   );
 
   return (
-    <div className="min-h-screen lg:grid lg:grid-cols-[264px_1fr]">
+    <div className="admin-shell min-h-screen lg:grid lg:grid-cols-[264px_minmax(0,1fr)]">
       <aside
         className={`bg-ocean fixed inset-y-0 left-0 z-50 print:hidden w-[264px] overflow-y-auto px-3 py-5 text-white transition-transform lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${
           menuOpen ? "translate-x-0" : "-translate-x-full"

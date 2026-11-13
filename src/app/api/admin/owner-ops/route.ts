@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireStaff } from "@/lib/auth";
 import {
+  deleteEnquiries,
   listDepartureCrew,
   listEnquiries,
   recordOfflinePayment,
@@ -85,6 +86,10 @@ export async function POST(request: NextRequest) {
       case "update_enquiry": {
         const enquiry = await updateEnquiry({ id: a.id, status: a.status, staffNote: a.staffNote }, who);
         return NextResponse.json({ ok: true, enquiry });
+      }
+      case "delete_enquiries": {
+        const r = await deleteEnquiries(a.ids, who);
+        return NextResponse.json({ ok: true, deleted: r.deleted });
       }
     }
   } catch (err) {

@@ -12,6 +12,7 @@
     "astryx": "node node_modules/@astryxdesign/cli/clients/cli/bin/astryx.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.8.0",
     "@astryxdesign/core": "^0.7.14",
     "@astryxdesign/theme-neutral": "^0.7.14",
     "@stylexjs/stylex": "^0.19.2",

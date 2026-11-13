@@ -4,6 +4,17 @@ interface Bucket {
 }
 
 const buckets = new Map<string, Bucket>();
+/** Expired buckets are swept at most once a minute, so the map never grows without bound. */
+const SWEEP_EVERY_MS = 60_000;
+let lastSweep = 0;
+
+function sweep(now: number) {
+  if (now - lastSweep < SWEEP_EVERY_MS) return;
+  lastSweep = now;
+  for (const [key, bucket] of buckets) {
+    if (bucket.resetAt <= now) buckets.delete(key);
+  }
+}
 
 export interface RateLimitResult {
   allowed: boolean;
@@ -17,6 +28,7 @@ export function checkRateLimit(
   windowMs = 60_000
 ): RateLimitResult {
   const now = Date.now();
+  sweep(now);
   const existing = buckets.get(key);
 
   if (!existing || existing.resetAt <= now) {
@@ -44,3 +56,8 @@ export function checkRateLimit(
   };
 }
 
+/** Test helper: forget every bucket. */
+export function resetRateLimits() {
+  buckets.clear();
+  lastSweep = 0;
+}

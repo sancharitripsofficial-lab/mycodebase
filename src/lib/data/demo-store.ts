@@ -1,3 +1,4 @@
+import { DEFAULT_ASSISTANT_SETTINGS } from "@/lib/assistant/settings";
 import { DEFAULT_HOME_CONTENT } from "@/lib/home-content";
 import crypto from "node:crypto";
 import { calculateBookingPricing } from "@/lib/currency";
@@ -712,6 +713,7 @@ function createInitialDemoState(): DemoDatabaseState {
     ],
     socialLinks: { instagramUrl: "", youtubeUrl: "", facebookUrl: "", whatsappNumber: "", whatsappChannelUrl: "" },
     homePage: DEFAULT_HOME_CONTENT,
+    assistant: DEFAULT_ASSISTANT_SETTINGS,
     legalDrafts: {
       ownerReviewRequired: true,
       termsSummary:

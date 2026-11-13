@@ -1,3 +1,4 @@
+import type { AssistantSettings } from "@/lib/assistant/settings";
 import type { HomePageContent } from "@/lib/home-content";
 export type Difficulty = "Easy" | "Moderate" | "Active";
 
@@ -270,6 +271,8 @@ export interface SiteSettings {
   socialLinks: SocialLinks;
   /** Home page words, cards and trip categories (Admin → Website text → Home page). */
   homePage: HomePageContent;
+  /** Website chat guide: name, greeting, customer care number, quick questions, character media (Admin → Website text → Chat guide). */
+  assistant: AssistantSettings;
   legalDrafts: {
     ownerReviewRequired: boolean;
     termsSummary: string;
