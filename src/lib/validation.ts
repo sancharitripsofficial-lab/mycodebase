@@ -40,6 +40,13 @@ export const checkoutSchema = z
       errorMap: () => ({ message: "You must review and accept the terms and privacy notice." }),
     }),
     preferredSeats: z.array(z.number().int().min(1).max(6)).max(6).optional(),
+    couponCode: z
+      .string()
+      .trim()
+      .max(24)
+      .transform((v) => v.toUpperCase())
+      .refine((v) => v === "" || /^[A-Z0-9][A-Z0-9-]{3,23}$/.test(v), "That coupon code doesn't look right.")
+      .optional(),
     acceptedComfortProcessing: z.literal(true, {
       errorMap: () => ({
         message: "Please confirm consent for operational handling of your booking preferences.",
@@ -247,3 +254,140 @@ export const enquirySchema = z.object({
   /** Hidden field; real people leave it empty. */
   website: z.string().max(0, "Could not send. Please WhatsApp us instead.").optional(),
 });
+
+// ---------------------------------------------------------------------------
+// Offers & ads
+// ---------------------------------------------------------------------------
+
+const mediaLink = z
+  .string()
+  .trim()
+  .max(600)
+  .refine((v) => v === "" || /^\/[A-Za-z0-9._~/%-]+$/.test(v) || /^https:\/\/[^\s<>"]{4,}$/.test(v), "Links must start with https:// (or be a file from the media library).");
+
+export const promotionSchema = z
+  .object({
+    id: z.string().uuid().nullable().optional(),
+    title: z.string().trim().min(3, "Title: at least 3 characters.").max(80),
+    message: z.string().trim().max(240),
+    badge: z.string().trim().max(24),
+    mediaType: z.enum(["none", "image", "video", "youtube"]),
+    mediaUrl: mediaLink,
+    posterUrl: mediaLink,
+    ctaLabel: z.string().trim().max(30),
+    ctaUrl: z
+      .string()
+      .trim()
+      .max(500)
+      .refine((v) => v === "" || /^\/[A-Za-z0-9._~/?#=&%-]*$/.test(v) || /^https:\/\/[^\s<>"]{4,}$/.test(v), "Button link: a page on this site (starts with /) or an https:// link."),
+    placements: z
+      .array(z.enum(["top_bar", "home_banner", "trips_banner", "trip_page", "popup"]))
+      .min(1, "Choose at least one place to show the offer.")
+      .transform((a) => Array.from(new Set(a))),
+    tripId: z.string().uuid().nullable(),
+    theme: z.enum(["sunset", "ocean", "teal"]),
+    startsAt: z.string().datetime().nullable(),
+    endsAt: z.string().datetime().nullable(),
+    isActive: z.boolean(),
+    sortOrder: z.number().int().min(-1000).max(1000),
+  })
+  .superRefine((d, ctx) => {
+    if (d.mediaType !== "none" && !d.mediaUrl) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["mediaUrl"], message: "Add the photo/video, or choose “No media”." });
+    }
+    if (d.mediaType === "youtube" && d.mediaUrl && !/youtu\.?be/.test(d.mediaUrl)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["mediaUrl"], message: "That is not a YouTube link." });
+    }
+    if ((d.ctaLabel === "") !== (d.ctaUrl === "")) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["ctaUrl"], message: "Give the button both a label and a link, or leave both empty." });
+    }
+    if (d.startsAt && d.endsAt && Date.parse(d.endsAt) <= Date.parse(d.startsAt)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["endsAt"], message: "The end must be after the start." });
+    }
+    if (d.placements.includes("top_bar") && d.title.length > 60) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["title"], message: "For the thin top bar keep the title under 60 characters." });
+    }
+  });
+
+export const promotionActionSchema = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("save"), promotion: promotionSchema }),
+  z.object({ action: z.literal("delete"), id: z.string().uuid() }),
+]);
+
+// ---------------------------------------------------------------------------
+// Creators (influencers) and coupons
+// ---------------------------------------------------------------------------
+
+const indianMobile = z
+  .string()
+  .trim()
+  .transform((v) => v.replace(/[\s-]/g, "").replace(/^(\+91|91|0)(?=[6-9]\d{9}$)/, ""))
+  .refine((v) => /^[6-9]\d{9}$/.test(v), "Enter a 10-digit Indian mobile number.");
+
+export const creatorApplySchema = z.object({
+  fullName: z.string().trim().min(2, "Enter your name.").max(120),
+  phone: indianMobile,
+  email: z.string().trim().toLowerCase().email("Enter a valid email — your code will be tied to it.").max(160),
+  platform: z.enum(["instagram", "youtube", "facebook", "x", "other"]),
+  profileUrl: z
+    .string()
+    .trim()
+    .max(300)
+    .refine((v) => /^https:\/\/[^\s<>"]{4,}$/.test(v), "Paste your full profile link (starts with https://)."),
+  followersClaimed: z.number({ invalid_type_error: "Enter your follower count." }).int().min(0).max(500_000_000),
+  message: z.string().trim().max(1500),
+  consent: z.literal(true, { errorMap: () => ({ message: "Please agree so we can contact you." }) }),
+  website: z.string().max(0, "Could not send.").optional(),
+});
+
+const codeField = z
+  .string()
+  .trim()
+  .transform((v) => v.toUpperCase())
+  .refine((v) => /^[A-Z0-9][A-Z0-9-]{3,23}$/.test(v), "Codes are 4–24 capital letters, numbers or dashes.");
+
+export const creatorAdminActionSchema = z.discriminatedUnion("action", [
+  z.object({
+    action: z.literal("save_tier"),
+    tier: z
+      .object({
+        id: z.string().uuid().nullable().optional(),
+        label: z.string().trim().min(2).max(40),
+        minFollowers: z.number().int().min(0),
+        maxFollowers: z.number().int().min(0).nullable(),
+        discountType: z.enum(["percent", "flat", "free_seats"]),
+        discountValue: z.number().int().positive(),
+        maxDiscountPaise: z.number().int().positive().nullable(),
+        validDays: z.number().int().min(1).max(365),
+        isActive: z.boolean(),
+      })
+      .refine((t) => t.maxFollowers === null || t.maxFollowers >= t.minFollowers, "The highest follower count must be at or above the lowest."),
+  }),
+  z.object({ action: z.literal("delete_tier"), id: z.string().uuid() }),
+  z.object({
+    action: z.literal("approve"),
+    applicationId: z.string().uuid(),
+    followersVerified: z.number().int().min(0).max(500_000_000),
+    code: codeField,
+    note: z.string().trim().max(500),
+  }),
+  z.object({ action: z.literal("reject"), applicationId: z.string().uuid(), note: z.string().trim().min(5, "Write why (at least 5 characters).").max(500) }),
+  z.object({
+    action: z.literal("save_coupon"),
+    coupon: z.object({
+      id: z.string().uuid().nullable().optional(),
+      code: codeField,
+      discountType: z.enum(["percent", "flat", "free_seats"]),
+      discountValue: z.number().int().positive(),
+      maxDiscountPaise: z.number().int().positive().nullable(),
+      minOrderPaise: z.number().int().min(0),
+      maxRedemptions: z.number().int().positive().nullable(),
+      perCustomerLimit: z.number().int().min(1).max(10),
+      validFrom: z.string().datetime().nullable(),
+      validUntil: z.string().datetime().nullable(),
+      tripId: z.string().uuid().nullable(),
+      isActive: z.boolean(),
+      note: z.string().trim().max(300),
+    }),
+  }),
+]);

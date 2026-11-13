@@ -16,23 +16,27 @@ import {
   Lock,
   LogOut,
   Map,
+  Megaphone,
   Menu,
   RefreshCw,
   Route,
   ScrollText,
   Settings2,
   Star,
+  Ticket,
   Users,
   X,
 } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { BookingMoney } from "@/components/admin/BookingMoney";
+import { CreatorsManager } from "@/components/admin/CreatorsManager";
 import { DeparturesManager } from "@/components/admin/DeparturesManager";
 import { EnquiriesSection } from "@/components/admin/EnquiriesSection";
 import { Notice, Panel, useAdminContent } from "@/components/admin/kit";
 import { MediaLibrary } from "@/components/admin/MediaLibrary";
 import { PasswordField } from "@/components/admin/PasswordField";
+import { PromotionsManager } from "@/components/admin/PromotionsManager";
 import { ReviewsManager } from "@/components/admin/ReviewsManager";
 import { SiteContentManager } from "@/components/admin/SiteContentManager";
 import { TripSheets } from "@/components/admin/TripSheets";
@@ -85,6 +89,8 @@ type SectionKey =
   | "dates"
   | "waitlist"
   | "trips"
+  | "offers"
+  | "creators"
   | "website"
   | "reviews"
   | "media"
@@ -112,6 +118,8 @@ const NAV: { group: string; items: { key: SectionKey; label: string; icon: typeo
   {
     group: "Website",
     items: [
+      { key: "offers", label: "Offers & ads", icon: Megaphone },
+      { key: "creators", label: "Creators & coupons", icon: Ticket },
       { key: "trips", label: "Trips", icon: Map },
       { key: "website", label: "Text & policies", icon: FileText },
       { key: "reviews", label: "Reviews", icon: Star },
@@ -538,6 +546,8 @@ function Workspace({
           )}
           {section === "dates" && <DeparturesManager editor={editor} onSeatOverride={runOps} />}
           {section === "waitlist" && <WaitlistSection data={data} />}
+          {section === "offers" && <PromotionsManager role={actor.staffRole} trips={data.trips} />}
+          {section === "creators" && <CreatorsManager role={actor.staffRole} trips={data.trips} />}
           {section === "trips" && <TripsManager editor={editor} />}
           {section === "website" && <SiteContentManager editor={editor} />}
           {section === "reviews" && <ReviewsManager editor={editor} />}

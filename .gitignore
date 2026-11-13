@@ -39,3 +39,4 @@ supabase/.branches/
 
 # Production values to paste into Vercel (never commit)
 .env.vercel.local
+marketing/

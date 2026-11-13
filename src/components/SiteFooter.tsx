@@ -1,4 +1,5 @@
 import { Facebook, Instagram, Mail, Youtube } from "lucide-react";
+import { WhatsAppChannelButton } from "@/components/WhatsAppChannelCta";
 import Image from "next/image";
 import Link from "next/link";
 import type { SiteSettings } from "@/lib/types";
@@ -50,6 +51,7 @@ export function SiteFooter({
               ))}
             </ul>
           )}
+          {social.whatsappChannelUrl && <WhatsAppChannelButton href={social.whatsappChannelUrl} />}
           {brand.isCopyDraft && (
             <p className="glass rounded-xl px-3 py-2 text-xs text-white/85">
               Some itineraries, prices and policy text on this site are samples awaiting final owner sign-off.
@@ -59,22 +61,23 @@ export function SiteFooter({
 
         <div className="space-y-2.5 text-sm">
           <p className="font-semibold">Explore</p>
-          <ul className="space-y-2 text-white/80">
-            <li><Link href="/trips" className="hover:text-white">All departures</Link></li>
-            <li><Link href="/trips?mode=private" className="hover:text-white">Book the whole car</Link></li>
-            <li><Link href="/about" className="hover:text-white">About Sanchari</Link></li>
-            <li><Link href="/safety" className="hover:text-white">Safety &amp; comfort</Link></li>
-            <li><Link href="/booking-lookup" className="hover:text-white">Find my booking</Link></li>
+          <ul className="space-y-0.5 text-white/80 md:space-y-2">
+            <li><Link href="/trips" className="inline-flex min-h-9 items-center hover:text-white md:min-h-0">All departures</Link></li>
+            <li><Link href="/trips?mode=private" className="inline-flex min-h-9 items-center hover:text-white md:min-h-0">Book the whole car</Link></li>
+            <li><Link href="/about" className="inline-flex min-h-9 items-center hover:text-white md:min-h-0">About Sanchari</Link></li>
+            <li><Link href="/safety" className="inline-flex min-h-9 items-center hover:text-white md:min-h-0">Safety &amp; comfort</Link></li>
+            <li><Link href="/booking-lookup" className="inline-flex min-h-9 items-center hover:text-white md:min-h-0">Find my booking</Link></li>
+            <li><Link href="/creators" className="inline-flex min-h-9 items-center hover:text-white md:min-h-0">Creators programme</Link></li>
           </ul>
         </div>
 
         <div className="space-y-2.5 text-sm">
           <p className="font-semibold">Policies &amp; support</p>
-          <ul className="space-y-2 text-white/80">
-            <li><Link href="/policies#terms" className="hover:text-white">Terms</Link></li>
-            <li><Link href="/policies#privacy" className="hover:text-white">Privacy</Link></li>
-            <li><Link href="/policies#refunds" className="hover:text-white">Cancellation &amp; refunds</Link></li>
-            <li><Link href="/contact" className="hover:text-white">Contact &amp; WhatsApp</Link></li>
+          <ul className="space-y-0.5 text-white/80 md:space-y-2">
+            <li><Link href="/policies#terms" className="inline-flex min-h-9 items-center hover:text-white md:min-h-0">Terms</Link></li>
+            <li><Link href="/policies#privacy" className="inline-flex min-h-9 items-center hover:text-white md:min-h-0">Privacy</Link></li>
+            <li><Link href="/policies#refunds" className="inline-flex min-h-9 items-center hover:text-white md:min-h-0">Cancellation &amp; refunds</Link></li>
+            <li><Link href="/contact" className="inline-flex min-h-9 items-center hover:text-white md:min-h-0">Contact &amp; WhatsApp</Link></li>
             {looksSet(brand.supportEmail) && (
               <li>
                 <a href={`mailto:${brand.supportEmail}`} className="inline-flex items-center gap-1.5 hover:text-white">

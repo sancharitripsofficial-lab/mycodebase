@@ -71,6 +71,7 @@ export async function POST(request: NextRequest) {
       preferenceNotes: parsed.data.preferenceNotes ?? "",
       whatsappOptIn: parsed.data.whatsappOptIn,
       preferredSeats: parsed.data.bookingMode === "batch_seats" ? parsed.data.preferredSeats ?? null : null,
+      couponCode: parsed.data.couponCode || null,
     });
 
     refreshStorefront();
@@ -81,8 +82,14 @@ export async function POST(request: NextRequest) {
       holdExpiresAt: hold.holdExpiresAt,
       amountDuePaise: hold.amountDuePaise,
       seatNumbers: hold.seatNumbers,
+      couponDiscountPaise: hold.couponDiscountPaise,
       lookupToken,
     };
+
+    // A coupon covered everything: the booking is already confirmed, no payment step.
+    if (hold.bookingStatus === "confirmed") {
+      return NextResponse.json({ ...base, paymentMethod: "free", freeConfirmed: true, upi: null, paymentOrder: null });
+    }
 
     if (upiSettings) {
       const upi = await buildUpiInstructions({

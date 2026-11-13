@@ -22,6 +22,8 @@ export interface PricingCalculationInput {
   bookingMode: BookingMode;
   seatsRequested: number;
   payDepositOnly: boolean;
+  /** Coupon discount already checked by the database (coupon_check). Applied after any private-car discount. */
+  couponDiscountPaise?: number;
   bookingPolicy: Pick<
     SiteSettings["bookingPolicy"],
     "taxRatePercent" | "allowDepositCheckout" | "depositPercent" | "balanceDueDaysBefore"
@@ -33,6 +35,8 @@ export interface PricingBreakdown {
   seatsCount: number;
   subtotalPaise: number;
   discountPaise: number;
+  /** Part of discountPaise that came from a coupon. */
+  couponDiscountPaise: number;
   taxPaise: number;
   totalPaise: number;
   payNowPaise: number;
@@ -66,6 +70,9 @@ export function calculateBookingPricing(input: PricingCalculationInput): Pricing
     subtotalPaise = fullBatchSubtotal;
   }
 
+  const couponDiscountPaise = Math.max(0, Math.min(Math.round(input.couponDiscountPaise ?? 0), subtotalPaise - discountPaise));
+  discountPaise += couponDiscountPaise;
+
   const netBeforeTax = Math.max(0, subtotalPaise - discountPaise);
   const taxRate = Math.max(0, input.bookingPolicy.taxRatePercent);
   const taxPaise = Math.round((netBeforeTax * taxRate) / 100);
@@ -91,6 +98,7 @@ export function calculateBookingPricing(input: PricingCalculationInput): Pricing
     seatsCount,
     subtotalPaise,
     discountPaise,
+    couponDiscountPaise,
     taxPaise,
     totalPaise,
     payNowPaise,

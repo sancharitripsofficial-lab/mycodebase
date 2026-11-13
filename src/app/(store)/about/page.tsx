@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
+import { LivingPhoto } from "@/components/living/LivingPhoto";
 import { getSiteSettings } from "@/lib/data/repository";
 
 export const metadata: Metadata = {
@@ -28,10 +28,11 @@ export default async function AboutPage() {
       </div>
 
       <div className="relative aspect-[3/2] overflow-hidden rounded-2xl border border-stone-200">
-        <Image
+        <LivingPhoto
+          variant="card"
+          region="Western Ghats"
           src="/media/story-coffee-morning.jpg"
           alt="Illustrative editorial photograph of friends enjoying coffee at a Karnataka estate"
-          fill
           sizes="(max-width: 768px) 100vw, 800px"
           className="object-cover"
         />

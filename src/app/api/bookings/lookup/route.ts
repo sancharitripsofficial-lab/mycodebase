@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getBookingSeatNumbers, getCustomerTripCrew } from "@/lib/data/owner-ops";
-import { lookupCustomerBooking, requestCustomerBookingChange } from "@/lib/data/repository";
+import { getSiteSettings, lookupCustomerBooking, requestCustomerBookingChange } from "@/lib/data/repository";
 import { verifyBookingLookupToken } from "@/lib/lookup-token";
 import { buildCustomerPaymentView } from "@/lib/payments/customer-view";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const [payment, seatNumbers, crew] = await Promise.all([
+  const [payment, seatNumbers, crew, site] = await Promise.all([
     buildCustomerPaymentView(result.booking),
     getBookingSeatNumbers(result.booking.id),
     getCustomerTripCrew({
@@ -65,8 +65,12 @@ export async function POST(request: NextRequest) {
       startDate: result.departure.startDate,
       endDate: result.departure.endDate,
     }),
+    getSiteSettings(),
   ]);
-  return NextResponse.json({ bookingView: { ...result, seatNumbers, crew }, payment });
+  return NextResponse.json({
+    bookingView: { ...result, seatNumbers, crew, whatsappChannelUrl: site.settings.socialLinks.whatsappChannelUrl || undefined },
+    payment,
+  });
 }
 
 export async function PATCH(request: NextRequest) {

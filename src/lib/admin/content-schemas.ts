@@ -202,6 +202,15 @@ export const socialLinksSchema = z.object({
     .trim()
     .transform((v) => v.replace(/\D/g, ""))
     .refine((v) => v === "" || /^91[6-9]\d{9}$/.test(v), "WhatsApp number: 91 followed by the 10-digit mobile number"),
+  whatsappChannelUrl: z
+    .string()
+    .trim()
+    .transform((v) => v.replace(/\/+$/, "").replace("://www.whatsapp.com/", "://whatsapp.com/"))
+    .refine(
+      (v) => v === "" || /^https:\/\/whatsapp\.com\/channel\/[A-Za-z0-9]{10,40}$/.test(v),
+      "WhatsApp channel: paste the link that starts with https://whatsapp.com/channel/"
+    )
+    .default(""),
 });
 
 export const settingsSaveSchema = z.discriminatedUnion("key", [

@@ -1,6 +1,5 @@
 import { Calendar, MapPin, Users } from "lucide-react";
-import Image from "next/image";
-import { isOptimizableImage } from "@/lib/media";
+import { LivingPhoto } from "@/components/living/LivingPhoto";
 import Link from "next/link";
 import { formatINR } from "@/lib/currency";
 import type { DepartureStatus, TripWithDetails } from "@/lib/types";
@@ -48,11 +47,12 @@ export function TripCard({ item }: { item: TripWithDetails }) {
   return (
     <article className="group flex flex-col overflow-hidden rounded-2xl border border-stone-200 bg-cream-50 shadow-xs transition hover:border-forest-700/40 hover:shadow-md">
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-stone-200">
-        <Image
+        <LivingPhoto
+          variant="card"
+          slug={trip.slug}
+          region={trip.region}
           src={trip.heroImageUrl}
-          unoptimized={!isOptimizableImage(trip.heroImageUrl)}
           alt={`${trip.destination} — ${trip.title} illustrative travel visual`}
-          fill
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           className="object-cover transition duration-500 group-hover:scale-[1.03]"
         />

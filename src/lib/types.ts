@@ -194,6 +194,8 @@ export interface CustomerBookingView {
   seatNumbers?: number[];
   /** Driver / vehicle / group link, shared only with paid bookings close to the trip. */
   crew?: import("@/lib/data/owner-ops").CustomerTripCrew | null;
+  /** Sanchari's public WhatsApp Channel, when the owner has set it. */
+  whatsappChannelUrl?: string;
 }
 
 export interface WaitlistEntry {
@@ -232,6 +234,8 @@ export interface SocialLinks {
   facebookUrl: string;
   /** Digits only with country code, e.g. 919876543210. Used for the WhatsApp chat button. */
   whatsappNumber: string;
+  /** Public WhatsApp Channel link (https://whatsapp.com/channel/...) for "Follow us" buttons. */
+  whatsappChannelUrl: string;
 }
 
 export interface SiteSettings {

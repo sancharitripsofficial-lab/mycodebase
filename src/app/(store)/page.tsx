@@ -8,9 +8,11 @@ import {
   ShieldCheck,
   Users,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
-import { CountUp, HeroCinematic, Reveal, RoadTripRoute, SeatPulse } from "@/components/motion";
+import { CountUp, HeroCinematic, Reveal, SeatPulse } from "@/components/motion";
+import { LivingPhoto } from "@/components/living/LivingPhoto";
+import { PromoBanner } from "@/components/promo/PromoBanner";
+import { RoadTripMinimap } from "@/components/three/RoadTripMinimap";
 import { TripCard } from "@/components/TripCard";
 import { formatINR } from "@/lib/currency";
 import {
@@ -19,16 +21,19 @@ import {
   getVerifiedReviews,
 } from "@/lib/data/repository";
 import { buildClickToWhatsAppUrl } from "@/lib/messaging/provider";
+import { forPlacement, getLivePromotions } from "@/lib/data/promotions";
 
 // Served from the CDN; refreshed every 30 s and immediately after bookings / admin edits.
 export const revalidate = 30;
 
 export default async function HomePage() {
-  const [{ trips }, { settings }, reviews] = await Promise.all([
+  const [{ trips }, { settings }, reviews, promotions] = await Promise.all([
     getPublishedTripsWithDetails(),
     getSiteSettings(),
     getVerifiedReviews(),
+    getLivePromotions(),
   ]);
+  const homeOffers = forPlacement(promotions, "home_banner");
 
   const upcomingDepartures = trips
     .flatMap((t) =>
@@ -61,8 +66,13 @@ export default async function HomePage() {
         />
         <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 pt-14 pb-20 sm:px-6 md:grid-cols-[1.15fr_0.85fr] md:pt-20 md:pb-28">
           <div className="max-w-xl space-y-6">
+            {/* Live 3D minimap HUD: floats beside the headline on phones (text wraps round it), pinned to the hero's top-right corner from md up */}
+            <RoadTripMinimap
+              labels={["Bengaluru", nextDeparture?.destination.split(",")[0] ?? "Chikmagalur"]}
+              className="float-right mb-2 ml-3 w-[104px] min-[360px]:w-[128px] md:absolute md:right-6 md:top-8 md:m-0 md:w-[232px] lg:w-[252px]"
+            />
             <Reveal>
-              <p className="glass inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs font-semibold tracking-wide text-white">
+              <p className="glass inline-flex max-w-[calc(100%-7.4rem)] items-center gap-2 rounded-2xl px-3.5 py-1.5 text-xs font-semibold tracking-wide text-white min-[360px]:max-w-[calc(100%-8.9rem)] md:max-w-none md:rounded-full">
                 <Compass className="h-3.5 w-3.5 text-saffron-500" aria-hidden="true" />
                 Bengaluru • Karnataka • Max 6 travelers per car
               </p>
@@ -116,13 +126,6 @@ export default async function HomePage() {
             </Reveal>
           </div>
 
-          <Reveal delay={200} className="hidden md:block">
-            <RoadTripRoute
-              tone="onDark"
-              labels={["Bengaluru", nextDeparture?.destination.split(",")[0] ?? "Chikmagalur"]}
-              className="mx-auto max-w-[360px]"
-            />
-          </Reveal>
         </div>
       </section>
 
@@ -144,6 +147,13 @@ export default async function HomePage() {
           ))}
         </div>
       </section>
+
+      {/* Offers & ads from Admin → Offers & ads (home banner) */}
+      {homeOffers.length > 0 && (
+        <section aria-label="Current offers" className="mx-auto mt-10 max-w-6xl px-4 sm:px-6">
+          <PromoBanner promotions={homeOffers} />
+        </section>
+      )}
 
       {/* Upcoming Departures Live Capacity Strip */}
       <section className="mx-auto max-w-6xl px-4 pt-16 pb-12 sm:px-6">
@@ -295,10 +305,11 @@ export default async function HomePage() {
       <section className="bg-ocean text-cream-100">
         <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-14 sm:px-6 md:grid-cols-2">
           <div className="relative aspect-[3/2] overflow-hidden rounded-3xl border border-white/20 shadow-[0_30px_60px_-30px_rgb(0_0_0/0.45)]">
-            <Image
+            <LivingPhoto
+              variant="card"
+              region="Western Ghats"
               src="/media/story-coffee-morning.jpg"
               alt="Illustrative editorial image: four travelers sharing morning filter coffee on a Karnataka estate verandah"
-              fill
               sizes="(max-width: 768px) 100vw, 50vw"
               className="object-cover"
             />

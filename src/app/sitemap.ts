@@ -5,7 +5,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
   const { trips } = await getPublishedTripsWithDetails();
 
-  const staticRoutes = ["", "/trips", "/about", "/safety", "/policies", "/contact"].map(
+  const staticRoutes = ["", "/trips", "/about", "/safety", "/policies", "/contact", "/creators"].map(
     (route) => ({
       url: `${baseUrl}${route}`,
       lastModified: new Date(),

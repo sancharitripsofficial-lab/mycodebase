@@ -133,6 +133,16 @@ function SocialForm({ initial, editor, canEdit }: { initial: SiteSettings["socia
           isDisabled={!canEdit}
           onChange={(v) => setF({ ...f, whatsappNumber: v.replace(/\D/g, "") })}
         />
+        <div className="md:col-span-2">
+          <TextInput
+            label="WhatsApp channel link"
+            description="In WhatsApp: Updates → your channel → Share → Copy link. Turns on 'Follow on WhatsApp' buttons in the footer, trip pages and My Booking."
+            placeholder="https://whatsapp.com/channel/…"
+            value={f.whatsappChannelUrl ?? ""}
+            isDisabled={!canEdit}
+            onChange={(v) => setF({ ...f, whatsappChannelUrl: v.trim() })}
+          />
+        </div>
       </div>
       <SaveBar editor={editor} keyName="social_links" value={f} canEdit={canEdit} />
     </div>

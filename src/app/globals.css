@@ -295,3 +295,25 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ---- Offers & ads (src/components/promo) ---- */
+@keyframes promo-sheen-move {
+  0% { transform: translateX(-30%) rotate(8deg); }
+  100% { transform: translateX(30%) rotate(8deg); }
+}
+.promo-sheen {
+  background: radial-gradient(40% 60% at 50% 50%, rgb(255 255 255 / 0.22), transparent 70%);
+  animation: promo-sheen-move 9s ease-in-out infinite alternate;
+}
+@keyframes promo-dash-move { to { stroke-dashoffset: -44; } }
+.promo-dash { animation: promo-dash-move 1.6s linear infinite; }
+@keyframes promo-enter-kf { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.promo-enter { animation: promo-enter-kf 420ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+@keyframes promo-fade-kf { from { opacity: 0; } to { opacity: 1; } }
+.promo-fade { animation: promo-fade-kf 380ms ease-out both; }
+.promo-backdrop { animation: promo-fade-kf 220ms ease-out both; }
+@keyframes promo-sheet-kf { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: none; } }
+.promo-sheet { animation: promo-sheet-kf 320ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .promo-sheen, .promo-dash, .promo-enter, .promo-fade, .promo-backdrop, .promo-sheet { animation: none; }
+}

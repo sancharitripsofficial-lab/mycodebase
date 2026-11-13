@@ -26,6 +26,7 @@ import { isServiceRoleConfigured, isSupabaseConfigured } from "@/lib/env";
 import { getSafeComfortCustomerLabel } from "@/lib/privacy";
 import { createSupabaseAdminClient, createSupabasePublicClient } from "@/lib/supabase/server";
 import type {
+  BookingMode,
   AdminBookingRow,
   AdminPaymentRow,
   AuditLogEntry,
@@ -255,10 +256,18 @@ export async function createAtomicBookingHold(
   amountDuePaise: number;
   holdExpiresAt: string;
   seatNumbers: number[];
+  /** "confirmed" when a coupon made the booking free (nothing to pay). */
+  bookingStatus: string;
+  couponDiscountPaise: number;
 }> {
   if (!isSupabaseConfigured() || !isServiceRoleConfigured()) {
+    if (input.couponCode) {
+      throw new Error("COUPON_NEEDS_DATABASE: Coupons work once the live database is connected.");
+    }
     const { booking, assignedSeats } = reserveSeatsDemo(input);
     return {
+      bookingStatus: booking.status,
+      couponDiscountPaise: 0,
       seatNumbers: assignedSeats.slice().sort((a, b) => a - b),
       bookingId: booking.id,
       bookingReference: booking.bookingReference,
@@ -292,7 +301,7 @@ export async function createAtomicBookingHold(
       throw new Error("Selected pickup hub does not belong to this trip.");
     }
   }
-  const pricing = calculateBookingPricing({
+  const priceInput = {
     trip: {
       basePricePaise: tripRow.base_price_paise,
       privateGroupPricePaise: tripRow.private_group_price_paise,
@@ -305,7 +314,19 @@ export async function createAtomicBookingHold(
     seatsRequested: input.seatsRequested,
     payDepositOnly: input.payDepositOnly,
     bookingPolicy: settings.bookingPolicy,
-  });
+  };
+  let pricing = calculateBookingPricing(priceInput);
+  const couponCode = input.couponCode?.trim().toUpperCase() || null;
+  if (couponCode) {
+    const quote = await checkCouponForPricing(admin, {
+      code: couponCode,
+      tripId: tripRow.id,
+      pricing,
+      email: input.customerEmail,
+      phone: input.customerPhone,
+    });
+    pricing = calculateBookingPricing({ ...priceInput, couponDiscountPaise: quote.discountPaise });
+  }
 
   const bookingReference = `SAN-${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
   const balanceDueAt =
@@ -316,7 +337,8 @@ export async function createAtomicBookingHold(
         ).toISOString()
       : null;
 
-  const { data, error } = await admin.rpc("reserve_departure_seats", {
+  const { data, error } = await admin.rpc(couponCode ? "reserve_departure_seats_with_coupon" : "reserve_departure_seats", {
+    ...(couponCode ? { p_coupon_code: couponCode, p_coupon_discount_paise: pricing.couponDiscountPaise } : {}),
     p_booking_reference: bookingReference,
     p_departure_id: input.departureId,
     p_user_id: input.userId,
@@ -357,8 +379,10 @@ export async function createAtomicBookingHold(
     bookingId: data[0].booking_id,
     bookingReference: data[0].booking_reference,
     amountDuePaise: pricing.payNowPaise,
-    holdExpiresAt: data[0].hold_expires_at,
+    holdExpiresAt: data[0].hold_expires_at ?? new Date().toISOString(),
     seatNumbers: ((data[0].assigned_seats ?? []) as number[]).map(Number).sort((a, b) => a - b),
+    bookingStatus: String(data[0].booking_status ?? "pending_payment"),
+    couponDiscountPaise: Number(data[0].coupon_discount_paise ?? 0),
   };
 }
 
@@ -1363,4 +1387,71 @@ export async function getDepartureSeatMap(departureId: string): Promise<number[]
     return [];
   }
   return (data ?? []).map((r: { seat_number: number }) => Number(r.seat_number)).sort((a: number, b: number) => a - b);
+}
+
+
+// ---------------------------------------------------------------------------
+// Coupons at checkout
+// ---------------------------------------------------------------------------
+
+/** Ask the database what a coupon is worth for this booking (no lock; the hold re-checks under lock). */
+async function checkCouponForPricing(
+  admin: ReturnType<typeof createSupabaseAdminClient>,
+  p: { code: string; tripId: string; pricing: { seatsCount: number; unitPricePaise: number; subtotalPaise: number; discountPaise: number }; email: string; phone: string }
+): Promise<{ discountPaise: number; summary: string; code: string }> {
+  const { data, error } = await admin.rpc("coupon_check", {
+    p_code: p.code,
+    p_trip_id: p.tripId,
+    p_seats: p.pricing.seatsCount,
+    p_unit_price_paise: p.pricing.unitPricePaise,
+    p_base_paise: p.pricing.subtotalPaise - p.pricing.discountPaise,
+    p_customer_email: p.email,
+    p_customer_phone: p.phone,
+    p_lock: false,
+  });
+  if (error || !data?.[0]) throw new Error(error?.message || "COUPON_UNKNOWN: That coupon code is not valid.");
+  return { discountPaise: Number(data[0].discount_paise), summary: String(data[0].summary), code: String(data[0].code) };
+}
+
+/** Price preview with a coupon for the booking box (same maths as the hold). */
+export async function quoteCoupon(input: {
+  code: string;
+  departureId: string;
+  bookingMode: BookingMode;
+  seatsRequested: number;
+  payDepositOnly: boolean;
+  email: string;
+  phone: string;
+}): Promise<{ code: string; summary: string; pricing: ReturnType<typeof calculateBookingPricing> }> {
+  if (!isSupabaseConfigured() || !isServiceRoleConfigured()) {
+    throw new Error("COUPON_NEEDS_DATABASE: Coupons work once the live database is connected.");
+  }
+  const admin = createSupabaseAdminClient();
+  const { settings } = await getSiteSettings();
+  const { data: depRow, error } = await admin.from("departures").select("*, trips(*)").eq("id", input.departureId).single();
+  if (error || !depRow || !depRow.trips) throw new Error("Departure or trip could not be loaded.");
+  const tripRow = depRow.trips;
+  const priceInput = {
+    trip: {
+      basePricePaise: tripRow.base_price_paise,
+      privateGroupPricePaise: tripRow.private_group_price_paise,
+      privateDiscountPercent: tripRow.private_discount_percent,
+      depositPercent: tripRow.deposit_percent,
+      balanceDueDaysBefore: tripRow.balance_due_days_before,
+    },
+    priceOverridePaise: depRow.price_override_paise,
+    bookingMode: input.bookingMode,
+    seatsRequested: input.seatsRequested,
+    payDepositOnly: input.payDepositOnly,
+    bookingPolicy: settings.bookingPolicy,
+  };
+  const before = calculateBookingPricing(priceInput);
+  const q = await checkCouponForPricing(admin, {
+    code: input.code.trim().toUpperCase(),
+    tripId: tripRow.id,
+    pricing: before,
+    email: input.email,
+    phone: input.phone,
+  });
+  return { code: q.code, summary: q.summary, pricing: calculateBookingPricing({ ...priceInput, couponDiscountPaise: q.discountPaise }) };
 }

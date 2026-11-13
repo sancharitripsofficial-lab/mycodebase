@@ -5,6 +5,7 @@ import { AlertCircle, Car, CheckCircle2, MessageCircle, Phone, Search, ShieldChe
 import { useEffect, useState } from "react";
 import { ErtigaSeatMap } from "@/components/booking/ErtigaSeatMap";
 import { UpiPayPanel } from "@/components/UpiPayPanel";
+import { WhatsAppChannelCta } from "@/components/WhatsAppChannelCta";
 import { formatINR } from "@/lib/currency";
 import type { CustomerPaymentView } from "@/lib/payments/customer-view";
 import type { CustomerBookingView, CustomerPaymentSummary } from "@/lib/types";
@@ -283,6 +284,10 @@ export function BookingLookupClient({
               </dd>
             </div>
           </dl>
+
+          {bookingView.whatsappChannelUrl && ["deposit_paid", "confirmed"].includes(bookingView.booking.status) && (
+            <WhatsAppChannelCta href={bookingView.whatsappChannelUrl} context="booking" />
+          )}
 
           {bookingView.crew && (
             <div className="space-y-3 rounded-2xl border border-lagoon-500/40 bg-gradient-to-br from-white to-lagoon-100/60 p-4">

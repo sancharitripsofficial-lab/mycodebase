@@ -49,8 +49,10 @@ interface HoldResponse {
   holdExpiresAt: string;
   amountDuePaise: number;
   seatNumbers?: number[];
+  couponDiscountPaise?: number;
+  freeConfirmed?: boolean;
   lookupToken: string;
-  paymentMethod: "upi" | "razorpay" | "sandbox";
+  paymentMethod: "upi" | "razorpay" | "sandbox" | "free";
   upi: UpiPaymentInstructions | null;
   paymentOrder: {
     provider: "razorpay" | "sandbox";
@@ -117,6 +119,11 @@ export function BookingWidget({
   const [pickedSeats, setPickedSeats] = useState<number[]>([]);
   const [seatNote, setSeatNote] = useState<string | null>(null);
   const [seatMapVersion, setSeatMapVersion] = useState(0);
+  // Coupon / creator code: priced by the server, checked again when the seats are held.
+  const [couponInput, setCouponInput] = useState("");
+  const [coupon, setCoupon] = useState<{ code: string; summary: string; couponDiscountPaise: number; key: string } | null>(null);
+  const [couponBusy, setCouponBusy] = useState(false);
+  const [couponMsg, setCouponMsg] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
   const [holdResult, setHoldResult] = useState<HoldResponse | null>(null);
   const [upiResult, setUpiResult] = useState<UpiSubmitResult | null>(null);
   const [verifiedReceipt, setVerifiedReceipt] = useState<{
@@ -264,11 +271,67 @@ export function BookingWidget({
         seatsRequested: effectiveSeats,
         payDepositOnly,
         bookingPolicy,
+        couponDiscountPaise: coupon?.couponDiscountPaise ?? 0,
       });
     } catch {
       return null;
     }
-  }, [selectedDep, trip, bookingMode, effectiveSeats, payDepositOnly, bookingPolicy]);
+  }, [selectedDep, trip, bookingMode, effectiveSeats, payDepositOnly, bookingPolicy, coupon]);
+
+  // Anything that changes the price or who is booking → the coupon must be priced again.
+  const couponKey = `${departureId}|${bookingMode}|${effectiveSeats}|${payDepositOnly}|${customerEmail.trim().toLowerCase()}|${customerPhone.replace(/\D/g, "").slice(-10)}`;
+
+  async function applyCoupon(code: string, silent = false) {
+    const clean = code.trim().toUpperCase();
+    if (!clean) return;
+    if (!customerEmail.trim() || customerPhone.replace(/\D/g, "").length < 10) {
+      setCouponMsg({ kind: "error", text: "Enter your email and phone above first — creator codes are tied to them." });
+      return;
+    }
+    setCouponBusy(true);
+    if (!silent) setCouponMsg(null);
+    try {
+      const res = await fetch("/api/coupons/quote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: clean,
+          departureId,
+          bookingMode,
+          seatsRequested: effectiveSeats,
+          payDepositOnly,
+          email: customerEmail,
+          phone: customerPhone,
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setCoupon(null);
+        setCouponMsg({ kind: "error", text: json.error || "That coupon could not be applied." });
+        return;
+      }
+      setCoupon({ code: json.code, summary: json.summary, couponDiscountPaise: json.couponDiscountPaise, key: couponKey });
+      setCouponMsg({
+        kind: "ok",
+        text:
+          json.totalPaise === 0
+            ? `${json.code}: ${json.summary} — this booking is free. Your seats are confirmed as soon as you continue.`
+            : `${json.code}: ${json.summary} — you save ${formatINR(json.couponDiscountPaise)}.`,
+      });
+    } catch {
+      setCouponMsg({ kind: "error", text: "Network problem — try the code again." });
+    } finally {
+      setCouponBusy(false);
+    }
+  }
+
+  useEffect(() => {
+    if (coupon && coupon.key !== couponKey) {
+      const t = window.setTimeout(() => void applyCoupon(coupon.code, true), 450);
+      return () => window.clearTimeout(t);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [couponKey]);
 
   const depositPercentAvailable =
     trip.depositPercent ??
@@ -292,6 +355,7 @@ export function BookingWidget({
             bookingMode === "batch_seats" && pickedSeats.length === effectiveSeats
               ? pickedSeats
               : undefined,
+          couponCode: coupon && coupon.key === couponKey ? coupon.code : undefined,
           pickupPointId: pickupPointId || null,
           customerName,
           customerEmail,
@@ -309,6 +373,10 @@ export function BookingWidget({
       if (!res.ok) {
         setErrorMsg(json.error || "Unable to reserve seats. Please check your details.");
         if (json.code === "SEAT_TAKEN") setSeatMapVersion((v) => v + 1);
+        if (/coupon/i.test(String(json.error ?? ""))) {
+          setCoupon(null);
+          setCouponMsg({ kind: "error", text: String(json.error) });
+        }
         return;
       }
       setHoldResult(json as HoldResponse);
@@ -482,6 +550,27 @@ export function BookingWidget({
           No active dates are currently scheduled for this route. Check back soon or contact
           operations for a private 6-seat date request.
         </p>
+      </div>
+    );
+  }
+
+  if (holdResult && holdResult.freeConfirmed) {
+    const lookupHref = `/booking-lookup?ref=${encodeURIComponent(holdResult.bookingReference)}&email=${encodeURIComponent(
+      customerEmail
+    )}&token=${encodeURIComponent(holdResult.lookupToken)}`;
+    return (
+      <div role="status" className="space-y-4 rounded-2xl border border-lagoon-500/40 bg-gradient-to-br from-white to-lagoon-100/60 p-5">
+        <p className="font-display text-2xl font-semibold text-forest-900">You&apos;re booked — free with your code 🎉</p>
+        <p className="text-sm text-ink-900">
+          Booking <strong className="font-mono">{holdResult.bookingReference}</strong> is confirmed
+          {holdResult.seatNumbers && holdResult.seatNumbers.length > 0 ? ` (seat ${holdResult.seatNumbers.join(", ")})` : ""}. Nothing to pay.
+        </p>
+        {holdResult.seatNumbers && holdResult.seatNumbers.length > 0 && (
+          <ErtigaSeatMap mode="view" takenSeats={[]} selectedSeats={holdResult.seatNumbers} maxCapacity={selectedDep?.maxCapacity ?? 6} showLegend={false} />
+        )}
+        <Link href={lookupHref} className="btn-sunset inline-flex items-center gap-2 px-5 py-3 text-sm">
+          Open My Booking
+        </Link>
       </div>
     );
   }
@@ -1225,6 +1314,60 @@ export function BookingWidget({
             </label>
           </div>
 
+          {/* Coupon / creator code */}
+          <div className="space-y-2">
+            <label htmlFor="coupon-code" className="block text-xs font-semibold uppercase tracking-wider text-stone-600">
+              Coupon or creator code
+            </label>
+            <div className="flex gap-2">
+              <input
+                id="coupon-code"
+                value={couponInput}
+                onChange={(e) => setCouponInput(e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, "").slice(0, 24))}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    void applyCoupon(couponInput);
+                  }
+                }}
+                placeholder="e.g. MONSOON10"
+                autoComplete="off"
+                autoCapitalize="characters"
+                className="min-w-0 flex-1 rounded-lg border border-stone-300 bg-white px-3 py-2 font-mono text-sm uppercase tracking-wide"
+              />
+              {coupon ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCoupon(null);
+                    setCouponInput("");
+                    setCouponMsg(null);
+                  }}
+                  className="shrink-0 rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-stone-600"
+                >
+                  Remove
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={couponBusy || couponInput.length < 4}
+                  onClick={() => void applyCoupon(couponInput)}
+                  className="shrink-0 rounded-lg bg-forest-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                >
+                  {couponBusy ? "Checking…" : "Apply"}
+                </button>
+              )}
+            </div>
+            {couponMsg && (
+              <p
+                role={couponMsg.kind === "error" ? "alert" : "status"}
+                className={`rounded-lg px-3 py-2 text-xs ${couponMsg.kind === "error" ? "bg-red-50 text-red-900" : "bg-lagoon-100 font-medium text-forest-900"}`}
+              >
+                {couponMsg.text}
+              </p>
+            )}
+          </div>
+
           {/* Pricing Breakdown */}
           {pricing && (
             <div className="rounded-xl border border-stone-200 bg-white p-4 space-y-2 text-sm">
@@ -1238,10 +1381,18 @@ export function BookingWidget({
                 </span>
                 <span>{formatINR(pricing.subtotalPaise)}</span>
               </div>
-              {pricing.discountPaise > 0 && (
+              {pricing.discountPaise - pricing.couponDiscountPaise > 0 && (
                 <div className="flex justify-between text-forest-700">
                   <span>Private 6-seat vehicle discount</span>
-                  <span>−{formatINR(pricing.discountPaise)}</span>
+                  <span>−{formatINR(pricing.discountPaise - pricing.couponDiscountPaise)}</span>
+                </div>
+              )}
+              {coupon && pricing.couponDiscountPaise > 0 && (
+                <div className="flex justify-between font-semibold text-copper-700">
+                  <span>
+                    Coupon {coupon.code} ({coupon.summary})
+                  </span>
+                  <span>−{formatINR(pricing.couponDiscountPaise)}</span>
                 </div>
               )}
               <div className="flex justify-between text-xs text-stone-600">

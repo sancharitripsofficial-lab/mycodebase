@@ -709,7 +709,7 @@ function createInitialDemoState(): DemoDatabaseState {
           "Sanchari publishes only authentic, operator-verified reviews from real completed trips. We never publish placeholder testimonials.",
       },
     ],
-    socialLinks: { instagramUrl: "", youtubeUrl: "", facebookUrl: "", whatsappNumber: "" },
+    socialLinks: { instagramUrl: "", youtubeUrl: "", facebookUrl: "", whatsappNumber: "", whatsappChannelUrl: "" },
     legalDrafts: {
       ownerReviewRequired: true,
       termsSummary:
@@ -901,6 +901,8 @@ export interface ReserveSeatsDemoInput {
   whatsappOptIn: boolean;
   /** Exact seats picked on the car map (same rules as the SQL p_preferred_seats). */
   preferredSeats?: number[] | null;
+  /** Coupon code typed at checkout (live database only). */
+  couponCode?: string | null;
 }
 
 export function reserveSeatsDemo(

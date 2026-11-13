@@ -8,13 +8,15 @@ import {
   XCircle,
 } from "lucide-react";
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BookingWidget } from "@/components/BookingWidget";
 import { EnquiryForm } from "@/components/EnquiryForm";
+import { WhatsAppChannelCta } from "@/components/WhatsAppChannelCta";
+import { LivingPhoto } from "@/components/living/LivingPhoto";
+import { PromoBanner } from "@/components/promo/PromoBanner";
 import { TripVideos } from "@/components/TripVideos";
-import { isOptimizableImage } from "@/lib/media";
+import { forPlacement, getLivePromotions } from "@/lib/data/promotions";
 import { formatINR } from "@/lib/currency";
 import { getPublishedTripBySlug, getPublishedTripsWithDetails, getSiteSettings } from "@/lib/data/repository";
 
@@ -52,9 +54,10 @@ export default async function TripDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const [{ item }, { settings }] = await Promise.all([
+  const [{ item }, { settings }, promotions] = await Promise.all([
     getPublishedTripBySlug(slug),
     getSiteSettings(),
+    getLivePromotions(),
   ]);
 
   if (!item) {
@@ -123,12 +126,13 @@ export default async function TripDetailPage({
           {/* Photo Gallery */}
           <div className="space-y-3">
             <div className="relative aspect-[16/10] overflow-hidden rounded-2xl border border-stone-200 bg-stone-200">
-              <Image
+              <LivingPhoto
+                variant="hero"
+                slug={trip.slug}
+                region={trip.region}
                 src={trip.heroImageUrl}
                 alt={`${trip.title} — ${trip.destination}`}
-                fill
                 priority
-                unoptimized={!isOptimizableImage(trip.heroImageUrl)}
                 sizes="(max-width: 1024px) 100vw, 60vw"
                 className="object-cover"
               />
@@ -140,11 +144,12 @@ export default async function TripDetailPage({
                     key={`${url}-${idx}`}
                     className="relative aspect-[3/2] overflow-hidden rounded-xl border border-stone-200 bg-stone-200"
                   >
-                    <Image
+                    <LivingPhoto
+                      variant="card"
+                      slug={trip.slug}
+                      region={trip.region}
                       src={url}
                       alt={`${trip.destination} photo ${idx + 1}`}
-                      fill
-                      unoptimized={!isOptimizableImage(url)}
                       sizes="20vw"
                       className="object-cover"
                     />
@@ -155,6 +160,10 @@ export default async function TripDetailPage({
           </div>
 
           <TripVideos videos={trip.videoLinks} title={trip.title} />
+
+          {forPlacement(promotions, "trip_page", trip.id).length > 0 && (
+            <PromoBanner promotions={forPlacement(promotions, "trip_page", trip.id)} />
+          )}
 
           {/* Key Facts */}
           <dl className="grid grid-cols-2 gap-3 rounded-2xl border border-stone-200 bg-cream-50 p-4 sm:grid-cols-4 text-xs">
@@ -339,7 +348,10 @@ export default async function TripDetailPage({
         </aside>
       </div>
 
-      <div id="ask" className="mx-auto mt-14 max-w-2xl scroll-mt-24">
+      <div id="ask" className="mx-auto mt-14 max-w-2xl scroll-mt-24 space-y-4">
+        {settings.socialLinks.whatsappChannelUrl && (
+          <WhatsAppChannelCta href={settings.socialLinks.whatsappChannelUrl} context="trip" />
+        )}
         <EnquiryForm tripId={trip.id} tripTitle={trip.title} />
       </div>
     </div>
