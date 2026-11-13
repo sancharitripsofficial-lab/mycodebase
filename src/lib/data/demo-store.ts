@@ -3,6 +3,7 @@ import { DEFAULT_HOME_CONTENT } from "@/lib/home-content";
 import crypto from "node:crypto";
 import { calculateBookingPricing } from "@/lib/currency";
 import { getSafeComfortCustomerLabel } from "@/lib/privacy";
+import { assertWomenOnlyConfirmed, preferenceForDeparture } from "@/lib/women-only";
 import type {
   AdminBookingRow,
   AuditLogEntry,
@@ -903,6 +904,8 @@ export interface ReserveSeatsDemoInput {
   coTravelerPreference: CoTravelerPreference;
   preferenceNotes: string;
   whatsappOptIn: boolean;
+  /** "Every traveller is a woman" — required for a women-only departure. */
+  womenOnlyConfirmed?: boolean;
   /** Exact seats picked on the car map (same rules as the SQL p_preferred_seats). */
   preferredSeats?: number[] | null;
   /** Coupon code typed at checkout (live database only). */
@@ -924,6 +927,7 @@ export function reserveSeatsDemo(
   if (Date.parse(dep.bookingCutoffAt) < Date.now()) {
     throw new Error("Booking cutoff has passed for this departure.");
   }
+  assertWomenOnlyConfirmed(dep.departureType, input.womenOnlyConfirmed);
 
   const trip = state.trips.find((t) => t.id === dep.tripId);
   if (!trip) {
@@ -1069,12 +1073,12 @@ export function reserveSeatsDemo(
     });
   }
 
+  const preference = preferenceForDeparture(dep.departureType, input.coTravelerPreference);
   state.comfortPreferences.push({
     bookingId,
-    coTravelerPreference: input.coTravelerPreference,
+    coTravelerPreference: preference,
     preferenceNotes: input.preferenceNotes || null,
-    resolutionStatus:
-      input.coTravelerPreference === "open_mixed" ? "none_requested" : "pending_review",
+    resolutionStatus: preference === "open_mixed" ? "none_requested" : "pending_review",
     resolvedBy: null,
     resolvedAt: null,
     consentRecordedAt: nowIso,

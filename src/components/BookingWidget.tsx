@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { WOMEN_ONLY_CONFIRM_LABEL } from "@/lib/women-only";
 import { ErtigaSeatMap, SEAT_INFO } from "@/components/booking/ErtigaSeatMap";
 import { CarSeatPicker3D } from "@/components/three/CarSeatPicker3D";
 import { UpiPayPanel, UpiSubmittedNotice } from "@/components/UpiPayPanel";
@@ -114,6 +115,8 @@ export function BookingWidget({
   const [whatsappOptIn, setWhatsappOptIn] = useState(false);
   const [acceptedTermsPrivacy, setAcceptedTermsPrivacy] = useState(false);
   const [acceptedComfortProcessing, setAcceptedComfortProcessing] = useState(false);
+  /** Women-only batches: "every traveller in this booking is a woman" (the server checks it too). */
+  const [womenOnlyConfirmed, setWomenOnlyConfirmed] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -395,6 +398,7 @@ export function BookingWidget({
           coTravelerPreference,
           preferenceNotes,
           whatsappOptIn,
+          womenOnlyConfirmed: selectedDep.departureType === "women_only" && womenOnlyConfirmed,
           acceptedTermsPrivacy,
           acceptedComfortProcessing,
         }),
@@ -1484,6 +1488,20 @@ export function BookingWidget({
 
           {/* Consent Checkboxes */}
           <div className="space-y-2.5 text-xs text-ink-900">
+            {selectedDep?.departureType === "women_only" && (
+              <label className="flex items-start gap-2 rounded-lg border border-[#f3c0c9] bg-[#fff1f3] p-2.5 font-semibold text-[#8a1f31]">
+                <input
+                  required
+                  type="checkbox"
+                  checked={womenOnlyConfirmed}
+                  onChange={(e) => setWomenOnlyConfirmed(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 accent-[#a3263a]"
+                />
+                <span>
+                  {WOMEN_ONLY_CONFIRM_LABEL} This date is a women-only batch, so only women can travel on it.
+                </span>
+              </label>
+            )}
             <label className="flex items-start gap-2">
               <input
                 required

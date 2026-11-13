@@ -36,6 +36,8 @@ export const checkoutSchema = z
       .default("open_mixed"),
     preferenceNotes: z.string().trim().max(300).optional().default(""),
     whatsappOptIn: z.boolean().default(false),
+    /** Required (true) for a women-only departure; checked on the server against the departure. */
+    womenOnlyConfirmed: z.boolean().optional().default(false),
     acceptedTermsPrivacy: z.literal(true, {
       errorMap: () => ({ message: "You must review and accept the terms and privacy notice." }),
     }),

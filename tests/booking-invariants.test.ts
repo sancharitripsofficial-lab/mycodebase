@@ -288,3 +288,58 @@ describe("6-seat capacity & atomic booking invariants", () => {
   });
 });
 
+describe("women-only batches", () => {
+  beforeEach(() => {
+    resetDemoStateForTests();
+  });
+
+  const WOMEN_ONLY_DEPARTURE = "22222222-2222-4222-8222-222222222203"; // SAN-CRG-DEC11
+  const OPEN_DEPARTURE = "22222222-2222-4222-8222-222222222201";
+  const hold = (departureId: string, womenOnlyConfirmed?: boolean) =>
+    reserveSeatsDemo({
+      departureId,
+      userId: null,
+      customerName: "Meera Iyer",
+      customerEmail: "meera@example.com",
+      customerPhone: "+919800000011",
+      bookingMode: "batch_seats",
+      seatsRequested: 1,
+      pickupPointId: null,
+      payDepositOnly: false,
+      paymentProvider: "sandbox",
+      travelers: [
+        {
+          fullName: "Meera Iyer",
+          ageGroup: "adult",
+          emergencyContact: "+919800000012",
+          seatRowRequest: "no_preference",
+          roomPreference: "shared_same_gender",
+        },
+      ],
+      coTravelerPreference: "open_mixed",
+      preferenceNotes: "",
+      whatsappOptIn: false,
+      womenOnlyConfirmed,
+    });
+
+  it("refuses a women-only date unless the booker confirms every traveller is a woman", () => {
+    expect(() => hold(WOMEN_ONLY_DEPARTURE)).toThrow(/^WOMEN_ONLY: .*women-only batch/);
+    expect(() => hold(WOMEN_ONLY_DEPARTURE, false)).toThrow(/WOMEN_ONLY/);
+    // Nothing was held by the refused attempts.
+    expect(getDemoState().bookings.filter((b) => b.departureId === WOMEN_ONLY_DEPARTURE)).toHaveLength(0);
+  });
+
+  it("holds the seat once confirmed, and records it as a women-only request", () => {
+    const { booking } = hold(WOMEN_ONLY_DEPARTURE, true);
+    expect(booking.status).toBe("pending_payment");
+    const pref = getDemoState().comfortPreferences.find((p) => p.bookingId === booking.id);
+    expect(pref?.coTravelerPreference).toBe("request_women_only");
+    expect(pref?.resolutionStatus).toBe("pending_review");
+  });
+
+  it("does not ask for the confirmation on other dates", () => {
+    const { booking } = hold(OPEN_DEPARTURE);
+    const pref = getDemoState().comfortPreferences.find((p) => p.bookingId === booking.id);
+    expect(pref?.coTravelerPreference).toBe("open_mixed");
+  });
+});

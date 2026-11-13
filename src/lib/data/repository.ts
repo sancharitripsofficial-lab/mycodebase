@@ -27,6 +27,7 @@ import {
 import { isServiceRoleConfigured, isSupabaseConfigured } from "@/lib/env";
 import { getSafeComfortCustomerLabel } from "@/lib/privacy";
 import { createSupabaseAdminClient, createSupabasePublicClient } from "@/lib/supabase/server";
+import { assertWomenOnlyConfirmed, preferenceForDeparture } from "@/lib/women-only";
 import type {
   BookingMode,
   AdminBookingRow,
@@ -294,6 +295,7 @@ export async function createAtomicBookingHold(
   }
 
   const tripRow = depRow.trips;
+  assertWomenOnlyConfirmed(depRow.departure_type, input.womenOnlyConfirmed);
   if (input.pickupPointId) {
     const { data: pickupMatch } = await admin
       .from("pickup_points")
@@ -368,7 +370,7 @@ export async function createAtomicBookingHold(
     p_pricing_snapshot: pricing,
     p_payment_provider: input.paymentProvider,
     p_travelers: input.travelers,
-    p_co_traveler_preference: input.coTravelerPreference,
+    p_co_traveler_preference: preferenceForDeparture(depRow.departure_type, input.coTravelerPreference),
     p_preference_notes: input.preferenceNotes,
     p_whatsapp_opt_in: input.whatsappOptIn,
     p_policy_version: settings.bookingPolicy.policyVersion,

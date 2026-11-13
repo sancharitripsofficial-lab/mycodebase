@@ -70,6 +70,7 @@ export async function POST(request: NextRequest) {
       coTravelerPreference: parsed.data.coTravelerPreference,
       preferenceNotes: parsed.data.preferenceNotes ?? "",
       whatsappOptIn: parsed.data.whatsappOptIn,
+      womenOnlyConfirmed: parsed.data.womenOnlyConfirmed,
       preferredSeats: parsed.data.bookingMode === "batch_seats" ? parsed.data.preferredSeats ?? null : null,
       couponCode: parsed.data.couponCode || null,
     });
@@ -114,6 +115,9 @@ export async function POST(request: NextRequest) {
     const raw = err instanceof Error ? err.message : null;
     const message = paymentErrorMessage(raw, "Could not hold seats.");
     const seatTaken = Boolean(raw && raw.startsWith("SEAT_TAKEN"));
+    if (raw && raw.startsWith("WOMEN_ONLY")) {
+      return NextResponse.json({ error: message, code: "WOMEN_ONLY" }, { status: 400 });
+    }
     return NextResponse.json({ error: message, code: seatTaken ? "SEAT_TAKEN" : undefined }, { status: 409 });
   }
 }
