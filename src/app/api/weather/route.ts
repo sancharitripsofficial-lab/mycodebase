@@ -15,6 +15,8 @@ export async function GET(request: Request) {
   const dest = findDestination(slug, region);
 
   const headers = { "Cache-Control": "public, max-age=300, s-maxage=900, stale-while-revalidate=1800" };
+  // A failed lookup is cached for a minute only, so a short outage doesn't hide the weather for 15 minutes.
+  const shortHeaders = { "Cache-Control": "public, max-age=30, s-maxage=60" };
   if (!dest) return NextResponse.json(NEUTRAL_WEATHER, { headers });
 
   const fallback: LiveWeather = { ...NEUTRAL_WEATHER, place: dest.place };
@@ -25,8 +27,16 @@ export async function GET(request: Request) {
       `?latitude=${dest.latitude}&longitude=${dest.longitude}` +
       "&current=temperature_2m,relative_humidity_2m,precipitation,weather_code,cloud_cover,wind_speed_10m,wind_direction_10m,is_day" +
       "&timezone=Asia/Kolkata";
-    const res = await fetch(api, { next: { revalidate: 900 }, signal: AbortSignal.timeout(6000) });
-    if (!res.ok) return NextResponse.json(fallback, { headers });
+    // One retry: the free weather service occasionally refuses or times out from shared cloud servers.
+    let res = await fetch(api, { next: { revalidate: 900 }, signal: AbortSignal.timeout(5000) }).catch(() => null);
+    if (!res || !res.ok) {
+      await new Promise((r) => setTimeout(r, 400));
+      res = await fetch(api, { cache: "no-store", signal: AbortSignal.timeout(5000) }).catch(() => null);
+    }
+    if (!res || !res.ok) {
+      console.error("[weather] lookup failed:", res ? res.status : "network/timeout");
+      return NextResponse.json(fallback, { headers: shortHeaders });
+    }
 
     const json = (await res.json()) as { current?: Record<string, unknown> };
     const c = json.current ?? {};
@@ -35,7 +45,7 @@ export async function GET(request: Request) {
     const tempC = num("temperature_2m");
     const windKmh = num("wind_speed_10m");
     const windFromDeg = num("wind_direction_10m");
-    if (tempC === null || windKmh === null || windFromDeg === null) return NextResponse.json(fallback, { headers });
+    if (tempC === null || windKmh === null || windFromDeg === null) return NextResponse.json(fallback, { headers: shortHeaders });
 
     const humidity = num("relative_humidity_2m") ?? 60;
     const cloudCover = num("cloud_cover") ?? 30;
@@ -59,6 +69,6 @@ export async function GET(request: Request) {
     };
     return NextResponse.json(body, { headers });
   } catch {
-    return NextResponse.json(fallback, { headers });
+    return NextResponse.json(fallback, { headers: shortHeaders });
   }
 }
