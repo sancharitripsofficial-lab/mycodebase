@@ -1,7 +1,8 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useState } from "react";
+import { RotateCcw, RotateCw, Undo2 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ErtigaSeatMap, SEAT_INFO, type ErtigaSeatMapProps } from "@/components/booking/ErtigaSeatMap";
 import { usePrefersReducedMotion } from "@/components/motion/useMotionHooks";
 import type { CarSeatSceneProps, CarSeatSceneStatus, SeatVisualState } from "./CarSeatScene";
@@ -71,26 +72,44 @@ export function CarSeatPicker3D(props: CarSeatPicker3DProps) {
   const [gaveUp, setGaveUp] = useState(false);
   const [touched2d, setTouched2d] = useState(false);
   const [focusSeat, setFocusSeat] = useState<number | null>(null);
+  const [turn, setTurn] = useState<{ id: number; by: number; reset?: boolean }>({ id: 0, by: 0 });
+  const [turned, setTurned] = useState(false);
+  const rootRef = useRef<HTMLDivElement | null>(null);
 
+  // The 3D car is prepared only when the seat area comes near the screen (and the browser is idle),
+  // so opening a trip page never waits for it.
   useEffect(() => {
     if (reducedMotion || gaveUp) return;
+    const root = rootRef.current;
+    if (!root) return;
     let cancelled = false;
+    let idle = 0;
     const arm = () => {
       if (!cancelled && webglAvailable()) setArmed(true);
     };
-    if ("requestIdleCallback" in window) {
-      const id = window.requestIdleCallback(arm, { timeout: 1200 });
-      return () => {
-        cancelled = true;
-        window.cancelIdleCallback(id);
-      };
-    }
-    const id = setTimeout(arm, 400);
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((e) => e.isIntersecting)) return;
+        io.disconnect();
+        if ("requestIdleCallback" in window) idle = window.requestIdleCallback(arm, { timeout: 800 });
+        else idle = globalThis.setTimeout(arm, 200) as unknown as number;
+      },
+      { rootMargin: "500px 0px" }
+    );
+    io.observe(root);
     return () => {
       cancelled = true;
-      clearTimeout(id);
+      io.disconnect();
+      if ("cancelIdleCallback" in window) window.cancelIdleCallback(idle);
+      globalThis.clearTimeout(idle);
     };
   }, [reducedMotion, gaveUp]);
+
+  const turnBy = (by: number) => setTurn((t) => ({ id: t.id + 1, by }));
+  const onTurn = useCallback((angle: number) => {
+    const a = Math.abs(((angle + Math.PI) % (2 * Math.PI)) - Math.PI);
+    setTurned((cur) => (cur === a > 0.12 ? cur : a > 0.12));
+  }, []);
 
   const onStatus = useCallback((status: CarSeatSceneStatus) => {
     if (status === "ready") setLive(true);
@@ -139,7 +158,7 @@ export function CarSeatPicker3D(props: CarSeatPicker3DProps) {
       : `Car seat map. ${takenCount} of ${cap} seats taken, ${yoursCount} picked by you, ${freeCount} available.`;
 
   return (
-    <div className={`relative mx-auto w-full min-w-0 max-w-[420px] text-[#0F2A3D] ${className ?? ""}`}>
+    <div ref={rootRef} className={`relative mx-auto w-full min-w-0 max-w-[420px] text-[#0F2A3D] ${className ?? ""}`}>
       {!show3d ? (
         // If someone starts picking on the 2D map before 3D is ready, keep the 2D map: nothing moves under their finger.
         <div onPointerDownCapture={() => setTouched2d(true)} onKeyDownCapture={() => setTouched2d(true)}>
@@ -158,7 +177,16 @@ export function CarSeatPicker3D(props: CarSeatPicker3DProps) {
           aria-label={show3d ? (pick ? "Choose your seats. The car is shown from behind: the driver sits front right." : summary) : undefined}
           aria-busy={(show3d && loading) || undefined}
         >
-          <CarSeatScene states={states} tappable={tappable} focusSeat={focusSeat} onSeat={onSeat} onStatus={onStatus} className="absolute inset-0 select-none" />
+          <CarSeatScene
+            states={states}
+            tappable={tappable}
+            focusSeat={focusSeat}
+            onSeat={onSeat}
+            onStatus={onStatus}
+            turn={turn}
+            onTurn={onTurn}
+            className="absolute inset-0 select-none"
+          />
           {show3d && pick ? (
             <div className="sr-only">
               {SEATS.map((seat, i) => (
@@ -176,7 +204,40 @@ export function CarSeatPicker3D(props: CarSeatPicker3DProps) {
               ))}
             </div>
           ) : null}
-          <p className="pointer-events-none absolute bottom-2 left-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#4B6273]/80">Front ↗ · Driver on the right</p>
+          {show3d ? (
+            <div className="absolute right-2 bottom-2 flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => turnBy(-Math.PI / 4)}
+                aria-label="Turn the car left"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-[#C2D4DE] bg-white/90 text-[#0D5F6B] shadow-sm"
+              >
+                <RotateCcw className="h-4 w-4" aria-hidden="true" />
+              </button>
+              {turned ? (
+                <button
+                  type="button"
+                  onClick={() => setTurn((t) => ({ id: t.id + 1, by: 0, reset: true }))}
+                  aria-label="Back to the start view"
+                  className="flex h-9 items-center gap-1 rounded-full border border-[#C2D4DE] bg-white/90 px-2.5 text-[11px] font-semibold text-[#0D5F6B] shadow-sm"
+                >
+                  <Undo2 className="h-3.5 w-3.5" aria-hidden="true" />
+                  Reset
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => turnBy(Math.PI / 4)}
+                aria-label="Turn the car right"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-[#C2D4DE] bg-white/90 text-[#0D5F6B] shadow-sm"
+              >
+                <RotateCw className="h-4 w-4" aria-hidden="true" />
+              </button>
+            </div>
+          ) : null}
+          <p className="pointer-events-none absolute bottom-2 left-3 max-w-[48%] text-[10px] leading-tight font-semibold uppercase tracking-[0.1em] text-[#4B6273]/85">
+            Drag or use the arrows to turn · Driver sits front right
+          </p>
         </div>
       ) : null}
 

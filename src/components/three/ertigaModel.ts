@@ -139,6 +139,28 @@ function planHalfWidth(x: number): number {
   return Math.max(0.004, w);
 }
 
+/**
+ * Side-glass band at station x on the +z side (mirror z for the other side): from the shoulder
+ * just above the belt line to where the roof corner starts. Same formulas as `crossSection`, so
+ * windows drawn from it sit exactly in the body's glasshouse.
+ */
+export function ertigaGlassBand(x: number): { z0: number; y0: number; z1: number; y1: number; roofY: number } {
+  const yb = bottomProfile(x);
+  const yt = Math.max(topProfile(x), yb + 0.1);
+  const wf = planHalfWidth(x);
+  const k = Math.min(1, wf / HALF_W);
+  const yBelt = Math.max(yb + 0.045, Math.min(beltProfile(x), yt - 0.05));
+  const hG = yt - yBelt;
+  const zSh = wf * 0.985;
+  const led = 0.05 * k;
+  const sh = Math.min(0.02, hG * 0.25);
+  const crown = Math.min(0.035 * k, hG * 0.25);
+  const rr = Math.min(0.11, (hG - sh - crown) * 0.6);
+  const tumble = 0.16 * k * clamp01((hG - 0.05) / 0.5);
+  const z0 = zSh - led;
+  return { z0, y0: yBelt + sh, z1: z0 - tumble, y1: yt - crown - rr, roofY: yt };
+}
+
 /** Half cross-section (z >= 0) at station x, from the bottom centre round to the roof centre. */
 function crossSection(x: number): [number, number][] {
   const yb = bottomProfile(x);

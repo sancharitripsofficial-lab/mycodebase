@@ -371,6 +371,22 @@ class Engine {
   private poleMeshes: THREE.Mesh[] = [];
   private disposables: { dispose: () => void }[] = [];
 
+  private warmed: Promise<void> | null = null;
+
+  /** Compiles every shader without blocking the page; resolves when they are ready (or on failure). */
+  warm(): Promise<void> {
+    if (!this.warmed) {
+      this.warmed = Promise.all([
+        this.renderer.compileAsync(this.bgScene, this.bgCam),
+        this.renderer.compileAsync(this.fxScene, this.fxCam),
+      ]).then(
+        () => undefined,
+        () => undefined
+      );
+    }
+    return this.warmed;
+  }
+
   constructor() {
     this.gl = document.createElement("canvas");
     this.renderer = new THREE.WebGLRenderer({
@@ -1098,5 +1114,9 @@ export async function mountLiving(opts: LivingOptions): Promise<LivingHandle | n
       };
     }
   }
+  // Compile the photo and effect shaders in the background first (parallel where the GPU driver
+  // allows), so the first living photo does not freeze the page.
+  await engine.warm();
+  if (!engine) return null;
   return engine.mount(opts);
 }

@@ -16,6 +16,16 @@ const nextConfig: NextConfig = {
       ? [{ protocol: "https", hostname: supabaseHost, pathname: "/storage/v1/object/public/**" }]
       : [],
   },
+  // Local profiling only (dev, or a local build with JS_PROFILING=1): allows the browser's
+  // JS Self-Profiling API and ships source maps, to find slow code. Never set on Vercel.
+  ...(process.env.JS_PROFILING === "1" ? { productionBrowserSourceMaps: true } : {}),
+  ...(process.env.NODE_ENV !== "production" || process.env.JS_PROFILING === "1"
+    ? {
+        async headers() {
+          return [{ source: "/:path*", headers: [{ key: "Document-Policy", value: "js-profiling" }] }];
+        },
+      }
+    : {}),
 };
 
 export default nextConfig;

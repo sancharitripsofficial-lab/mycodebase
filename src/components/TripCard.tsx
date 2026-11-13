@@ -6,7 +6,10 @@ import { formatINR } from "@/lib/currency";
 import { themeClass } from "@/lib/destination-theme";
 import type { DepartureStatus, TripWithDetails } from "@/lib/types";
 
-function getStatusBadge(status: DepartureStatus, seatsRemaining: number) {
+const shortDate = (iso: string) =>
+  new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "Asia/Kolkata" });
+
+function getStatusBadge(status: DepartureStatus, seatsRemaining: number, maxCapacity: number) {
   switch (status) {
     case "sold_out":
       return {
@@ -25,7 +28,7 @@ function getStatusBadge(status: DepartureStatus, seatsRemaining: number) {
       };
     default:
       return {
-        label: `Open • ${seatsRemaining} of 6 seats`,
+        label: `Open • ${seatsRemaining} of ${maxCapacity} seats`,
         className: "bg-forest-900/10 text-forest-900 border-forest-700/25",
       };
   }
@@ -39,7 +42,7 @@ export function TripCard({ item, weather = null }: { item: TripWithDetails; weat
     null;
 
   const badge = upcoming
-    ? getStatusBadge(upcoming.status, upcoming.seatsRemaining)
+    ? getStatusBadge(upcoming.status, upcoming.seatsRemaining, upcoming.maxCapacity)
     : { label: "Dates coming soon", className: "bg-stone-200 text-stone-600 border-stone-300" };
 
   const privateAvailable = departures.some(
@@ -57,7 +60,7 @@ export function TripCard({ item, weather = null }: { item: TripWithDetails; weat
           region={trip.region}
           src={trip.heroImageUrl}
           initialWeather={weather}
-          alt={`${trip.destination} — ${trip.title} illustrative travel visual`}
+          alt={`${trip.destination} — ${trip.title}`}
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           className="object-cover transition duration-500 group-hover:scale-[1.03]"
         />
@@ -101,7 +104,7 @@ export function TripCard({ item, weather = null }: { item: TripWithDetails; weat
               <div className="flex items-center gap-2">
                 <Calendar className="th-accent h-3.5 w-3.5" aria-hidden="true" />
                 <span>
-                  Next: {upcoming.startDate} to {upcoming.endDate}
+                  Next: {shortDate(upcoming.startDate)} – {shortDate(upcoming.endDate)}
                   {upcoming.departureType === "women_only" ? " (Women-only batch)" : ""}
                 </span>
               </div>

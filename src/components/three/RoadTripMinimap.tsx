@@ -19,6 +19,9 @@ const RoadTrip3D = dynamic<RoadTrip3DProps>(
   { ssr: false },
 );
 
+/** Switch the minimap back to the live 3D road (heavier: see the note in the effect below). */
+const MINIMAP_3D = false;
+
 export interface RoadTripMinimapProps {
   /** Stop names, first to last, e.g. ["Bengaluru", "Kodagu"]. Shown as "Bengaluru \u2192 Kodagu" under the map. */
   labels: string[];
@@ -53,11 +56,20 @@ export function RoadTripMinimap({ labels, meta, className }: RoadTripMinimapProp
   useEffect(() => {
     if (reducedMotion || gaveUp) return;
     let cancelled = false;
+    // Phones and laptops with few cores / little memory keep the flat animated route: building the
+    // 3D road there would stall scrolling for a second or more.
+    const nav = navigator as Navigator & { deviceMemory?: number; connection?: { saveData?: boolean } };
+    const capable =
+      (nav.hardwareConcurrency ?? 8) >= 6 && (nav.deviceMemory ?? 8) >= 4 && !nav.connection?.saveData;
+    // Measured 13 Nov: building the 3D road stalls the home page for 1.5–3 s even on fast laptops,
+    // so the minimap uses the flat animated route (same S road, car driving it) everywhere.
+    if (!MINIMAP_3D || !capable) return;
     const arm = () => {
       if (!cancelled && webglAvailable()) setArmed(true);
     };
     if ("requestIdleCallback" in window) {
-      const id = window.requestIdleCallback(arm, { timeout: 1800 });
+      // Wait until the page has settled (hero film playing, first scroll done) before building the map.
+      const id = window.requestIdleCallback(arm, { timeout: 3500 });
       return () => {
         cancelled = true;
         window.cancelIdleCallback(id);
@@ -92,7 +104,7 @@ export function RoadTripMinimap({ labels, meta, className }: RoadTripMinimapProp
     >
       <div className="relative aspect-square overflow-hidden rounded-xl ring-1 ring-inset ring-white/15">
         {/* Watermark: the map is see-through and dissolves at the edges, so the hero film shows behind it. */}
-        <div className="absolute inset-0 opacity-[0.58] [mask-image:radial-gradient(closest-side,#000_62%,transparent_100%)] [-webkit-mask-image:radial-gradient(closest-side,#000_62%,transparent_100%)]">
+        <div className="absolute inset-0 opacity-[0.72] [mask-image:radial-gradient(closest-side,#000_62%,transparent_100%)] [-webkit-mask-image:radial-gradient(closest-side,#000_62%,transparent_100%)]">
           {!covered && (
             <div className="absolute inset-0 flex items-center justify-center p-1">
               <div style={{ height: "100%", aspectRatio: "360 / 420" }}>

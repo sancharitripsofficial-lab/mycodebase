@@ -13,8 +13,8 @@ import { notFound } from "next/navigation";
 import { BookingWidget } from "@/components/BookingWidget";
 import { EnquiryForm } from "@/components/EnquiryForm";
 import { WhatsAppChannelCta } from "@/components/WhatsAppChannelCta";
-import { LivingPhoto } from "@/components/living/LivingPhoto";
 import { PromoBanner } from "@/components/promo/PromoBanner";
+import { TripGallery } from "@/components/TripGallery";
 import { TripVideos } from "@/components/TripVideos";
 import { forPlacement, getLivePromotions } from "@/lib/data/promotions";
 import { formatINR } from "@/lib/currency";
@@ -139,43 +139,16 @@ export default async function TripDetailPage({
             <p className="text-base leading-relaxed text-stone-600">{trip.summary}</p>
           </div>
 
-          {/* Photo Gallery */}
-          <div className="space-y-3">
-            <div className="relative aspect-[16/10] overflow-hidden rounded-2xl border border-stone-200 bg-stone-200">
-              <LivingPhoto
-                variant="hero"
-                slug={trip.slug}
-                region={trip.region}
-                src={trip.heroImageUrl}
-                initialWeather={weather}
-                alt={`${trip.title} — ${trip.destination}`}
-                priority
-                sizes="(max-width: 1024px) 100vw, 60vw"
-                className="object-cover"
-              />
-            </div>
-            {trip.galleryUrls.length > 1 && (
-              <div className="grid grid-cols-3 gap-3">
-                {trip.galleryUrls.slice(0, 3).map((url, idx) => (
-                  <div
-                    key={`${url}-${idx}`}
-                    className="relative aspect-[3/2] overflow-hidden rounded-xl border border-stone-200 bg-stone-200"
-                  >
-                    <LivingPhoto
-                      variant="card"
-                      slug={trip.slug}
-                      region={trip.region}
-                      src={url}
-                      initialWeather={weather}
-                      alt={`${trip.destination} photo ${idx + 1}`}
-                      sizes="20vw"
-                      className="object-cover"
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          {/* Photo gallery: tap any photo to open it full screen */}
+          <TripGallery
+            title={trip.title}
+            destination={trip.destination}
+            slug={trip.slug}
+            region={trip.region}
+            heroUrl={trip.heroImageUrl}
+            galleryUrls={trip.galleryUrls}
+            weather={weather}
+          />
 
           <TripVideos videos={trip.videoLinks} title={trip.title} />
 

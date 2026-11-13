@@ -32,7 +32,7 @@ export default async function AboutPage() {
           variant="card"
           region="Western Ghats"
           src="/media/story-coffee-morning.jpg"
-          alt="Illustrative editorial photograph of friends enjoying coffee at a Karnataka estate"
+          alt="Friends enjoying coffee at a Karnataka coffee estate"
           sizes="(max-width: 768px) 100vw, 800px"
           className="object-cover"
         />

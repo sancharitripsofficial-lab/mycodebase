@@ -505,13 +505,10 @@ export default async function HomePage() {
               variant="card"
               region="Western Ghats"
               src="/media/story-coffee-morning.jpg"
-              alt="Illustrative editorial image: four travelers sharing morning filter coffee on a Karnataka estate verandah"
+              alt="Four friends sharing morning filter coffee on a Karnataka coffee-estate verandah"
               sizes="(max-width: 768px) 100vw, 50vw"
               className="object-cover"
             />
-            <span className="glass absolute bottom-3 left-3 rounded-full px-3 py-1 text-[11px] text-white">
-              Illustrative editorial visual (not a customer testimonial photo)
-            </span>
           </div>
 
           <div className="space-y-4">

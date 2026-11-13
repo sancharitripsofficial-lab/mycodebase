@@ -66,6 +66,7 @@ export function LivingPhoto({
   const weatherRef = useRef<LiveWeather>(seeded ?? NEUTRAL_WEATHER);
   const [shown, setShown] = useState(false);
   const [weather, setWeather] = useState<LiveWeather | null>(seeded);
+  const [loadFailures, setLoadFailures] = useState(0);
 
   const scene = useMemo(() => resolveScene(src, slug, region), [src, slug, region]);
   if (seeded && typeof window !== "undefined") seedLiveWeather(scene.weatherKey, seeded);
@@ -165,8 +166,9 @@ export function LivingPhoto({
         fill
         sizes={sizes}
         priority={priority}
-        unoptimized={unoptimized ?? !isOptimizableImage(src)}
-        className={className}
+        unoptimized={loadFailures > 0 || (unoptimized ?? !isOptimizableImage(src))}
+        onError={() => setLoadFailures((n) => n + 1)}
+        className={loadFailures > 1 ? `${className ?? ""} opacity-0` : className}
       />
       <canvas
         ref={canvasRef}

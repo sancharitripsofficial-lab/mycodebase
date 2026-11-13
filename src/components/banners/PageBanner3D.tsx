@@ -73,10 +73,9 @@ export function PageBanner3D({ scene, title, eyebrow, subtitle, width = "4xl", c
       observer = new IntersectionObserver((entries) => {
         if (!entries.some((entry) => entry.isIntersecting)) return;
         observer?.disconnect();
-        // Let the page finish painting and become interactive first.
+        // Drawn by a worker off the main thread, so it can start straight away (next frame).
         const go = () => setMounted(true);
-        if ("requestIdleCallback" in window) idle = window.requestIdleCallback(go, { timeout: 1200 });
-        else timer = globalThis.setTimeout(go, 250) as unknown as number;
+        timer = globalThis.setTimeout(go, 0) as unknown as number;
       });
       observer.observe(element);
     };

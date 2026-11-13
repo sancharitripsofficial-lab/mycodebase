@@ -1246,8 +1246,12 @@ export function RoadTrip3D({ labels, className, variant = "scene", quality = "au
         }
       }
     };
+    // Shaders are compiled in the background before the first frame (parallel where the GPU driver
+    // allows), so the page does not freeze while the scene appears.
+    let compiled = false;
+    let torn = false;
     const start = () => {
-      if (running || lost || !inView || document.hidden) return;
+      if (torn || !compiled || running || lost || !inView || document.hidden) return;
       running = true;
       last = 0;
       raf = requestAnimationFrame(frame);
@@ -1333,9 +1337,16 @@ export function RoadTrip3D({ labels, className, variant = "scene", quality = "au
     };
     canvas.addEventListener("webglcontextlost", onLost);
     canvas.addEventListener("webglcontextrestored", onRestored);
-    start();
+    renderer
+      .compileAsync(scene, camera)
+      .catch(() => undefined)
+      .finally(() => {
+        compiled = true;
+        start();
+      });
 
     return () => {
+      torn = true;
       stop();
       ro.disconnect();
       io.disconnect();

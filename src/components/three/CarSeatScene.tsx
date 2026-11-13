@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
-import { buildErtiga } from "./ertigaModel";
+import { buildErtiga, ertigaGlassBand } from "./ertigaModel";
 import { CABIN_CUT_HEIGHT, buildErtigaInterior } from "./ertigaInterior";
 
 export type SeatVisualState = "available" | "yours" | "taken" | "off" | "loading";
@@ -18,6 +18,10 @@ export interface CarSeatSceneProps {
   focusSeat: number | null;
   onSeat: (seat: number) => void;
   onStatus: (status: CarSeatSceneStatus) => void;
+  /** Turn the car: each new `id` adds `by` radians (turn buttons); `reset` returns to the start view. */
+  turn?: { id: number; by: number; reset?: boolean };
+  /** Reports the current view angle (radians from the start view). */
+  onTurn?: (angle: number) => void;
   className?: string;
 }
 
@@ -46,10 +50,10 @@ function labelText(seat: number, state: SeatVisualState): string {
 }
 
 /** The WebGL part of the 3D seat picker: cutaway MPV, cabin, seat states, tap / hover handling. */
-export function CarSeatScene({ states, tappable, focusSeat, onSeat, onStatus, className }: CarSeatSceneProps) {
+export function CarSeatScene({ states, tappable, focusSeat, onSeat, onStatus, turn, onTurn, className }: CarSeatSceneProps) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const labelRefs = useRef<(HTMLSpanElement | null)[]>([]);
-  const live = useRef({ states, tappable, focusSeat, onSeat, onStatus, dirty: true });
+  const live = useRef({ states, tappable, focusSeat, onSeat, onStatus, onTurn, turn, turnSeen: turn?.id ?? 0, dirty: true });
   useEffect(() => {
     const l = live.current;
     l.dirty = l.dirty || l.states.join() !== states.join();
@@ -58,6 +62,8 @@ export function CarSeatScene({ states, tappable, focusSeat, onSeat, onStatus, cl
     l.focusSeat = focusSeat;
     l.onSeat = onSeat;
     l.onStatus = onStatus;
+    l.onTurn = onTurn;
+    l.turn = turn;
   });
 
   useEffect(() => {
@@ -120,6 +126,89 @@ export function CarSeatScene({ states, tappable, focusSeat, onSeat, onStatus, cl
     const interior = buildErtigaInterior();
     car.body.add(interior.group);
     scene.add(car.group);
+
+    /* ---- windows: tinted glass on both sides, windscreen and tailgate glass, with dark pillars.
+       Shaped from the body's own glasshouse. The roof stays open (cutaway) so every seat can
+       still be seen and tapped through the glass. ---- */
+    const windowGroup = new THREE.Group();
+    const glassMat = new THREE.MeshStandardMaterial({
+      color: 0x9cc7d3,
+      roughness: 0.06,
+      metalness: 0.1,
+      transparent: true,
+      opacity: 0.26,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+      envMapIntensity: 1.6,
+    });
+    const frameMat = new THREE.MeshStandardMaterial({ color: 0x1d2328, roughness: 0.45, metalness: 0.2 });
+    const winGeos: THREE.BufferGeometry[] = [];
+    const X_REAR = -1.98;
+    const X_FRONT = 0.93;
+    const STEPS = 40;
+    const topY = (x: number) => {
+      const b = ertigaGlassBand(x);
+      return Math.max(b.y0 + 0.01, b.y1);
+    };
+    for (const side of [-1, 1]) {
+      const pos: number[] = [];
+      const idx: number[] = [];
+      for (let i = 0; i <= STEPS; i++) {
+        const x = X_REAR + ((X_FRONT - X_REAR) * i) / STEPS;
+        const b = ertigaGlassBand(x);
+        pos.push(x, b.y0, side * b.z0, x, topY(x), side * b.z1);
+        if (i > 0) {
+          const a = (i - 1) * 2;
+          idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
+        }
+      }
+      const g = new THREE.BufferGeometry();
+      g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+      g.setIndex(idx);
+      g.computeVertexNormals();
+      winGeos.push(g);
+      windowGroup.add(new THREE.Mesh(g, glassMat));
+      // Pillars: B between front and middle row, C between middle and back row, D at the tailgate.
+      for (const px of [-0.22, -1.1, -1.94]) {
+        const b = ertigaGlassBand(px);
+        const a = new THREE.Vector3(px, b.y0, side * b.z0);
+        const c = new THREE.Vector3(px, topY(px), side * b.z1);
+        const pg = new THREE.CylinderGeometry(0.028, 0.032, a.distanceTo(c), 8);
+        winGeos.push(pg);
+        const pillar = new THREE.Mesh(pg, frameMat);
+        pillar.position.copy(a).add(c).multiplyScalar(0.5);
+        pillar.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), c.clone().sub(a).normalize());
+        windowGroup.add(pillar);
+      }
+      // Window frame along the belt line and along the top edge.
+      for (const edge of ["bottom", "top"] as const) {
+        const pts: THREE.Vector3[] = [];
+        for (let i = 0; i <= STEPS; i++) {
+          const x = X_REAR + ((X_FRONT - X_REAR) * i) / STEPS;
+          const b = ertigaGlassBand(x);
+          pts.push(edge === "bottom" ? new THREE.Vector3(x, b.y0, side * b.z0) : new THREE.Vector3(x, topY(x), side * b.z1));
+        }
+        const rg = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), STEPS, 0.014, 6, false);
+        winGeos.push(rg);
+        windowGroup.add(new THREE.Mesh(rg, frameMat));
+      }
+    }
+    // Windscreen (sloping up from the bonnet) and tailgate glass, spanning the two side bands.
+    const spanPane = (xTop: number, xLow: number) => {
+      const a = ertigaGlassBand(xTop);
+      const b = ertigaGlassBand(xLow);
+      const yA = topY(xTop);
+      const pos = [xTop, yA, -a.z1, xTop, yA, a.z1, xLow, b.y0, -b.z0, xLow, b.y0, b.z0];
+      const g = new THREE.BufferGeometry();
+      g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+      g.setIndex([0, 1, 2, 1, 3, 2]);
+      g.computeVertexNormals();
+      winGeos.push(g);
+      windowGroup.add(new THREE.Mesh(g, glassMat));
+    };
+    spanPane(0.27, 0.96);
+    spanPane(-1.9, -2.08);
+    car.body.add(windowGroup);
 
     const floorGeo = new THREE.PlaneGeometry(12, 12);
     floorGeo.rotateX(-Math.PI / 2);
@@ -205,6 +294,16 @@ export function CarSeatScene({ states, tappable, focusSeat, onSeat, onStatus, cl
         target.addScaledVector(right, ((minX + maxX) / 2) * halfH * camera.aspect).addScaledVector(up, ((minY + maxY) / 2 + 0.03) * halfH);
         baseDist *= Math.max((maxX - minX) / 2 / 0.93, (maxY - minY) / 2 / 0.86);
       }
+      // The car can be turned all the way round: step back just enough that it fits from every side.
+      let need = 1;
+      for (let k = 1; k < 8; k++) {
+        place(AZ0 + (k * Math.PI) / 4, EL, baseDist);
+        for (const p of fitPts) {
+          proj.copy(p).project(camera);
+          need = Math.max(need, Math.abs(proj.x) / 0.95, Math.abs(proj.y) / 0.9);
+        }
+      }
+      baseDist *= Math.min(need, 1.15); // a little room to turn; the start view stays large and easy to tap
     };
 
     /* ---- pointer: tap to pick, hover on desktop, horizontal drag for a small orbit ---- */
@@ -240,7 +339,7 @@ export function CarSeatScene({ states, tappable, focusSeat, onSeat, onStatus, cl
         const dx = e.clientX - down.x;
         const dy = e.clientY - down.y;
         if (!down.dragging && Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy) * 1.6) down.dragging = true;
-        if (down.dragging) orbitTarget = THREE.MathUtils.clamp(down.orbit + dx * 0.006, -0.5, 0.5);
+        if (down.dragging) orbitTarget = down.orbit + dx * 0.009;
         return;
       }
       if (e.pointerType === "mouse") {
@@ -325,7 +424,14 @@ export function CarSeatScene({ states, tappable, focusSeat, onSeat, onStatus, cl
       });
       if (moving) key.shadow.needsUpdate = true;
 
+      const T = L.turn;
+      if (T && T.id !== L.turnSeen) {
+        L.turnSeen = T.id;
+        orbitTarget = T.reset ? Math.round(orbit / (2 * Math.PI)) * 2 * Math.PI : orbitTarget + T.by;
+      }
+      const before = orbit;
       orbit += (orbitTarget - orbit) * (1 - Math.exp(-dt * 6));
+      if (Math.abs(orbit - before) > 1e-4) L.onTurn?.(orbit);
       place(AZ0 + orbit + Math.sin(time * 0.35) * 0.03, EL + Math.sin(time * 0.27 + 1) * 0.012, baseDist * (1 + Math.sin(time * 0.22) * 0.006));
       renderer.render(scene, camera);
 
@@ -364,8 +470,11 @@ export function CarSeatScene({ states, tappable, focusSeat, onSeat, onStatus, cl
         }
       }
     };
+    // Shaders compile in the background first, so the page never freezes while the car appears.
+    let compiled = false;
+    let torn = false;
     const start = () => {
-      if (running || lost || !inView || document.hidden) return;
+      if (torn || !compiled || running || lost || !inView || document.hidden) return;
       running = true;
       last = 0;
       raf = requestAnimationFrame(frame);
@@ -394,9 +503,17 @@ export function CarSeatScene({ states, tappable, focusSeat, onSeat, onStatus, cl
     };
     canvas.addEventListener("webglcontextlost", onLost);
     L.dirty = true;
-    start();
+    applyStates();
+    renderer
+      .compileAsync(scene, camera)
+      .catch(() => undefined)
+      .finally(() => {
+        compiled = true;
+        start();
+      });
 
     return () => {
+      torn = true;
       stop();
       ro.disconnect();
       io.disconnect();
@@ -408,6 +525,9 @@ export function CarSeatScene({ states, tappable, focusSeat, onSeat, onStatus, cl
       canvas.removeEventListener("pointercancel", onCancel);
       canvas.removeEventListener("pointerleave", onLeave);
       interior.dispose();
+      winGeos.forEach((g) => g.dispose());
+      glassMat.dispose();
+      frameMat.dispose();
       car.dispose();
       floorGeo.dispose();
       floorMat.dispose();
