@@ -36,3 +36,6 @@ supabase/.branches/
 
 # TypeScript build cache
 *.tsbuildinfo
+
+# Production values to paste into Vercel (never commit)
+.env.vercel.local
