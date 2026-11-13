@@ -115,66 +115,13 @@ export default function BannerCanvas({ scene, getFocus, onReady, onLost }: Banne
     container.appendChild(canvas);
 
     if (canRenderInWorker()) {
-      // Progressive: the light version is on screen in a few seconds; on capable screens the sharp
-      // version is then prepared in a second worker and cross-fades in over it when ready.
-      let sharp: { host: BannerHost; canvas: HTMLCanvasElement } | null = null;
-      let upgradeTimer = 0;
-      const wantSharp = pickQuality(Math.max(1, container.clientWidth)) === "high";
-      const startSharp = () => {
-        if (cancelled || sharp) return;
-        const hi = document.createElement("canvas");
-        hi.setAttribute("aria-hidden", "true");
-        hi.style.cssText =
-          "position:absolute;inset:0;display:block;width:100%;height:100%;pointer-events:none;opacity:0;transition:opacity 900ms ease-out";
-        container.appendChild(hi);
-        const hiHost = createWorkerHost(hi, container, scene, "high", {
-          current: {
-            getFocus: (w, h) => callbacks.current.getFocus(w, h),
-            onReady: () => {
-              if (cancelled) return;
-              hi.style.opacity = "1";
-              // Once the sharp picture covers it, free the light one.
-              window.setTimeout(() => {
-                if (cancelled) return;
-                host?.dispose();
-                canvas.remove();
-                host = hiHost;
-                sharp = null;
-              }, 1000);
-            },
-            onLost: () => {
-              hiHost.dispose();
-              hi.remove();
-            },
-          },
-        });
-        sharp = { host: hiHost, canvas: hi };
-      };
+      // Computers get the sharp scene, phones the light one; a still of the scene shows meanwhile.
       try {
-        host = createWorkerHost(canvas, container, scene, "low", {
-          current: {
-            getFocus: (w, h) => callbacks.current.getFocus(w, h),
-            onReady: () => {
-              callbacks.current.onReady();
-              if (wantSharp && !sharp) upgradeTimer = window.setTimeout(startSharp, 1200);
-            },
-            onLost: () => callbacks.current.onLost(),
-          },
-        });
+        host = createWorkerHost(canvas, container, scene, pickQuality(Math.max(1, container.clientWidth)), callbacks);
       } catch (error) {
         console.warn("[banner] worker could not start", error);
         callbacks.current.onLost();
       }
-      return () => {
-        cancelled = true;
-        window.clearTimeout(upgradeTimer);
-        host?.dispose();
-        canvas.remove();
-        if (sharp) {
-          sharp.host.dispose();
-          sharp.canvas.remove();
-        }
-      };
     } else {
       // Older browsers: draw on the page itself (the scene is still built only once on screen).
       SCENE_LOADERS[scene]()

@@ -24,10 +24,11 @@ export const metadata: Metadata = {
   description:
     "Weekend road trips from Bengaluru (Bangalore) to Coorg, Chikmagalur, Gokarna and Hampi with at most 6 travellers per car. Pick your exact seat on a live car map, pay by UPI, solo, women-only or private car.",
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
+  // The share picture is the official logo card (src/app/opengraph-image.tsx).
   openGraph: {
-    title: "Sanchari • Micro Trips",
-    description: "Curated Karnataka road trips, shared with no more than six travelers.",
-    images: ["/media/hero-western-ghats.jpg"],
+    title: "Sanchari • Micro Trips — weekend trips from Bengaluru, max 6 per car",
+    description: "Coorg, Chikmagalur, Gokarna and Hampi in a 6-seat car. Pick your seat on a live car map and pay by UPI.",
+    siteName: "Sanchari Micro Trips",
     type: "website",
   },
 };

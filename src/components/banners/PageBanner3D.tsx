@@ -1,5 +1,6 @@
 "use client";
 
+import { getImageProps } from "next/image";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import type { BannerFocus } from "./engine";
@@ -113,6 +114,7 @@ export function PageBanner3D({ scene, title, eyebrow, subtitle, width = "4xl", c
       className="relative isolate w-full overflow-hidden bg-[#135a4b] text-white"
     >
       <div aria-hidden="true" className="absolute inset-0" style={{ background: FALLBACK[scene] }} />
+      <BannerStill scene={scene} />
       <div
         aria-hidden="true"
         className={`absolute inset-0 transition-opacity duration-[1400ms] ease-out ${ready ? "opacity-100" : "opacity-0"}`}
@@ -140,5 +142,27 @@ export function PageBanner3D({ scene, title, eyebrow, subtitle, width = "4xl", c
         </div>
       </div>
     </section>
+  );
+}
+
+/**
+ * A sharp still of the same 3D scene (captured at full quality), on screen the moment the page
+ * opens: wide on tablets and computers, tall on phones. The live scene fades in over it.
+ */
+function BannerStill({ scene }: { scene: BannerSceneName }) {
+  const common = { alt: "", fill: true, priority: true, sizes: "100vw" } as const;
+  const {
+    props: { srcSet: wide },
+  } = getImageProps({ ...common, src: `/media/banners/${scene}-wide.jpg` });
+  const {
+    props: { srcSet: tall, ...img },
+  } = getImageProps({ ...common, src: `/media/banners/${scene}-tall.jpg` });
+  return (
+    <picture>
+      <source media="(min-width: 768px)" srcSet={wide} />
+      <source media="(max-width: 767px)" srcSet={tall} />
+      {/* eslint-disable-next-line jsx-a11y/alt-text, @next/next/no-img-element */}
+      <img {...img} className="object-cover" aria-hidden="true" />
+    </picture>
   );
 }
