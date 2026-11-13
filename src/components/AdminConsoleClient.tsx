@@ -44,6 +44,7 @@ import { TripsManager } from "@/components/admin/TripsManager";
 import { AdminPaymentsPanel } from "@/components/AdminPaymentsPanel";
 import { AdminUpiSettings } from "@/components/AdminUpiSettings";
 import { formatINR } from "@/lib/currency";
+import { clearCached, warmAdminCache } from "@/lib/admin/memo-cache";
 import type { DepartureCrew, Enquiry } from "@/lib/data/owner-ops";
 import { addDaysISO, localISODate } from "@/lib/dates";
 import type {
@@ -174,6 +175,7 @@ export function AdminConsoleClient({ initialActor, supabaseConfigured, initialDa
       refreshOps={refreshOps}
       onSignOut={async () => {
         await fetch("/api/admin/auth", { method: "DELETE" });
+        clearCached();
         setActor(null);
         setData(null);
       }}
@@ -314,6 +316,9 @@ function Workspace({
       setEnquiries(json.enquiries as Enquiry[]);
     }
   }, []);
+
+  // Pre-load the other sections' data while the console is idle, so they open instantly.
+  useEffect(() => warmAdminCache(), []);
 
   useEffect(() => {
     void refreshPayments();

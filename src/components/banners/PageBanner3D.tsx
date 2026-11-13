@@ -22,15 +22,15 @@ export interface PageBanner3DProps {
 /** Still picture shown first, and kept when 3D is unavailable or motion is reduced. */
 const FALLBACK: Record<BannerSceneName, string> = {
   trips:
-    "linear-gradient(180deg, rgb(14 94 143 / 0.15) 0%, rgb(11 86 131 / 0.35) 100%), url(/media/hero-western-ghats.jpg) center 40% / cover no-repeat, #0e5e8f",
+    "linear-gradient(180deg, rgb(19 90 75 / 0.15) 0%, rgb(20 82 63 / 0.35) 100%), url(/media/hero-western-ghats.jpg) center 40% / cover no-repeat, #135a4b",
   safety:
     "radial-gradient(60% 90% at 72% 70%, rgb(255 214 170 / 0.55), transparent 70%), linear-gradient(180deg, #7fb7cf 0%, #c9dfe4 55%, #5f8f9c 100%)",
   policies:
-    "radial-gradient(55% 80% at 70% 45%, rgb(196 214 150 / 0.75), transparent 72%), linear-gradient(100deg, #0e5e8f 0%, #1b86a8 40%, #7db7a0 100%)",
+    "radial-gradient(55% 80% at 70% 45%, rgb(196 214 150 / 0.75), transparent 72%), linear-gradient(100deg, #135a4b 0%, #1b86a8 40%, #7db7a0 100%)",
   contact:
-    "radial-gradient(70% 55% at 65% 100%, rgb(255 190 110 / 0.5), transparent 70%), linear-gradient(180deg, #0e5e8f 0%, #1d7f9e 38%, #e9a36b 60%, #14618a 62%, #0b5683 100%)",
+    "radial-gradient(70% 55% at 65% 100%, rgb(255 190 110 / 0.5), transparent 70%), linear-gradient(180deg, #135a4b 0%, #1d7f9e 38%, #e9a36b 60%, #11655a 62%, #14523f 100%)",
   booking:
-    "radial-gradient(45% 70% at 72% 45%, rgb(255 254 252 / 0.4), transparent 70%), radial-gradient(40% 60% at 95% 100%, rgb(255 138 61 / 0.45), transparent 70%), linear-gradient(120deg, #0b5683 0%, #0e5e8f 40%, #1ba3b3 100%)",
+    "radial-gradient(45% 70% at 72% 45%, rgb(255 254 252 / 0.4), transparent 70%), radial-gradient(40% 60% at 95% 100%, rgb(255 138 61 / 0.45), transparent 70%), linear-gradient(120deg, #14523f 0%, #135a4b 40%, #1ba3b3 100%)",
 };
 
 const WIDTHS = { "3xl": "max-w-3xl", "4xl": "max-w-4xl", "6xl": "max-w-6xl" } as const;
@@ -111,7 +111,7 @@ export function PageBanner3D({ scene, title, eyebrow, subtitle, width = "4xl", c
       ref={section}
       data-banner={scene}
       data-banner-live={ready ? "true" : "false"}
-      className="relative isolate w-full overflow-hidden bg-forest-900 text-white"
+      className="relative isolate w-full overflow-hidden bg-[#135a4b] text-white"
     >
       <div aria-hidden="true" className="absolute inset-0" style={{ background: FALLBACK[scene] }} />
       <div
@@ -120,17 +120,17 @@ export function PageBanner3D({ scene, title, eyebrow, subtitle, width = "4xl", c
       >
         {mounted && <BannerCanvas scene={scene} getFocus={getFocus} onReady={onReady} onLost={onLost} />}
       </div>
-      {/* Ocean-tinted veil that keeps the heading readable over any frame of the scene. */}
+      {/* Tea-green veil (matches the home film) that keeps the heading readable over any frame of the scene. */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[linear-gradient(0deg,rgb(11_86_131/0.95)_0%,rgb(11_86_131/0.82)_38%,rgb(11_86_131/0.3)_68%,rgb(11_86_131/0)_86%)] md:bg-[linear-gradient(90deg,rgb(11_86_131/0.93)_0%,rgb(11_86_131/0.78)_30%,rgb(11_86_131/0.28)_56%,rgb(11_86_131/0)_74%)]"
+        className="pointer-events-none absolute inset-0 bg-[linear-gradient(0deg,rgb(18_70_54/0.9)_0%,rgb(18_70_54/0.72)_38%,rgb(18_70_54/0.22)_66%,rgb(18_70_54/0)_84%)] md:bg-[linear-gradient(90deg,rgb(18_70_54/0.88)_0%,rgb(18_70_54/0.66)_30%,rgb(18_70_54/0.2)_56%,rgb(18_70_54/0)_74%)]"
       />
       <div
         className={`relative mx-auto flex min-h-[250px] w-full ${WIDTHS[width]} flex-col justify-end px-4 pt-28 pb-6 sm:min-h-[300px] sm:px-6 md:min-h-[340px] md:justify-center md:py-10 lg:min-h-[370px]`}
       >
         <div
           ref={text}
-          className="min-w-0 max-w-xl space-y-2 break-words [text-shadow:0_1px_2px_rgb(8_60_95/0.55)] md:max-w-md lg:max-w-lg"
+          className="min-w-0 max-w-xl space-y-2 break-words [text-shadow:0_1px_3px_rgb(10_40_30/0.55)] md:max-w-md lg:max-w-lg"
         >
           {eyebrow && (
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-peach-100">{eyebrow}</p>

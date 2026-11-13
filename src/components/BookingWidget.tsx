@@ -10,7 +10,7 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ErtigaSeatMap, SEAT_INFO } from "@/components/booking/ErtigaSeatMap";
 import { CarSeatPicker3D } from "@/components/three/CarSeatPicker3D";
 import { UpiPayPanel, UpiSubmittedNotice } from "@/components/UpiPayPanel";
@@ -33,6 +33,8 @@ interface BookingWidgetProps {
   departures: PublicDepartureAvailability[];
   pickupPoints: PickupPoint[];
   bookingPolicy: SiteSettings["bookingPolicy"];
+  /** Taken seat numbers per departure, read while the page was built: the car map shows at once. */
+  initialSeatMaps?: Record<string, number[]>;
 }
 
 interface TravelerFormRow {
@@ -82,6 +84,7 @@ export function BookingWidget({
   departures,
   pickupPoints,
   bookingPolicy,
+  initialSeatMaps,
 }: BookingWidgetProps) {
   const initialDep =
     departures.find((d) => d.status !== "sold_out" && d.status !== "cancelled") ??
@@ -115,7 +118,14 @@ export function BookingWidget({
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   // Live seat map for the chosen date (numbers only) + the exact seats this customer tapped.
-  const [seatMap, setSeatMap] = useState<{ departureId: string; taken: number[] } | null>(null);
+  // Seat maps already known (from the page, or fetched earlier this visit) show instantly; the
+  // live map is then re-read quietly in the background, so switching dates never shows a spinner.
+  const knownMapsRef = useRef<Record<string, number[]>>({ ...(initialSeatMaps ?? {}) });
+  const [seatMap, setSeatMap] = useState<{ departureId: string; taken: number[] } | null>(() => {
+    const id = initialDep?.departureId;
+    const known = id ? initialSeatMaps?.[id] : undefined;
+    return id && known ? { departureId: id, taken: known } : null;
+  });
   const [seatsLoading, setSeatsLoading] = useState(false);
   const [pickedSeats, setPickedSeats] = useState<number[]>([]);
   const [seatNote, setSeatNote] = useState<string | null>(null);
@@ -166,13 +176,18 @@ export function BookingWidget({
   useEffect(() => {
     if (!departureId) return;
     let cancelled = false;
-    setSeatsLoading(true);
+    const known = knownMapsRef.current[departureId];
+    if (known) setSeatMap((cur) => (cur?.departureId === departureId ? cur : { departureId, taken: known }));
+    else setSeatsLoading(true);
     fetch(`/api/departures/${departureId}/seats`, { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((json: { taken?: number[] } | null) => {
         if (cancelled || !json || !Array.isArray(json.taken)) return;
         const taken = json.taken;
-        setSeatMap({ departureId, taken });
+        knownMapsRef.current[departureId] = taken;
+        setSeatMap((cur) =>
+          cur?.departureId === departureId && cur.taken.join() === taken.join() ? cur : { departureId, taken }
+        );
         setPickedSeats((cur) => {
           const gone = cur.filter((s) => taken.includes(s));
           if (gone.length === 0) return cur;
@@ -543,7 +558,7 @@ export function BookingWidget({
 
   if (departures.length === 0) {
     return (
-      <div className="rounded-2xl border border-stone-200 bg-cream-50 p-6">
+      <div className="card-theme p-6 pt-7">
         <h2 className="font-display text-xl font-semibold text-forest-900">
           Upcoming Departures
         </h2>
@@ -640,7 +655,7 @@ export function BookingWidget({
     )}`;
 
     return (
-      <div className="rounded-2xl border-2 border-forest-700 bg-cream-50 p-6 space-y-4">
+      <div className="card-theme space-y-4 p-6 pt-7">
         <div className="flex items-start gap-3">
           <CheckCircle2 className="h-6 w-6 shrink-0 text-forest-700" aria-hidden="true" />
           <div>
@@ -692,7 +707,7 @@ export function BookingWidget({
 
   if (holdResult) {
     return (
-      <div className="rounded-2xl border border-forest-800 bg-cream-50 p-6 space-y-5">
+      <div className="card-theme space-y-5 p-6 pt-7">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-copper-700">
@@ -784,7 +799,7 @@ export function BookingWidget({
   }
 
   return (
-    <div className="rounded-2xl border border-stone-200 bg-cream-50 p-5 sm:p-6 space-y-6">
+    <div className="card-theme space-y-6 p-5 pt-6 sm:p-6 sm:pt-7">
       <div>
         <h2 className="font-display text-2xl font-semibold text-forest-900">
           Select Departure &amp; Seats

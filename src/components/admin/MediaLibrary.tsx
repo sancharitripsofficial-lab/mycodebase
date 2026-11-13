@@ -5,6 +5,7 @@ import { Button } from "@astryxdesign/core/Button";
 import { Check, Copy, Film, ImagePlus, Trash2, Upload } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Notice, Panel } from "@/components/admin/kit";
+import { getCached, setCached } from "@/lib/admin/memo-cache";
 
 interface MediaItem {
   path: string;
@@ -31,8 +32,9 @@ export function MediaLibrary({
   pickLabel?: string;
   compact?: boolean;
 }) {
-  const [items, setItems] = useState<MediaItem[]>([]);
-  const [ready, setReady] = useState<boolean | null>(null);
+  const cached = getCached<{ ready?: boolean; items?: MediaItem[] }>("media");
+  const [items, setItems] = useState<MediaItem[]>(cached?.items ?? []);
+  const [ready, setReady] = useState<boolean | null>(cached ? Boolean(cached.ready) : null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
@@ -43,6 +45,7 @@ export function MediaLibrary({
     const json = await res.json();
     setReady(Boolean(json.ready));
     setItems(json.items ?? []);
+    if (res.ok) setCached("media", json);
     if (json.error) setNotice({ kind: "error", text: json.error });
   }, []);
 

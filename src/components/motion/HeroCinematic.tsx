@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import Image, { getImageProps } from "next/image";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import styles from "./motion.module.css";
 import { useInView, usePageVisible, usePrefersReducedMotion } from "./useMotionHooks";
@@ -20,6 +20,8 @@ export interface HeroCinematicProps {
   mobileVideoSrc?: string;
   /** Still frame shown while the video loads. */
   posterSrc?: string;
+  /** Portrait still frame for phones (matches `mobileVideoSrc`). */
+  mobilePosterSrc?: string;
   /** Time each photo stays up, in ms. Default 6000. */
   intervalMs?: number;
   /** Crossfade length, in ms. Default 1200. */
@@ -43,6 +45,7 @@ export function HeroCinematic({
   videoSrc,
   mobileVideoSrc,
   posterSrc,
+  mobilePosterSrc,
   intervalMs = 6000,
   fadeMs = 1200,
   scrim = "left",
@@ -114,14 +117,12 @@ export function HeroCinematic({
     >
       {videoMode ? (
         <>
-          <Image
+          <HeroPoster
             src={posterSrc ?? slides[0]?.src ?? "/media/hero-western-ghats.jpg"}
-            alt=""
-            fill
-            priority
-            sizes="100vw"
-            className={styles.heroMedia}
+            mobileSrc={mobilePosterSrc}
           />
+          {/* No poster attribute: the optimised still above is already on screen, so phones
+              don't download a second full-size copy of it. */}
           <video
             ref={videoRef}
             className={styles.heroVideo}
@@ -130,7 +131,6 @@ export function HeroCinematic({
             loop
             playsInline
             preload="metadata"
-            poster={posterSrc}
             tabIndex={-1}
             disablePictureInPicture
             onPlaying={() => setVideoReady(true)}
@@ -163,5 +163,27 @@ export function HeroCinematic({
       {scrim !== "none" && <div className={styles.heroScrim} data-scrim={scrim} />}
       <div className={styles.heroGlow} />
     </div>
+  );
+}
+
+/** Poster still with art direction: the portrait frame on phones, the wide frame from 768px. */
+function HeroPoster({ src, mobileSrc }: { src: string; mobileSrc?: string }) {
+  if (!mobileSrc) {
+    return <Image src={src} alt="" fill priority sizes="100vw" className={styles.heroMedia} />;
+  }
+  const common = { alt: "", fill: true, priority: true, sizes: "100vw" } as const;
+  const {
+    props: { srcSet: wide },
+  } = getImageProps({ ...common, src });
+  const {
+    props: { srcSet: tall, ...img },
+  } = getImageProps({ ...common, src: mobileSrc });
+  return (
+    <picture>
+      <source media="(min-width: 768px)" srcSet={wide} />
+      <source media="(max-width: 767px)" srcSet={tall} />
+      {/* eslint-disable-next-line jsx-a11y/alt-text, @next/next/no-img-element */}
+      <img {...img} className={styles.heroMedia} />
+    </picture>
   );
 }

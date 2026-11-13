@@ -129,7 +129,7 @@ export function BookingLookupClient({
     <div className="space-y-8">
       <form
         onSubmit={handleSubmitLookup}
-        className="rounded-2xl border border-stone-200 bg-cream-50 p-5 sm:p-6 space-y-4"
+        className="card-theme theme-brand space-y-4 p-5 pt-6 sm:p-6 sm:pt-7"
       >
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block text-xs font-medium">
@@ -177,7 +177,7 @@ export function BookingLookupClient({
       </form>
 
       {bookingView && (
-        <div className="space-y-6 rounded-2xl border border-stone-200 bg-cream-50 p-5 sm:p-6">
+        <div className="card-theme theme-brand space-y-6 p-5 pt-6 sm:p-6 sm:pt-7">
           <div className="flex flex-wrap items-start justify-between gap-4 border-b border-stone-200 pb-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-copper-700">

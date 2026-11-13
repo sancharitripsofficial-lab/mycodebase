@@ -305,7 +305,8 @@
   inset: 0;
   overflow: hidden;
   pointer-events: none;
-  background: linear-gradient(135deg, #0b5683 0%, #1373a8 60%, #0c7a8c 100%);
+  /* Shown for the first instant before the poster paints: the film's own misty tea-green. */
+  background: linear-gradient(160deg, #6f8f7c 0%, #3f6b52 55%, #24503f 100%);
 }
 .heroMedia {
   object-fit: cover;
@@ -362,32 +363,34 @@
   inset: 0;
 }
 .heroScrim[data-scrim="left"] {
+  /* Tea-green shade on the text side only; the misty hills and the car stay in full colour. */
   background:
     linear-gradient(
       90deg,
-      rgba(11, 86, 131, 0.94) 0%,
-      rgba(14, 94, 143, 0.8) 34%,
-      rgba(19, 115, 168, 0.34) 66%,
-      rgba(19, 115, 168, 0) 100%
+      rgba(16, 58, 44, 0.86) 0%,
+      rgba(20, 72, 54, 0.64) 32%,
+      rgba(24, 82, 62, 0.2) 60%,
+      rgba(24, 82, 62, 0) 78%
     ),
-    linear-gradient(180deg, rgba(11, 86, 131, 0.35) 0%, rgba(11, 86, 131, 0) 30%, rgba(12, 122, 140, 0.4) 100%);
+    linear-gradient(180deg, rgba(16, 58, 44, 0.3) 0%, rgba(16, 58, 44, 0) 26%, rgba(14, 60, 52, 0.42) 100%);
 }
 .heroScrim[data-scrim="full"] {
   background: linear-gradient(
     180deg,
-    rgba(11, 86, 131, 0.72) 0%,
-    rgba(14, 94, 143, 0.58) 45%,
-    rgba(12, 122, 140, 0.78) 100%
+    rgba(16, 58, 44, 0.62) 0%,
+    rgba(20, 72, 54, 0.42) 45%,
+    rgba(14, 60, 52, 0.72) 100%
   );
 }
 @media (max-width: 767px) {
-  /* On phones the text sits over the whole photo, so the scrim covers it all. */
+  /* Phones: text sits over the upper half, the car drives in the lower half and stays visible. */
   .heroScrim[data-scrim="left"] {
     background: linear-gradient(
       180deg,
-      rgba(11, 86, 131, 0.84) 0%,
-      rgba(14, 94, 143, 0.7) 50%,
-      rgba(12, 122, 140, 0.82) 100%
+      rgba(16, 58, 44, 0.78) 0%,
+      rgba(18, 66, 50, 0.6) 42%,
+      rgba(18, 66, 50, 0.22) 70%,
+      rgba(14, 60, 52, 0.55) 100%
     );
   }
 }

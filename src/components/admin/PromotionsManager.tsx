@@ -11,6 +11,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { DateTimeField, Notice, Panel } from "@/components/admin/kit";
 import { PromoBanner } from "@/components/promo/PromoBanner";
 import { PromoMedia } from "@/components/promo/PromoMedia";
+import { getCached, setCached } from "@/lib/admin/memo-cache";
 import type { AdminPromotion, PromoMediaType, PromoPlacement, PromoTheme, Promotion } from "@/lib/data/promotions";
 import type { StaffRole, Trip } from "@/lib/types";
 
@@ -67,7 +68,7 @@ function when(iso: string | null): string {
 /** Admin → Offers & ads: what the website advertises, where, and when. */
 export function PromotionsManager({ role, trips }: { role: StaffRole; trips: Trip[] }) {
   const canEdit = role === "owner" || role === "ops";
-  const [rows, setRows] = useState<AdminPromotion[] | null>(null);
+  const [rows, setRows] = useState<AdminPromotion[] | null>(() => getCached<AdminPromotion[]>("promotions") ?? null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
@@ -76,8 +77,10 @@ export function PromotionsManager({ role, trips }: { role: StaffRole; trips: Tri
   const load = useCallback(async () => {
     const res = await fetch("/api/admin/promotions", { cache: "no-store" });
     const json = await res.json().catch(() => ({}));
-    if (res.ok) setRows(json.promotions as AdminPromotion[]);
-    else setNotice({ kind: "error", text: json.error || "Could not load offers." });
+    if (res.ok) {
+      setRows(json.promotions as AdminPromotion[]);
+      setCached("promotions", json.promotions);
+    } else setNotice({ kind: "error", text: json.error || "Could not load offers." });
   }, []);
 
   useEffect(() => {

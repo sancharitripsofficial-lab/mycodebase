@@ -7,17 +7,18 @@
 /* The Sanchari Astryx theme CSS is imported by src/astryx-themes.ts (generated). */
 
 /*
- * Sanchari palette — taken from the logo:
- *   ocean blue → teal road (primary), sunset orange (call to action), amber (highlights),
- *   misty sky canvas. Token names are kept from the first build so every page re-themes at once:
- *   forest-* = ocean blues, copper-* = sunset orange, saffron = amber, cream-* = canvas.
- * No black or near-black surfaces: the darkest surface is saturated ocean blue.
+ * Sanchari palette — matched to the hero film (misty tea hills, golden haze) and the logo's teal road:
+ *   deep lagoon teal (primary), Western Ghats tea-green surfaces, sunset orange (call to action),
+ *   amber (highlights), warm misty canvas with colourful kolam / contour patterns.
+ *   Token names are kept from the first build so every page re-themes at once:
+ *   forest-* = lagoon teals, copper-* = sunset orange, saffron = amber, cream-* = canvas.
+ * No black or near-black surfaces: the darkest surface is a saturated tea-green.
  */
 @theme inline {
-  --color-forest-950: #0b5683;
-  --color-forest-900: #0e5e8f;
-  --color-forest-800: #1373a8;
-  --color-forest-700: #0c7a8c;
+  --color-forest-950: #0b4f5a;
+  --color-forest-900: #0d5f6b;
+  --color-forest-800: #12737d;
+  --color-forest-700: #0b7a6a;
 
   --color-lagoon-500: #1ba3b3;
   --color-lagoon-100: #ddf3f4;
@@ -29,11 +30,11 @@
   --color-saffron-500: #f5a524;
 
   --color-cream-50: #fffefc;
-  --color-cream-100: #f2f8fa;
-  --color-stone-200: #dce8ee;
-  --color-stone-300: #c2d4de;
-  --color-stone-600: #4b6273;
-  --color-ink-900: #0f2a3d;
+  --color-cream-100: #f4f8f4;
+  --color-stone-200: #dbe7e3;
+  --color-stone-300: #c0d4cf;
+  --color-stone-600: #48625f;
+  --color-ink-900: #10302f;
 
   --font-sans: var(--font-plus-jakarta), ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-serif: var(--font-fraunces), ui-serif, Georgia, Cambria, serif;
@@ -41,28 +42,30 @@
 
 @layer base {
   :root {
-    --shadow-soft: 0 1px 2px rgb(14 94 143 / 0.06), 0 8px 24px -12px rgb(14 94 143 / 0.18);
-    --shadow-lift: 0 2px 4px rgb(14 94 143 / 0.06), 0 24px 48px -20px rgb(14 94 143 / 0.35);
+    --shadow-soft: 0 1px 2px rgb(13 95 107 / 0.06), 0 8px 24px -12px rgb(13 95 107 / 0.2);
+    --shadow-lift: 0 2px 4px rgb(13 95 107 / 0.06), 0 24px 48px -20px rgb(13 95 107 / 0.38);
     --shadow-glow: 0 10px 30px -10px rgb(232 96 15 / 0.55);
   }
 
   html {
     scroll-behavior: smooth;
-    background-color: #f2f8fa;
-    color: #0f2a3d;
+    background-color: #f4f8f4;
+    color: #10302f;
   }
 
   body {
-    color: #0f2a3d;
+    color: #10302f;
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
-    /* Misty canvas with a whisper of teal (top) and sunset (bottom), like the logo backdrop. */
-    background-color: #f2f8fa;
+    /* Warm misty canvas: tea-green, lagoon and sunset washes over a faint kolam dot pattern.
+       Scrolls with the page (no fixed attachment, which repaints on every scroll on phones). */
+    background-color: #f4f8f4;
     background-image:
-      radial-gradient(1200px 600px at 8% -10%, rgb(27 163 179 / 0.1), transparent 60%),
-      radial-gradient(900px 500px at 100% 0%, rgb(14 94 143 / 0.08), transparent 55%),
-      radial-gradient(900px 600px at 90% 110%, rgb(255 138 61 / 0.08), transparent 60%);
-    background-attachment: fixed;
+      radial-gradient(1100px 620px at 6% -6%, rgb(27 163 179 / 0.13), transparent 60%),
+      radial-gradient(900px 520px at 100% 4%, rgb(255 138 61 / 0.1), transparent 55%),
+      radial-gradient(1000px 700px at 50% 120%, rgb(79 170 110 / 0.1), transparent 60%),
+      var(--pat-kolam);
+    background-size: auto, auto, auto, 56px 56px;
   }
 
   h1,
@@ -82,7 +85,7 @@
 
   ::selection {
     background: rgb(255 138 61 / 0.3);
-    color: #0f2a3d;
+    color: #10302f;
   }
 
   *:focus-visible {
@@ -92,13 +95,16 @@
 }
 
 @layer components {
-  /* Saturated ocean → teal surface for heroes, banners and the footer. */
+  /* Western Ghats dusk: tea-green → lagoon teal with a sunset glow and a faint contour pattern.
+     Used for the safety band, the top strip and the footer (matches the hero film). */
   .bg-ocean {
-    background-color: #0e5e8f;
+    background-color: #135a4b;
     background-image:
-      radial-gradient(800px 420px at 85% 120%, rgb(255 138 61 / 0.28), transparent 60%),
-      radial-gradient(700px 400px at 0% -20%, rgb(27 163 179 / 0.45), transparent 60%),
-      linear-gradient(135deg, #0b5683 0%, #0e5e8f 45%, #0c7a8c 100%);
+      radial-gradient(800px 420px at 88% 120%, rgb(255 138 61 / 0.34), transparent 60%),
+      radial-gradient(700px 420px at 0% -20%, rgb(245 165 36 / 0.22), transparent 60%),
+      var(--pat-contour-light),
+      linear-gradient(135deg, #14523f 0%, #0f6158 48%, #0d6b73 100%);
+    background-size: auto, auto, 180px 90px, auto;
   }
 
   /* Sunset call-to-action. Text stays white (≥ 4.5:1 on the darker end). */
@@ -137,10 +143,10 @@
     justify-content: center;
     gap: 0.5rem;
     border-radius: 9999px;
-    background-image: linear-gradient(135deg, #1373a8 0%, #0e5e8f 60%, #0b5683 100%);
+    background-image: linear-gradient(135deg, #12807a 0%, #0d6b6b 55%, #0d5f6b 100%);
     color: #fff;
     font-weight: 600;
-    box-shadow: 0 10px 26px -12px rgb(14 94 143 / 0.6);
+    box-shadow: 0 10px 26px -12px rgb(13 95 107 / 0.6);
     transition:
       transform 160ms ease,
       filter 160ms ease;
@@ -155,7 +161,7 @@
   }
 
   .text-gradient-brand {
-    background-image: linear-gradient(100deg, #0e5e8f 0%, #1ba3b3 45%, #e8600f 100%);
+    background-image: linear-gradient(100deg, #0d5f6b 0%, #1ba3b3 45%, #e8600f 100%);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -168,10 +174,13 @@
     color: transparent;
   }
 
-  /* White card with soft blue shadow that lifts on hover. */
+  /* Card with a soft colour wash (lagoon top-right, sunset bottom-left) that lifts on hover. */
   .card-soft {
-    background: #fffefc;
-    border: 1px solid #dce8ee;
+    background-color: #fffefc;
+    background-image:
+      radial-gradient(260px 160px at 100% 0%, rgb(27 163 179 / 0.1), transparent 70%),
+      radial-gradient(240px 150px at 0% 100%, rgb(255 138 61 / 0.08), transparent 70%);
+    border: 1px solid #dbe7e3;
     border-radius: 1.25rem;
     box-shadow: var(--shadow-soft);
   }
@@ -184,7 +193,7 @@
   .card-lift:hover {
     transform: translateY(-3px);
     box-shadow: var(--shadow-lift);
-    border-color: #b9cede;
+    border-color: #b4cfc8;
   }
 
   /* Frosted glass panel for use over photos / the ocean surface. */
@@ -316,4 +325,159 @@
 .promo-sheet { animation: promo-sheet-kf 320ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 @media (prefers-reduced-motion: reduce) {
   .promo-sheen, .promo-dash, .promo-enter, .promo-fade, .promo-backdrop, .promo-sheet { animation: none; }
+}
+
+/* ===========================================================================
+ * Colourful patterns and destination themes
+ * Tiny inline SVG tiles (no image downloads, no animation, no repaint on scroll).
+ * Every pattern sits behind text at low strength so reading stays easy.
+ * ========================================================================= */
+:root {
+  /* Kolam: the dot-and-loop floor drawing of South Indian homes. Body canvas + FAQ. */
+  --pat-kolam: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 56 56'%3E%3Cg fill='none' stroke='%231ba3b3' stroke-opacity='.11' stroke-width='1.1'%3E%3Cpath d='M28 6c12 0 22 10 22 22S40 50 28 50 6 40 6 28 16 6 28 6z'/%3E%3Cpath d='M28 18l10 10-10 10-10-10z'/%3E%3C/g%3E%3Cg fill='%23e8600f' fill-opacity='.16'%3E%3Ccircle cx='28' cy='28' r='1.6'/%3E%3Ccircle cx='0' cy='0' r='1.6'/%3E%3Ccircle cx='56' cy='0' r='1.6'/%3E%3Ccircle cx='0' cy='56' r='1.6'/%3E%3Ccircle cx='56' cy='56' r='1.6'/%3E%3C/g%3E%3C/svg%3E");
+  /* Ghat contour lines (hill maps). */
+  --pat-contour: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='90' viewBox='0 0 180 90'%3E%3Cg fill='none' stroke='%230b7a6a' stroke-opacity='.13' stroke-width='1.2'%3E%3Cpath d='M0 20c30-16 60-16 90 0s60 16 90 0'/%3E%3Cpath d='M0 45c30-16 60-16 90 0s60 16 90 0'/%3E%3Cpath d='M0 70c30-16 60-16 90 0s60 16 90 0'/%3E%3C/g%3E%3C/svg%3E");
+  --pat-contour-light: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='90' viewBox='0 0 180 90'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='.07' stroke-width='1.2'%3E%3Cpath d='M0 20c30-16 60-16 90 0s60 16 90 0'/%3E%3Cpath d='M0 45c30-16 60-16 90 0s60 16 90 0'/%3E%3Cpath d='M0 70c30-16 60-16 90 0s60 16 90 0'/%3E%3C/g%3E%3C/svg%3E");
+  /* Dashed road with stop pins (departures, pickups). */
+  --pat-route: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='100' viewBox='0 0 200 100'%3E%3Cpath d='M-6 76c38 0 52-52 102-52s62 52 110 52' fill='none' stroke='%23e8600f' stroke-opacity='.16' stroke-width='2.2' stroke-dasharray='7 8' stroke-linecap='round'/%3E%3Ccircle cx='96' cy='24' r='3.4' fill='%231ba3b3' fill-opacity='.32'/%3E%3C/svg%3E");
+  /* Destination motifs. */
+  --pat-leaf: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Cg fill='%231f8a5b' fill-opacity='.13'%3E%3Cpath d='M10 22c6-11 20-11 20-11s-2 13-13 17c-4 1-6-2-7-6z'/%3E%3Cpath d='M41 50c-9-4-11-17-11-17s13 0 16 10c1 3-2 6-5 7z'/%3E%3C/g%3E%3C/svg%3E");
+  --pat-coffee: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 56 56'%3E%3Cg fill='%238a5a33' fill-opacity='.15'%3E%3Cellipse cx='15' cy='15' rx='6' ry='8.5' transform='rotate(-30 15 15)'/%3E%3Cellipse cx='41' cy='41' rx='6' ry='8.5' transform='rotate(25 41 41)'/%3E%3C/g%3E%3Cg fill='none' stroke='%238a5a33' stroke-opacity='.22' stroke-width='1.1'%3E%3Cpath d='M12 9c4 3 2 9 6 12'/%3E%3Cpath d='M39 34c4 3 0 9 4 13'/%3E%3C/g%3E%3C/svg%3E");
+  --pat-wave: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='40' viewBox='0 0 80 40'%3E%3Cg fill='none' stroke='%230f8fa3' stroke-opacity='.16' stroke-width='1.4' stroke-linecap='round'%3E%3Cpath d='M0 12c10-7 20-7 30 0s20 7 30 0 20-7 30 0'/%3E%3Cpath d='M-20 32c10-7 20-7 30 0s20 7 30 0 20-7 30 0 20-7 30 0'/%3E%3C/g%3E%3C/svg%3E");
+  --pat-boulder: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='56' viewBox='0 0 72 56'%3E%3Cg fill='%23c2551f' fill-opacity='.12'%3E%3Cellipse cx='15' cy='47' rx='13' ry='8'/%3E%3Cellipse cx='24' cy='35' rx='8.5' ry='6.5'/%3E%3Cpath d='M51 52l8-30 8 30z'/%3E%3Crect x='56' y='17' width='6' height='4.5' rx='1'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+@layer components {
+  /* ---- Section canvases (replace plain white bands) ---- */
+  .sec-route {
+    background-color: #fbf7f1;
+    background-image:
+      radial-gradient(700px 360px at 0% 0%, rgb(27 163 179 / 0.12), transparent 65%),
+      radial-gradient(700px 380px at 100% 100%, rgb(255 138 61 / 0.13), transparent 65%),
+      var(--pat-route);
+    background-size: auto, auto, 260px 130px;
+  }
+  .sec-contour {
+    background-color: #eef7f2;
+    background-image:
+      radial-gradient(760px 420px at 100% 0%, rgb(245 165 36 / 0.14), transparent 65%),
+      radial-gradient(700px 420px at 0% 100%, rgb(27 163 179 / 0.14), transparent 65%),
+      var(--pat-contour);
+    background-size: auto, auto, 180px 90px;
+  }
+  .sec-kolam {
+    background-color: #fff6ee;
+    background-image:
+      radial-gradient(700px 400px at 100% 0%, rgb(27 163 179 / 0.12), transparent 65%),
+      radial-gradient(600px 380px at 0% 100%, rgb(79 170 110 / 0.12), transparent 65%),
+      var(--pat-kolam);
+    background-size: auto, auto, 56px 56px;
+  }
+  .sec-sunrise {
+    background-color: #fff8ef;
+    background-image:
+      linear-gradient(180deg, rgb(255 235 221 / 0.85), rgb(221 243 244 / 0.7)),
+      var(--pat-wave);
+    background-size: auto, 80px 40px;
+  }
+
+  /* ---- Destination themes: colour + motif follow the trip's place ---- */
+  .theme-brand { --th: #12737d; --th-deep: #0d5f6b; --th-tint: #e2f3f2; --th-tint2: #ffefe2; --th-pat: var(--pat-route); --th-pat-size: 200px 100px; }
+  .theme-coorg { --th: #1f8a5b; --th-deep: #12603e; --th-tint: #e2f4e8; --th-tint2: #f3fbe8; --th-pat: var(--pat-leaf); --th-pat-size: 60px 60px; }
+  .theme-chikmagalur { --th: #8a5a33; --th-deep: #5f3b1f; --th-tint: #f6eadd; --th-tint2: #fff5e6; --th-pat: var(--pat-coffee); --th-pat-size: 56px 56px; }
+  .theme-gokarna { --th: #0f8fa3; --th-deep: #0b6676; --th-tint: #ddf3f6; --th-tint2: #fff0e2; --th-pat: var(--pat-wave); --th-pat-size: 80px 40px; }
+  .theme-hampi { --th: #c2551f; --th-deep: #8f3a12; --th-tint: #fbe8d7; --th-tint2: #fff6e6; --th-pat: var(--pat-boulder); --th-pat-size: 72px 56px; }
+
+  /* Themed data card: tinted gradient + the destination's motif + a coloured top edge. */
+  .card-theme {
+    position: relative;
+    overflow: hidden;
+    border-radius: 1.25rem;
+    border: 1px solid color-mix(in srgb, var(--th, #12737d) 24%, white);
+    background-color: #fffefc;
+    background-image:
+      linear-gradient(155deg, var(--th-tint, #e2f3f2) 0%, rgb(255 255 255 / 0.86) 46%, var(--th-tint2, #ffefe2) 100%),
+      var(--th-pat, none);
+    background-size: auto, var(--th-pat-size, auto);
+    box-shadow: 0 1px 2px rgb(16 48 47 / 0.05), 0 10px 26px -14px color-mix(in srgb, var(--th, #12737d) 45%, transparent);
+  }
+  .card-theme::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 4px;
+    border-radius: 1.25rem 1.25rem 0 0;
+    background: linear-gradient(90deg, var(--th, #12737d), #f5a524 70%, #e8600f);
+    pointer-events: none;
+  }
+  .th-text { color: var(--th-deep, #0d5f6b); }
+  .th-accent { color: var(--th, #12737d); }
+  .th-chip {
+    background: color-mix(in srgb, var(--th, #12737d) 14%, white);
+    color: var(--th-deep, #0d5f6b);
+    border: 1px solid color-mix(in srgb, var(--th, #12737d) 28%, white);
+  }
+  .th-dot { background: var(--th, #12737d); }
+
+  /* Stat / fact tiles: four friendly colours. */
+  .tile {
+    border-radius: 1rem;
+    border: 1px solid transparent;
+    padding: 0.9rem 0.75rem;
+  }
+  .tile-sunset { background: linear-gradient(150deg, #ffe7d4, #fff6ee); border-color: #ffd2b0; }
+  .tile-lagoon { background: linear-gradient(150deg, #d9f2f2, #f2fbfb); border-color: #b5e2e2; }
+  .tile-amber { background: linear-gradient(150deg, #fff0cc, #fffaf0); border-color: #f8dc9a; }
+  .tile-leaf { background: linear-gradient(150deg, #dcf3e3, #f4fcf6); border-color: #b9e3c6; }
+  .tile-rose { background: linear-gradient(150deg, #fde3e6, #fff5f6); border-color: #f6c1c8; }
+  .tile-sunset .tile-num { color: #c2470a; }
+  .tile-lagoon .tile-num { color: #0b6676; }
+  .tile-amber .tile-num { color: #9a5b00; }
+  .tile-leaf .tile-num { color: #12603e; }
+  .tile-rose .tile-num { color: #a3263a; }
+
+  /* ---- Scroll reveal without JavaScript ----
+     Content is never hidden while the page's script loads. Where the browser supports
+     scroll-driven animation, blocks rise in as they enter the screen (runs on the compositor,
+     so scrolling stays smooth); elsewhere they simply show. */
+  .reveal-in {
+    opacity: 1;
+  }
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .reveal-in {
+        animation: reveal-rise linear both;
+        animation-timeline: view();
+        animation-range: entry 0% entry 55%;
+      }
+    }
+  }
+  /* Above-the-fold copy: one short entrance on load, CSS only. */
+  .enter-up {
+    animation: enter-rise 640ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: var(--enter-delay, 0ms);
+  }
+}
+
+@keyframes reveal-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Starts faint, never invisible, so the headline counts as painted from the first frame. */
+@keyframes enter-rise {
+  from {
+    opacity: 0.2;
+    transform: translate3d(0, 14px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }

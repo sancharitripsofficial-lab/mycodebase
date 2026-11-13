@@ -18,11 +18,11 @@ const plusJakarta = Plus_Jakarta_Sans({
 
 export const metadata: Metadata = {
   title: {
-    default: "Sanchari • Micro Trips — Curated 6-Traveler Karnataka Road Trips",
+    default: "Weekend Trips from Bangalore in a 6-Seat Car | Sanchari Micro Trips",
     template: "%s | Sanchari • Micro Trips",
   },
   description:
-    "Small-group Karnataka weekend road trips from Bengaluru in a 6-passenger MPV. Transparent itineraries, safety-first pacing, and solo or private-group booking.",
+    "Weekend road trips from Bengaluru (Bangalore) to Coorg, Chikmagalur, Gokarna and Hampi with at most 6 travellers per car. Pick your exact seat on a live car map, pay by UPI, solo, women-only or private car.",
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
   openGraph: {
     title: "Sanchari • Micro Trips",
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0e5e8f",
+  themeColor: "#135a4b",
 };
 
 /** Page shell only. Storefront chrome lives in (store)/layout.tsx; the admin has its own layout. */

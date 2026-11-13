@@ -38,7 +38,7 @@ export default async function AboutPage() {
         />
       </div>
 
-      <div className="rounded-2xl border border-stone-200 bg-cream-50 p-6 space-y-3 text-sm leading-relaxed text-stone-600">
+      <div className="sec-contour rounded-2xl border border-stone-200 p-6 space-y-3 text-sm leading-relaxed text-stone-600">
         <h2 className="font-display text-xl font-semibold text-forest-900">
           Business Identity &amp; Owner Verification Checklist
         </h2>

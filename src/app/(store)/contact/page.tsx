@@ -28,7 +28,7 @@ export default async function ContactPage() {
         subtitle="For private 6-seat date requests, accessibility queries, or booking changes."
       />
       <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-12 space-y-8">
-        <div className="rounded-2xl border border-stone-200 bg-cream-50 p-6 space-y-4 text-sm">
+        <div className="sec-route rounded-2xl border border-stone-200 p-6 space-y-4 text-sm">
           <div className="flex items-start gap-3">
             <MapPin className="h-5 w-5 text-forest-700 shrink-0 mt-0.5" aria-hidden="true" />
             <div className="min-w-0 break-words">

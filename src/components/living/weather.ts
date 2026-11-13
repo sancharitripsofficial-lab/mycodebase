@@ -80,10 +80,21 @@ function isLiveWeather(v: unknown): v is LiveWeather {
 
 const cache = new Map<string, Promise<LiveWeather>>();
 
+function cacheKey(key: { slug?: string; region?: string }): string {
+  return key.slug ? `slug=${encodeURIComponent(key.slug)}` : `region=${encodeURIComponent(key.region ?? "")}`;
+}
+
+/** Browser: weather the server already put in the page, so no request is needed. */
+export function seedLiveWeather(key: { slug?: string; region?: string } | null, weather: LiveWeather): void {
+  if (!key || (!key.slug && !key.region) || !weather.live) return;
+  const qs = cacheKey(key);
+  if (!cache.has(qs)) cache.set(qs, Promise.resolve(weather));
+}
+
 /** Browser: one request per destination per page view, shared by every photo of that trip. */
 export function fetchLiveWeather(key: { slug?: string; region?: string } | null): Promise<LiveWeather> {
   if (!key || (!key.slug && !key.region)) return Promise.resolve(NEUTRAL_WEATHER);
-  const qs = key.slug ? `slug=${encodeURIComponent(key.slug)}` : `region=${encodeURIComponent(key.region ?? "")}`;
+  const qs = cacheKey(key);
   let p = cache.get(qs);
   if (!p) {
     p = fetch(`/api/weather?${qs}`, { credentials: "omit" })

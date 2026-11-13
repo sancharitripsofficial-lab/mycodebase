@@ -14,7 +14,9 @@ export function TripsCatalogClient({ trips }: { trips: TripWithDetails[] }) {
 
   // "Book the whole car" links land here with ?mode=private (read in the browser so the page stays cached).
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("mode") === "private") setOnlyPrivateEligible(true);
+    const mode = new URLSearchParams(window.location.search).get("mode");
+    if (mode === "private") setOnlyPrivateEligible(true);
+    if (mode === "women") setOnlyWomenBatch(true);
   }, []);
 
   const regions = useMemo(
@@ -49,7 +51,7 @@ export function TripsCatalogClient({ trips }: { trips: TripWithDetails[] }) {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-stone-200 bg-cream-50 p-4 sm:p-5">
+      <div className="sec-route rounded-2xl border border-stone-200 p-4 shadow-[var(--shadow-soft)] sm:p-5">
         <div className="grid gap-3 md:grid-cols-4">
           <label className="relative md:col-span-2">
             <span className="sr-only">Search destination or vibe</span>
@@ -120,7 +122,7 @@ export function TripsCatalogClient({ trips }: { trips: TripWithDetails[] }) {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-stone-300 bg-cream-50 p-10 text-center">
+        <div className="sec-kolam rounded-2xl border border-dashed border-stone-300 p-10 text-center">
           <p className="font-display text-lg font-semibold text-forest-900">
             No matching departures found
           </p>

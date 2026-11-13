@@ -1,34 +1,33 @@
-"use client";
-
-import { useRef, type CSSProperties, type ElementType, type ReactNode } from "react";
-import styles from "./motion.module.css";
-import { useInView } from "./useMotionHooks";
+import type { CSSProperties, ElementType, ReactNode } from "react";
 
 export interface RevealProps {
   children: ReactNode;
   /** Element to render, e.g. "section", "li", "h2". Default "div". */
   as?: ElementType;
-  /** Delay in ms before the reveal starts (use for staggering siblings). */
+  /**
+   * Stagger in ms. Used for the on-load entrance (`onLoad`); scroll reveals follow the scroll
+   * position instead, so siblings naturally rise one after another.
+   */
   delay?: number;
+  /** Above-the-fold copy: a short CSS entrance when the page opens instead of a scroll reveal. */
+  onLoad?: boolean;
   className?: string;
   id?: string;
 }
 
-/** Scroll reveal wrapper: fades its children in with a 16px rise the first time they enter the viewport. */
-export function Reveal({ children, as, delay = 0, className, id }: RevealProps) {
+/**
+ * Reveal wrapper with no JavaScript: content is painted with the HTML, never held back until
+ * the page's script wakes up. Supported browsers let blocks rise in as they scroll into view
+ * (compositor-driven, smooth); others show them straight away.
+ */
+export function Reveal({ children, as, delay = 0, onLoad = false, className, id }: RevealProps) {
   const Tag: ElementType = as ?? "div";
-  const ref = useRef<HTMLElement | null>(null);
-  const shown = useInView(ref, { once: true, rootMargin: "0px 0px -8% 0px", threshold: 0.08 });
-  const style: CSSProperties | undefined = delay > 0 ? { transitionDelay: `${delay}ms` } : undefined;
+  const base = onLoad ? "enter-up" : "reveal-in";
+  const style: CSSProperties | undefined =
+    onLoad && delay > 0 ? ({ "--enter-delay": `${delay}ms` } as CSSProperties) : undefined;
 
   return (
-    <Tag
-      ref={ref}
-      id={id}
-      className={className ? `${styles.reveal} ${className}` : styles.reveal}
-      data-shown={shown ? "true" : "false"}
-      style={style}
-    >
+    <Tag id={id} className={className ? `${base} ${className}` : base} style={style}>
       {children}
     </Tag>
   );

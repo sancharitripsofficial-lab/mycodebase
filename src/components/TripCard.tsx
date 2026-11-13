@@ -1,7 +1,9 @@
 import { Calendar, MapPin, Users } from "lucide-react";
 import { LivingPhoto } from "@/components/living/LivingPhoto";
+import type { LiveWeather } from "@/components/living/weather";
 import Link from "next/link";
 import { formatINR } from "@/lib/currency";
+import { themeClass } from "@/lib/destination-theme";
 import type { DepartureStatus, TripWithDetails } from "@/lib/types";
 
 function getStatusBadge(status: DepartureStatus, seatsRemaining: number) {
@@ -29,7 +31,7 @@ function getStatusBadge(status: DepartureStatus, seatsRemaining: number) {
   }
 }
 
-export function TripCard({ item }: { item: TripWithDetails }) {
+export function TripCard({ item, weather = null }: { item: TripWithDetails; weather?: LiveWeather | null }) {
   const { trip, departures } = item;
   const upcoming =
     departures.find((d) => d.status !== "sold_out" && d.status !== "cancelled") ??
@@ -45,13 +47,16 @@ export function TripCard({ item }: { item: TripWithDetails }) {
   );
 
   return (
-    <article className="group flex flex-col overflow-hidden rounded-2xl border border-stone-200 bg-cream-50 shadow-xs transition hover:border-forest-700/40 hover:shadow-md">
+    <article
+      className={`card-theme ${themeClass(trip.slug, trip.destination, trip.region)} group flex flex-col transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-lift)]`}
+    >
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-stone-200">
         <LivingPhoto
           variant="card"
           slug={trip.slug}
           region={trip.region}
           src={trip.heroImageUrl}
+          initialWeather={weather}
           alt={`${trip.destination} — ${trip.title} illustrative travel visual`}
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           className="object-cover transition duration-500 group-hover:scale-[1.03]"
@@ -73,13 +78,13 @@ export function TripCard({ item }: { item: TripWithDetails }) {
       <div className="flex flex-1 flex-col justify-between p-5">
         <div className="space-y-3">
           <div className="flex items-center justify-between gap-2 text-xs font-medium text-stone-600">
-            <span>{trip.region}</span>
+            <span className="th-chip rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">{trip.region}</span>
             <span>
               {trip.durationDays}D / {trip.durationNights}N • {trip.difficulty}
             </span>
           </div>
 
-          <h3 className="font-display text-xl font-semibold leading-snug text-forest-900">
+          <h3 className="th-text font-display text-xl font-semibold leading-snug">
             <Link href={`/trips/${trip.slug}`} className="hover:text-copper-700">
               {trip.title}
             </Link>
@@ -87,14 +92,14 @@ export function TripCard({ item }: { item: TripWithDetails }) {
 
           <p className="text-sm leading-relaxed text-stone-600 line-clamp-2">{trip.tagline}</p>
 
-          <dl className="space-y-1.5 border-t border-stone-200 pt-3 text-xs text-stone-600">
+          <dl className="space-y-1.5 border-t border-black/5 pt-3 text-xs text-ink-900/75">
             <div className="flex items-center gap-2">
-              <MapPin className="h-3.5 w-3.5 text-forest-700" aria-hidden="true" />
+              <MapPin className="th-accent h-3.5 w-3.5" aria-hidden="true" />
               <span>Pickup: {trip.pickupCity} • {trip.vibe}</span>
             </div>
             {upcoming && (
               <div className="flex items-center gap-2">
-                <Calendar className="h-3.5 w-3.5 text-forest-700" aria-hidden="true" />
+                <Calendar className="th-accent h-3.5 w-3.5" aria-hidden="true" />
                 <span>
                   Next: {upcoming.startDate} to {upcoming.endDate}
                   {upcoming.departureType === "women_only" ? " (Women-only batch)" : ""}
@@ -102,7 +107,7 @@ export function TripCard({ item }: { item: TripWithDetails }) {
               </div>
             )}
             <div className="flex items-center gap-2">
-              <Users className="h-3.5 w-3.5 text-forest-700" aria-hidden="true" />
+              <Users className="th-accent h-3.5 w-3.5" aria-hidden="true" />
               <span>
                 {privateAvailable
                   ? "Batch seats or Private 6-seat vehicle available"
@@ -112,7 +117,7 @@ export function TripCard({ item }: { item: TripWithDetails }) {
           </dl>
         </div>
 
-        <div className="mt-5 flex items-center justify-between border-t border-stone-200 pt-4">
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-black/5 pt-4">
           <div>
             <p className="text-[11px] uppercase tracking-wider text-stone-600">
               Sample from

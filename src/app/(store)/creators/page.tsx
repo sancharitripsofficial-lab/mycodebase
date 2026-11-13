@@ -33,7 +33,7 @@ export default async function CreatorsPage() {
         ) : (
           <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {tiers.map((t) => (
-              <li key={t.id} className="card-soft space-y-2 p-5">
+              <li key={t.id} className={`tile ${["tile-sunset", "tile-lagoon", "tile-amber", "tile-leaf", "tile-rose"][tiers.indexOf(t) % 5]} space-y-2 p-5`}>
                 <p className="text-xs font-bold tracking-wider text-copper-700 uppercase">{t.label}</p>
                 <p className="font-display text-2xl font-semibold text-forest-900">{rewardLabel(t)}</p>
                 <p className="text-sm text-stone-600">{followersLabel(t)}</p>
@@ -54,7 +54,7 @@ export default async function CreatorsPage() {
           { icon: Ticket, title: "Get your code", text: "A personal one-time code on WhatsApp, matched to your range." },
           { icon: Sparkles, title: "Travel & share", text: "Book any open date with your code, then share your story." },
         ].map((s, i) => (
-          <div key={s.title} className="card-soft space-y-2 p-4">
+          <div key={s.title} className={`tile ${["tile-lagoon", "tile-sunset", "tile-leaf", "tile-amber"][i % 4]} space-y-2 p-4`}>
             <s.icon className="h-6 w-6 text-copper-600" aria-hidden="true" />
             <p className="font-semibold text-ink-900">
               {i + 1}. {s.title}

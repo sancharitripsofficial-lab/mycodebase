@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { isOptimizableImage } from "@/lib/media";
 import type { LivingHandle } from "./engine";
 import { resolveScene } from "./scenes";
-import { fetchLiveWeather, NEUTRAL_WEATHER, type LiveWeather } from "./weather";
+import { fetchLiveWeather, NEUTRAL_WEATHER, seedLiveWeather, type LiveWeather } from "./weather";
 
 export type LivingPhotoProps = {
   src: string;
@@ -27,6 +27,8 @@ export type LivingPhotoProps = {
   region?: string;
   /** Hero only: show the "Live in ..." chip. Default true. */
   weatherChip?: boolean;
+  /** Weather the server already looked up: the chip shows with the first paint, no request. */
+  initialWeather?: LiveWeather | null;
 };
 
 function whenIdle(ms: number): Promise<void> {
@@ -55,15 +57,18 @@ export function LivingPhoto({
   slug,
   region,
   weatherChip = true,
+  initialWeather = null,
 }: LivingPhotoProps) {
   const imgRef = useRef<HTMLImageElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const handleRef = useRef<LivingHandle | null>(null);
-  const weatherRef = useRef<LiveWeather>(NEUTRAL_WEATHER);
+  const seeded = initialWeather?.live ? initialWeather : null;
+  const weatherRef = useRef<LiveWeather>(seeded ?? NEUTRAL_WEATHER);
   const [shown, setShown] = useState(false);
-  const [weather, setWeather] = useState<LiveWeather | null>(null);
+  const [weather, setWeather] = useState<LiveWeather | null>(seeded);
 
   const scene = useMemo(() => resolveScene(src, slug, region), [src, slug, region]);
+  if (seeded && typeof window !== "undefined") seedLiveWeather(scene.weatherKey, seeded);
 
   // Live weather for this destination (one request per destination, shared by all its photos).
   useEffect(() => {

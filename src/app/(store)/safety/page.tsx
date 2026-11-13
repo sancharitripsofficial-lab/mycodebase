@@ -23,7 +23,7 @@ export default async function SafetyPage() {
       />
       <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 sm:py-12 space-y-8">
         <div className="grid gap-5 sm:grid-cols-2">
-          <div className="rounded-2xl border border-stone-200 bg-cream-50 p-5 space-y-2">
+          <div className="tile tile-lagoon p-5 space-y-2">
             <Lock className="h-5 w-5 text-forest-700" aria-hidden="true" />
             <h2 className="font-display text-lg font-semibold text-forest-900">
               Private Comfort Requests
@@ -35,7 +35,7 @@ export default async function SafetyPage() {
             </p>
           </div>
 
-          <div className="rounded-2xl border border-stone-200 bg-cream-50 p-5 space-y-2">
+          <div className="tile tile-rose p-5 space-y-2">
             <Users className="h-5 w-5 text-copper-600" aria-hidden="true" />
             <h2 className="font-display text-lg font-semibold text-forest-900">
               Explicit Women-Only Batches
@@ -48,7 +48,7 @@ export default async function SafetyPage() {
             </p>
           </div>
 
-          <div className="rounded-2xl border border-stone-200 bg-cream-50 p-5 space-y-2">
+          <div className="tile tile-leaf p-5 space-y-2">
             <BedDouble className="h-5 w-5 text-forest-700" aria-hidden="true" />
             <h2 className="font-display text-lg font-semibold text-forest-900">
               Overnight Room Policy
@@ -58,7 +58,7 @@ export default async function SafetyPage() {
             </p>
           </div>
 
-          <div className="rounded-2xl border border-stone-200 bg-cream-50 p-5 space-y-2">
+          <div className="tile tile-amber p-5 space-y-2">
             <ShieldCheck className="h-5 w-5 text-forest-700" aria-hidden="true" />
             <h2 className="font-display text-lg font-semibold text-forest-900">
               ID Minimization &amp; Draft Safety Note

@@ -10,6 +10,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { DateTimeField, Notice, Panel, rupees } from "@/components/admin/kit";
 import { waLink } from "@/lib/admin/whatsapp";
 import type { Coupon, CreatorApplication, DiscountType, InfluencerTier } from "@/lib/data/creators";
+import { getCached, setCached } from "@/lib/admin/memo-cache";
 import type { StaffRole, Trip } from "@/lib/types";
 
 type Tab = "applications" | "ranges" | "coupons";
@@ -46,15 +47,17 @@ function suggestCode(name: string): string {
 export function CreatorsManager({ role, trips }: { role: StaffRole; trips: Trip[] }) {
   const canEdit = role === "owner" || role === "ops";
   const [tab, setTab] = useState<Tab>("applications");
-  const [data, setData] = useState<Data | null>(null);
+  const [data, setData] = useState<Data | null>(() => getCached<Data>("creators") ?? null);
   const [notice, setNotice] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     const res = await fetch("/api/admin/creators", { cache: "no-store" });
     const json = await res.json().catch(() => ({}));
-    if (res.ok) setData(json as Data);
-    else setNotice({ kind: "error", text: json.error || "Could not load." });
+    if (res.ok) {
+      setData(json as Data);
+      setCached("creators", json);
+    } else setNotice({ kind: "error", text: json.error || "Could not load." });
   }, []);
   useEffect(() => {
     void load();

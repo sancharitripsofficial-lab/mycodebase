@@ -18,7 +18,7 @@ export function TripVideos({ videos, title }: { videos: VideoLink[]; title: stri
         <div className="grid gap-4 sm:grid-cols-2">
           {players.map((v, i) => (
             <figure key={`${v.url}-${i}`} className="card-soft overflow-hidden">
-              <div className="relative aspect-video bg-forest-950">
+              <div className="relative aspect-video bg-gradient-to-br from-[#14523f] to-[#0d6b73]">
                 {v.kind.kind === "youtube" ? (
                   <iframe
                     src={v.kind.embedUrl}
@@ -30,7 +30,7 @@ export function TripVideos({ videos, title }: { videos: VideoLink[]; title: stri
                     className="absolute inset-0 h-full w-full"
                   />
                 ) : (
-                  <video src={v.url} controls preload="metadata" playsInline className="absolute inset-0 h-full w-full object-cover" />
+                  <video src={v.url} controls preload="metadata" playsInline className="absolute inset-0 h-full w-full object-contain" />
                 )}
               </div>
               <figcaption className="px-4 py-2.5 text-sm font-medium text-ink-900">{v.label}</figcaption>

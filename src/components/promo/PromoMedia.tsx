@@ -2,7 +2,7 @@
 
 import { Play } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode, type RefObject, type SyntheticEvent } from "react";
 import type { Promotion } from "@/lib/data/promotions";
 import { classifyVideoLink, isOptimizableImage } from "@/lib/media";
 import { THEME_BG } from "./track";
@@ -13,12 +13,59 @@ function youtubeId(url: string): string | null {
 }
 
 /**
+ * Fits uploaded media to its box on every screen size. When the picture or video is a very
+ * different shape from the box (a tall phone video in a wide phone banner, a wide photo in the
+ * tall popup), the whole picture is shown ("contain") over a soft blurred copy of itself,
+ * instead of cutting off heads, text or the product. Close shapes simply fill the box.
+ */
+function useSmartFit(dims: { w: number; h: number } | null) {
+  const boxRef = useRef<HTMLDivElement | null>(null);
+  const [fit, setFit] = useState<"cover" | "contain">("cover");
+  useEffect(() => {
+    const box = boxRef.current;
+    if (!box || !dims || !dims.w || !dims.h) return;
+    const decide = () => {
+      const r = box.getBoundingClientRect();
+      if (!r.width || !r.height) return;
+      const media = dims.w / dims.h;
+      const frame = r.width / r.height;
+      setFit(Math.max(media / frame, frame / media) > 1.28 ? "contain" : "cover");
+    };
+    decide();
+    const ro = new ResizeObserver(decide);
+    ro.observe(box);
+    return () => ro.disconnect();
+  }, [dims]);
+  return { boxRef, fit };
+}
+
+function FitBox({
+  boxRef,
+  backdrop,
+  children,
+}: {
+  boxRef: RefObject<HTMLDivElement | null>;
+  backdrop: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <div ref={boxRef} className="absolute inset-0 overflow-hidden">
+      {backdrop}
+      {children}
+    </div>
+  );
+}
+
+/**
  * The picture, video or YouTube clip of an offer, filling its box (the parent sets the size).
  * Videos play muted and only while on screen; YouTube loads only after a tap.
  */
 export function PromoMedia({ promo, sizes, priority = false }: { promo: Promotion; sizes: string; priority?: boolean }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [ytOpen, setYtOpen] = useState(false);
+  const [dims, setDims] = useState<{ w: number; h: number } | null>(null);
+  const { boxRef, fit } = useSmartFit(dims);
+  const objectFit = fit === "contain" ? "object-contain" : "object-cover";
 
   useEffect(() => {
     const v = videoRef.current;
@@ -37,27 +84,68 @@ export function PromoMedia({ promo, sizes, priority = false }: { promo: Promotio
   }, [promo.mediaUrl]);
 
   if (promo.mediaType === "image" && promo.mediaUrl) {
-    return isOptimizableImage(promo.mediaUrl) ? (
-      <Image src={promo.mediaUrl} alt="" fill sizes={sizes} priority={priority} className="object-cover" />
-    ) : (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img src={promo.mediaUrl} alt="" loading={priority ? "eager" : "lazy"} decoding="async" className="absolute inset-0 h-full w-full object-cover" />
+    const onImg = (e: SyntheticEvent<HTMLImageElement>) =>
+      setDims({ w: e.currentTarget.naturalWidth, h: e.currentTarget.naturalHeight });
+    const optimise = isOptimizableImage(promo.mediaUrl);
+    const backdrop =
+      fit === "contain" ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={promo.mediaUrl}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 h-full w-full scale-110 object-cover opacity-70 blur-xl saturate-150"
+        />
+      ) : null;
+    return (
+      <FitBox boxRef={boxRef} backdrop={backdrop}>
+        {optimise ? (
+          <Image src={promo.mediaUrl} alt="" fill sizes={sizes} priority={priority} onLoad={onImg} className={objectFit} />
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={promo.mediaUrl}
+            alt=""
+            loading={priority ? "eager" : "lazy"}
+            decoding="async"
+            onLoad={onImg}
+            className={`absolute inset-0 h-full w-full ${objectFit}`}
+          />
+        )}
+      </FitBox>
     );
   }
 
   if (promo.mediaType === "video" && promo.mediaUrl) {
+    const backdrop =
+      fit === "contain" ? (
+        promo.posterUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={promo.posterUrl}
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 h-full w-full scale-110 object-cover opacity-70 blur-xl saturate-150"
+          />
+        ) : (
+          <div className={`absolute inset-0 ${THEME_BG[promo.theme]}`} aria-hidden="true" />
+        )
+      ) : null;
     return (
-      <video
-        ref={videoRef}
-        src={promo.mediaUrl}
-        poster={promo.posterUrl || undefined}
-        muted
-        loop
-        playsInline
-        preload="metadata"
-        aria-hidden="true"
-        className="absolute inset-0 h-full w-full object-cover"
-      />
+      <FitBox boxRef={boxRef} backdrop={backdrop}>
+        <video
+          ref={videoRef}
+          src={promo.mediaUrl}
+          poster={promo.posterUrl || undefined}
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          aria-hidden="true"
+          onLoadedMetadata={(e) => setDims({ w: e.currentTarget.videoWidth, h: e.currentTarget.videoHeight })}
+          className={`absolute inset-0 h-full w-full ${objectFit}`}
+        />
+      </FitBox>
     );
   }
 

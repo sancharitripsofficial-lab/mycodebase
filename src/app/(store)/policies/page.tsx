@@ -26,7 +26,7 @@ export default async function PoliciesPage() {
           launch or payment gateway onboarding.
         </div>
 
-        <section id="terms" className="rounded-2xl border border-stone-200 bg-cream-50 p-6 space-y-2">
+        <section id="terms" className="tile tile-lagoon p-6 space-y-2">
           <h2 className="font-display text-xl font-semibold text-forest-900">
             1. Terms of Service (Draft)
           </h2>
@@ -38,7 +38,7 @@ export default async function PoliciesPage() {
           </p>
         </section>
 
-        <section id="privacy" className="rounded-2xl border border-stone-200 bg-cream-50 p-6 space-y-2">
+        <section id="privacy" className="tile tile-leaf p-6 space-y-2">
           <h2 className="font-display text-xl font-semibold text-forest-900">
             2. Privacy Notice (Draft)
           </h2>
@@ -47,7 +47,7 @@ export default async function PoliciesPage() {
           </p>
         </section>
 
-        <section id="refunds" className="rounded-2xl border border-stone-200 bg-cream-50 p-6 space-y-3">
+        <section id="refunds" className="tile tile-sunset p-6 space-y-3">
           <h2 className="font-display text-xl font-semibold text-forest-900">
             3. Cancellation &amp; Refund Policy (Draft)
           </h2>
