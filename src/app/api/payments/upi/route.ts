@@ -3,6 +3,7 @@ import { z } from "zod";
 import { findBookingByReferenceAndEmail, submitUpiPayment } from "@/lib/data/repository";
 import { paymentErrorMessage, validateUtr } from "@/lib/payments/upi";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { refreshStorefront } from "@/lib/revalidate";
 
 const submitSchema = z.object({
   bookingReference: z.string().trim().min(5).max(40),
@@ -49,6 +50,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const result = await submitUpiPayment(booking.id, utr.value);
+    refreshStorefront();
     return NextResponse.json({ ok: true, bookingReference: booking.bookingReference, ...result });
   } catch (err) {
     const raw = err instanceof Error ? err.message : null;

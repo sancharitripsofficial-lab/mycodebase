@@ -123,7 +123,7 @@
     box-shadow: 0 14px 34px -10px rgb(232 96 15 / 0.65);
   }
   .btn-sunset:active {
-    transform: translateY(0);
+    transform: scale(0.96);
   }
   .btn-sunset:disabled {
     opacity: 0.6;
@@ -210,6 +210,70 @@
     letter-spacing: 0.16em;
     text-transform: uppercase;
     color: #c2470a;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Touch feel: every button, link-card and toggle visibly presses in on tap.
+ * (TapFeedback.tsx enables :active on iOS and adds a light vibration on Android.)
+ * Base layer, so any component/utility class can still override it.
+ * ------------------------------------------------------------------------- */
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  :where(a[href], button, [role="button"], summary, label, select, input[type="checkbox"], input[type="radio"]) {
+    touch-action: manipulation;
+  }
+
+  :where(a[href], button, [role="button"], summary, .tap) {
+    transition:
+      transform 140ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      box-shadow 180ms ease,
+      background-color 180ms ease,
+      border-color 180ms ease,
+      filter 180ms ease,
+      opacity 180ms ease;
+  }
+
+  :where(a[href], button:not(:disabled), [role="button"]:not([aria-disabled="true"]), summary, .tap):active {
+    transform: scale(0.97);
+    filter: brightness(0.97);
+  }
+
+  :where(a[href], button, [role="button"], summary):focus-visible {
+    transform: none;
+  }
+}
+
+@layer components {
+  /* Loading placeholders: soft misty shimmer in brand tones */
+  .skeleton {
+    background: linear-gradient(100deg, #e6eff4 30%, #f6fafc 50%, #e6eff4 70%);
+    background-size: 220% 100%;
+    animation: skeleton-shimmer 1.2s ease-in-out infinite;
+  }
+
+  /* Cards press in less (they're big) and drop their lift */
+  .card-lift:active {
+    transform: scale(0.985);
+    box-shadow: var(--shadow-soft);
+  }
+
+  .btn-sunset:active,
+  .btn-ocean:active {
+    transform: scale(0.96);
+    filter: brightness(0.95);
+  }
+}
+
+@keyframes skeleton-shimmer {
+  from {
+    background-position: 120% 0;
+  }
+  to {
+    background-position: -120% 0;
   }
 }
 

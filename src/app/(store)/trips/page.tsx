@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import { EnquiryForm } from "@/components/EnquiryForm";
 import { TripsCatalogClient } from "@/components/TripsCatalogClient";
 import { getPublishedTripsWithDetails } from "@/lib/data/repository";
 
-export const dynamic = "force-dynamic";
+// Served from the CDN; refreshed every 30 s and immediately after bookings / admin edits.
+export const revalidate = 30;
 
 export const metadata: Metadata = {
   title: "Explore Karnataka Trips",
@@ -10,15 +12,9 @@ export const metadata: Metadata = {
     "Browse upcoming 6-traveler Karnataka road trips from Bengaluru with live seat counts and private vehicle options.",
 };
 
-export default async function TripsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ mode?: string }>;
-}) {
-  const [{ trips }, resolvedParams] = await Promise.all([
-    getPublishedTripsWithDetails(),
-    searchParams,
-  ]);
+export default async function TripsPage() {
+  // ?mode=private is read in the browser (TripsCatalogClient) so this page stays cacheable.
+  const { trips } = await getPublishedTripsWithDetails();
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14 space-y-8">
@@ -35,7 +31,11 @@ export default async function TripsPage({
         </p>
       </div>
 
-      <TripsCatalogClient trips={trips} initialMode={resolvedParams.mode} />
+      <TripsCatalogClient trips={trips} />
+
+      <div id="ask" className="mx-auto max-w-2xl scroll-mt-24">
+        <EnquiryForm />
+      </div>
     </div>
   );
 }

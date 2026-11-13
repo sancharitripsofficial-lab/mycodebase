@@ -1,0 +1,347 @@
+/* Ertiga-class seat map. Colours are the Sanchari palette; no black anywhere. */
+
+.root {
+  width: 100%;
+  min-width: 0;
+  max-width: 420px;
+  margin-inline: auto;
+  color: #0f2a3d;
+}
+
+.stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 320 / 580;
+  filter: drop-shadow(0 14px 18px rgb(14 94 143 / 0.16));
+}
+
+.car {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  font-family: inherit;
+  pointer-events: none;
+}
+
+/* ---------- seats ---------- */
+
+.seat {
+  position: absolute;
+  display: block;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  border-radius: 22% / 17%;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: transform 160ms ease;
+}
+
+.seat svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  font-family: inherit;
+}
+
+button.seat {
+  cursor: pointer;
+}
+
+button.seat:disabled {
+  cursor: not-allowed;
+}
+
+button.seat[data-private="true"]:disabled {
+  cursor: default;
+}
+
+button.seat:focus-visible {
+  outline: 3px solid #0e5e8f;
+  outline-offset: 3px;
+}
+
+.cushion,
+.back,
+.head {
+  transition:
+    fill 160ms ease,
+    stroke 160ms ease;
+}
+
+.num {
+  font-weight: 800;
+  font-size: 21px;
+}
+
+.numSmall {
+  font-weight: 800;
+  font-size: 10.5px;
+}
+
+.youText {
+  font-weight: 800;
+  font-size: 8.5px;
+  letter-spacing: 0.02em;
+  fill: #0f2a3d;
+}
+
+.seam {
+  fill: none;
+  stroke-width: 1.2;
+  stroke-linecap: round;
+}
+
+/* Available: lagoon outline + number */
+.seat[data-state="available"] .cushion {
+  fill: #fffefc;
+  stroke: #1ba3b3;
+  stroke-width: 2;
+}
+.seat[data-state="available"] .back,
+.seat[data-state="available"] .head {
+  fill: #ddf3f4;
+  stroke: #1ba3b3;
+  stroke-width: 2;
+}
+.seat[data-state="available"] .seam {
+  stroke: #1ba3b3;
+  stroke-opacity: 0.35;
+}
+.seat[data-state="available"] .num {
+  fill: #0b5683;
+}
+
+@media (hover: hover) {
+  button.seat[data-state="available"]:hover {
+    transform: translateY(-1px) scale(1.035);
+  }
+  button.seat[data-state="available"]:hover .cushion {
+    fill: #ddf3f4;
+    stroke: #0c7a8c;
+  }
+  button.seat[data-state="yours"]:not(:disabled):hover {
+    transform: scale(1.03);
+  }
+}
+
+button.seat:not(:disabled):active {
+  transform: scale(0.96);
+}
+
+/* Your seat: sunset fill + check + "You" tag */
+.seat[data-state="yours"] .cushion {
+  fill: #e8600f;
+  stroke: #ff8a3d;
+  stroke-width: 1.5;
+}
+.seat[data-state="yours"] .back {
+  fill: #e8600f;
+  stroke: #ffebdd;
+  stroke-opacity: 0.55;
+  stroke-width: 1.5;
+}
+.seat[data-state="yours"] .head {
+  fill: #ff8a3d;
+  stroke: #ffebdd;
+  stroke-opacity: 0.8;
+  stroke-width: 1.5;
+}
+.seat[data-state="yours"] .seam {
+  stroke: #ffebdd;
+  stroke-opacity: 0.4;
+}
+.seat[data-state="yours"] .numSmall {
+  fill: #0f2a3d;
+}
+
+/* Taken: muted grey-blue + lock */
+.seat[data-state="taken"] .cushion,
+.seat[data-state="taken"] .back {
+  fill: #4b6273;
+  fill-opacity: 0.72;
+  stroke: #4b6273;
+  stroke-opacity: 0.5;
+  stroke-width: 1.5;
+}
+.seat[data-state="taken"] .head {
+  fill: #dce8ee;
+  stroke: #4b6273;
+  stroke-opacity: 0.6;
+  stroke-width: 1.5;
+}
+.seat[data-state="taken"] .seam {
+  stroke: #fffefc;
+  stroke-opacity: 0.25;
+}
+.seat[data-state="taken"] .numSmall {
+  fill: #4b6273;
+}
+
+/* Not offered: very faint, dashed */
+.seat[data-state="off"] .cushion,
+.seat[data-state="off"] .back,
+.seat[data-state="off"] .head {
+  fill: #f2f8fa;
+  fill-opacity: 0.5;
+  stroke: #4b6273;
+  stroke-opacity: 0.38;
+  stroke-width: 1.4;
+  stroke-dasharray: 4 3.5;
+}
+.seat[data-state="off"] .seam {
+  stroke: none;
+}
+.seat[data-state="off"] .num {
+  fill: #4b6273;
+  fill-opacity: 0.45;
+}
+
+/* Loading: soft shimmer */
+.seat[data-state="loading"] .cushion,
+.seat[data-state="loading"] .back,
+.seat[data-state="loading"] .head {
+  fill: #dce8ee;
+  stroke: #fffefc;
+  stroke-width: 1.5;
+}
+.seat[data-state="loading"] .seam {
+  stroke: none;
+}
+.seat[data-state="loading"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    100deg,
+    rgb(255 254 252 / 0) 30%,
+    rgb(255 254 252 / 0.75) 50%,
+    rgb(255 254 252 / 0) 70%
+  );
+  background-size: 220% 100%;
+  animation: shimmer 1.5s linear infinite;
+}
+
+.pop {
+  animation: pop 320ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(0.9);
+  }
+  55% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 120% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+/* ---------- car artwork text ---------- */
+
+.caption {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  fill: #4b6273;
+}
+
+.hint {
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  fill: #4b6273;
+}
+
+.bootText {
+  font-size: 10.5px;
+  font-weight: 700;
+  fill: #0c7a8c;
+}
+
+/* ---------- legend ---------- */
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 14px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #4b6273;
+}
+
+.legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.swatch {
+  position: relative;
+  display: block;
+  width: 20px;
+  height: 26px;
+  flex: none;
+}
+
+.swatch svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.status {
+  margin: 8px 0 0;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f2a3d;
+}
+
+.status span {
+  color: #e8600f;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seat,
+  .cushion,
+  .back,
+  .head {
+    transition: none;
+  }
+  .pop {
+    animation: none;
+  }
+  .seat[data-state="loading"]::after {
+    animation: none;
+    background: rgb(255 254 252 / 0.35);
+  }
+  button.seat[data-state="available"]:hover,
+  button.seat[data-state="yours"]:not(:disabled):hover,
+  button.seat:not(:disabled):active {
+    transform: none;
+  }
+}

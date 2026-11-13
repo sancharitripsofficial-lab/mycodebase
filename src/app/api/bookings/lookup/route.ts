@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getBookingSeatNumbers, getCustomerTripCrew } from "@/lib/data/owner-ops";
 import { lookupCustomerBooking, requestCustomerBookingChange } from "@/lib/data/repository";
 import { verifyBookingLookupToken } from "@/lib/lookup-token";
 import { buildCustomerPaymentView } from "@/lib/payments/customer-view";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { refreshStorefront } from "@/lib/revalidate";
 import { bookingLookupSchema, cancellationRequestSchema } from "@/lib/validation";
 
 export async function POST(request: NextRequest) {
@@ -54,8 +56,17 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const payment = await buildCustomerPaymentView(result.booking);
-  return NextResponse.json({ bookingView: result, payment });
+  const [payment, seatNumbers, crew] = await Promise.all([
+    buildCustomerPaymentView(result.booking),
+    getBookingSeatNumbers(result.booking.id),
+    getCustomerTripCrew({
+      departureId: result.booking.departureId,
+      bookingStatus: result.booking.status,
+      startDate: result.departure.startDate,
+      endDate: result.departure.endDate,
+    }),
+  ]);
+  return NextResponse.json({ bookingView: { ...result, seatNumbers, crew }, payment });
 }
 
 export async function PATCH(request: NextRequest) {
@@ -85,6 +96,7 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const { outcome } = await requestCustomerBookingChange(parsed.data);
+    refreshStorefront();
     return NextResponse.json({
       ok: true,
       outcome,

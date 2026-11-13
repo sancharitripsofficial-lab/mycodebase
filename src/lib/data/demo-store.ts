@@ -899,6 +899,8 @@ export interface ReserveSeatsDemoInput {
   coTravelerPreference: CoTravelerPreference;
   preferenceNotes: string;
   whatsappOptIn: boolean;
+  /** Exact seats picked on the car map (same rules as the SQL p_preferred_seats). */
+  preferredSeats?: number[] | null;
 }
 
 export function reserveSeatsDemo(
@@ -960,10 +962,28 @@ export function reserveSeatsDemo(
   }
 
   const chosenSeats: number[] = [];
-  for (let s = 1; s <= dep.maxCapacity; s++) {
-    if (!activeSeatNumbers.has(s)) {
-      chosenSeats.push(s);
-      if (chosenSeats.length === input.seatsRequested) break;
+  const preferred = input.preferredSeats ?? [];
+  if (preferred.length > 0 && input.bookingMode !== "private_vehicle") {
+    if (preferred.length !== input.seatsRequested) {
+      throw new Error(`SEAT_COUNT: Pick exactly ${input.seatsRequested} seat(s) on the car map.`);
+    }
+    if (new Set(preferred).size !== preferred.length) {
+      throw new Error("SEAT_DUPLICATE: The same seat was picked twice.");
+    }
+    if (preferred.some((s) => !Number.isInteger(s) || s < 1 || s > dep.maxCapacity)) {
+      throw new Error("SEAT_INVALID: That seat is not offered on this date.");
+    }
+    const gone = preferred.filter((s) => activeSeatNumbers.has(s)).sort((a, b) => a - b);
+    if (gone.length > 0) {
+      throw new Error(`SEAT_TAKEN: Seat ${gone.join(", ")} was just taken by someone else. Please pick again.`);
+    }
+    chosenSeats.push(...preferred.slice().sort((a, b) => a - b));
+  } else {
+    for (let s = 1; s <= dep.maxCapacity; s++) {
+      if (!activeSeatNumbers.has(s)) {
+        chosenSeats.push(s);
+        if (chosenSeats.length === input.seatsRequested) break;
+      }
     }
   }
 
@@ -1250,6 +1270,10 @@ export function getAdminRowsDemo(): {
         pickupName: booking.pickupPointId ? pickupMap.get(booking.pickupPointId)?.name ?? null : null,
         travelers: state.travelers.filter((t) => t.bookingId === booking.id),
         comfortPreference: state.comfortPreferences.find((c) => c.bookingId === booking.id) ?? null,
+        seatNumbers: state.seatAllocations
+          .filter((s) => s.bookingId === booking.id && (s.allocationStatus === "held" || s.allocationStatus === "confirmed"))
+          .map((s) => s.seatNumber)
+          .sort((a, b) => a - b),
       };
     });
 

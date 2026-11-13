@@ -7,6 +7,8 @@ import {
   performAdminSeatOverride,
   performAdminTripUpdate,
 } from "@/lib/data/repository";
+import { signBookingLookupToken } from "@/lib/lookup-token";
+import { refreshStorefront } from "@/lib/revalidate";
 import {
   adminBookingActionSchema,
   adminSeatOverrideSchema,
@@ -19,12 +21,25 @@ const mutationEnvelopeSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("trip_update"), payload: adminTripUpdateSchema }),
 ]);
 
-export async function GET() {
+/** Where customer links should point: the public site, even when staff use a separate admin host. */
+function publicSiteUrl(request: NextRequest): string {
+  const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? "";
+  const adminHost = process.env.ADMIN_HOST?.trim().toLowerCase();
+  const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (adminHost && host.toLowerCase() === adminHost && configured) return configured.replace(/\/+$/, "");
+  return request.nextUrl.origin;
+}
+
+export async function GET(request: NextRequest) {
   try {
     const actor = await requireStaff(["owner", "ops", "support"]);
     const includeComfortPrefs = actor.staffRole === "owner" || actor.staffRole === "ops";
     const data = await getAdminOperationsData(includeComfortPrefs);
-    return NextResponse.json({ actorRole: actor.staffRole, ...data });
+    const bookings = data.bookings.map((row) => ({
+      ...row,
+      lookupToken: signBookingLookupToken(row.booking.bookingReference, row.booking.customerEmail),
+    }));
+    return NextResponse.json({ actorRole: actor.staffRole, ...data, bookings, publicSiteUrl: publicSiteUrl(request) });
   } catch (err) {
     if (err instanceof Error && err.message === "UNAUTHORIZED_STAFF") {
       return NextResponse.json({ error: "Admin authorization required." }, { status: 403 });
@@ -81,6 +96,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    refreshStorefront();
     return NextResponse.json({ ok: true });
   } catch (err) {
     return NextResponse.json(

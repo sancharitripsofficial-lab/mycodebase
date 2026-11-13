@@ -10,8 +10,8 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { SeatTracker } from "@/components/SeatTracker";
+import { useEffect, useMemo, useState } from "react";
+import { ErtigaSeatMap, SEAT_INFO } from "@/components/booking/ErtigaSeatMap";
 import { UpiPayPanel, UpiSubmittedNotice } from "@/components/UpiPayPanel";
 import { calculateBookingPricing, formatINR } from "@/lib/currency";
 import type {
@@ -48,6 +48,7 @@ interface HoldResponse {
   bookingReference: string;
   holdExpiresAt: string;
   amountDuePaise: number;
+  seatNumbers?: number[];
   lookupToken: string;
   paymentMethod: "upi" | "razorpay" | "sandbox";
   upi: UpiPaymentInstructions | null;
@@ -85,6 +86,12 @@ export function BookingWidget({
     null;
 
   const [departureId, setDepartureId] = useState<string>(initialDep?.departureId ?? "");
+
+  // Departure cards link here with ?date=<departureId>#book — preselect that exact date.
+  useEffect(() => {
+    const wanted = new URLSearchParams(window.location.search).get("date");
+    if (wanted && departures.some((d) => d.departureId === wanted)) setDepartureId(wanted);
+  }, [departures]);
   const [bookingMode, setBookingMode] = useState<BookingMode>("batch_seats");
   const [seatsRequested, setSeatsRequested] = useState<number>(1);
   const [pickupPointId, setPickupPointId] = useState<string>(pickupPoints[0]?.id ?? "");
@@ -104,6 +111,12 @@ export function BookingWidget({
 
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  // Live seat map for the chosen date (numbers only) + the exact seats this customer tapped.
+  const [seatMap, setSeatMap] = useState<{ departureId: string; taken: number[] } | null>(null);
+  const [seatsLoading, setSeatsLoading] = useState(false);
+  const [pickedSeats, setPickedSeats] = useState<number[]>([]);
+  const [seatNote, setSeatNote] = useState<string | null>(null);
+  const [seatMapVersion, setSeatMapVersion] = useState(0);
   const [holdResult, setHoldResult] = useState<HoldResponse | null>(null);
   const [upiResult, setUpiResult] = useState<UpiSubmitResult | null>(null);
   const [verifiedReceipt, setVerifiedReceipt] = useState<{
@@ -127,14 +140,79 @@ export function BookingWidget({
   );
 
   const effectiveSeats = bookingMode === "private_vehicle" ? 6 : seatsRequested;
-  const maxBatchSelectable = selectedDep
-    ? Math.min(5, Math.max(1, selectedDep.seatsRemaining))
-    : 1;
+  // The live map (fetched with no cache) wins over the page's 30-second-old counts.
+  const liveTaken =
+    selectedDep && seatMap?.departureId === selectedDep.departureId ? seatMap.taken : null;
+  const seatsTakenNow = liveTaken ? liveTaken.length : selectedDep?.seatsTaken ?? 0;
+  const seatsRemainingNow = selectedDep
+    ? liveTaken
+      ? Math.max(0, selectedDep.maxCapacity - liveTaken.length)
+      : selectedDep.seatsRemaining
+    : 0;
+  const maxBatchSelectable = selectedDep ? Math.min(5, Math.max(1, seatsRemainingNow)) : 1;
   const privateEligible = selectedDep
-    ? selectedDep.seatsTaken === 0 &&
-      selectedDep.seatsRemaining === 6 &&
-      selectedDep.status !== "cancelled"
+    ? seatsTakenNow === 0 && selectedDep.maxCapacity === 6 && selectedDep.status !== "cancelled"
     : false;
+
+  // Load the live seat map whenever the date changes (and again after a seat clash).
+  useEffect(() => {
+    if (!departureId) return;
+    let cancelled = false;
+    setSeatsLoading(true);
+    fetch(`/api/departures/${departureId}/seats`, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json: { taken?: number[] } | null) => {
+        if (cancelled || !json || !Array.isArray(json.taken)) return;
+        const taken = json.taken;
+        setSeatMap({ departureId, taken });
+        setPickedSeats((cur) => {
+          const gone = cur.filter((s) => taken.includes(s));
+          if (gone.length === 0) return cur;
+          setSeatNote(
+            `Seat ${gone.join(", ")} ${gone.length === 1 ? "was" : "were"} just taken by someone else. Please pick again.`
+          );
+          return cur.filter((s) => !taken.includes(s));
+        });
+      })
+      .catch(() => {
+        /* the map is a nicety: without it we still seat people together automatically */
+      })
+      .finally(() => {
+        if (!cancelled) setSeatsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [departureId, seatMapVersion]);
+
+  // Picked seats always decide how many travellers there are.
+  useEffect(() => {
+    if (bookingMode !== "batch_seats" || pickedSeats.length === 0) return;
+    if (pickedSeats.length !== seatsRequested) {
+      setSeatsRequested(pickedSeats.length);
+      syncTravelerRows(pickedSeats.length);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pickedSeats, bookingMode]);
+
+  const toggleSeat = (seat: number) => {
+    if (bookingMode !== "batch_seats") return;
+    setSeatNote(null);
+    setErrorMsg(null);
+    if (!pickedSeats.includes(seat) && pickedSeats.length >= maxBatchSelectable) {
+      setSeatNote(
+        maxBatchSelectable === 5
+          ? "A shared trip takes up to 5 seats. For all 6, choose the private car."
+          : `Only ${maxBatchSelectable} seat${maxBatchSelectable === 1 ? " is" : "s are"} open on this date.`
+      );
+    }
+    // Functional update so two quick taps never overwrite each other.
+    setPickedSeats((cur) => {
+      if (cur.includes(seat)) return cur.filter((s) => s !== seat);
+      if (cur.length >= maxBatchSelectable) return cur;
+      return [...cur, seat];
+    });
+  };
 
   const syncTravelerRows = (nextCount: number) => {
     setTravelers((prev) => {
@@ -147,10 +225,25 @@ export function BookingWidget({
   const handleSeatCountChange = (count: number) => {
     setSeatsRequested(count);
     syncTravelerRows(count);
+    // Keep any tapped seats in step with the new number: drop the last ones, or add the
+    // nearest free seats so the group still sits together.
+    if (pickedSeats.length === 0) return;
+    if (count < pickedSeats.length) {
+      setPickedSeats(pickedSeats.slice(0, count));
+      return;
+    }
+    const used = new Set([...(liveTaken ?? []), ...pickedSeats]);
+    const extra: number[] = [];
+    for (let s = 1; s <= (selectedDep?.maxCapacity ?? 6) && pickedSeats.length + extra.length < count; s++) {
+      if (!used.has(s)) extra.push(s);
+    }
+    setPickedSeats([...pickedSeats, ...extra]);
   };
 
   const handleModeChange = (mode: BookingMode) => {
     setBookingMode(mode);
+    setPickedSeats([]);
+    setSeatNote(null);
     if (mode === "private_vehicle") {
       setSeatsRequested(6);
       syncTravelerRows(6);
@@ -195,6 +288,10 @@ export function BookingWidget({
           departureId: selectedDep.departureId,
           bookingMode,
           seatsRequested: effectiveSeats,
+          preferredSeats:
+            bookingMode === "batch_seats" && pickedSeats.length === effectiveSeats
+              ? pickedSeats
+              : undefined,
           pickupPointId: pickupPointId || null,
           customerName,
           customerEmail,
@@ -211,6 +308,7 @@ export function BookingWidget({
       const json = await res.json();
       if (!res.ok) {
         setErrorMsg(json.error || "Unable to reserve seats. Please check your details.");
+        if (json.code === "SEAT_TAKEN") setSeatMapVersion((v) => v + 1);
         return;
       }
       setHoldResult(json as HoldResponse);
@@ -403,8 +501,23 @@ export function BookingWidget({
       );
     }
 
+    const heldSeats = holdResult.seatNumbers ?? [];
     return (
       <div className="space-y-3">
+        {heldSeats.length > 0 && bookingMode === "batch_seats" && (
+          <div className="rounded-2xl border border-lagoon-500/30 bg-white/80 p-3">
+            <p className="mb-2 text-xs font-semibold text-forest-900">
+              Held for you: seat {heldSeats.join(", ")} until the timer ends
+            </p>
+            <ErtigaSeatMap
+              mode="view"
+              takenSeats={(liveTaken ?? []).filter((s) => !heldSeats.includes(s))}
+              selectedSeats={heldSeats}
+              maxCapacity={selectedDep?.maxCapacity ?? 6}
+              showLegend={false}
+            />
+          </div>
+        )}
         <UpiPayPanel
           mode="pay"
           instructions={holdResult.upi}
@@ -618,6 +731,8 @@ export function BookingWidget({
                       setDepartureId(dep.departureId);
                       setErrorMsg(null);
                       setWaitlistSuccess(null);
+                      setPickedSeats([]);
+                      setSeatNote(null);
                       if (dep.seatsTaken > 0 && bookingMode === "private_vehicle") {
                         setBookingMode("batch_seats");
                         setSeatsRequested(1);
@@ -655,18 +770,54 @@ export function BookingWidget({
             );
           })}
         </div>
+        <a href="#ask" className="inline-block pt-0.5 text-xs font-semibold text-forest-800 underline-offset-2 hover:underline">
+          None of these dates work? Ask for your own date or a private car →
+        </a>
       </fieldset>
 
       {selectedDep && (
-        <SeatTracker
-          maxCapacity={selectedDep.maxCapacity}
-          seatsTaken={selectedDep.seatsTaken}
-          selectedCount={selectedDep.seatsRemaining === 0 ? 0 : effectiveSeats}
-          departureCode={selectedDep.departureCode}
-        />
+        <section aria-labelledby="seat-map-title" className="space-y-2">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <p id="seat-map-title" className="text-xs font-semibold uppercase tracking-wider text-stone-600">
+              {bookingMode === "private_vehicle"
+                ? "Your private car"
+                : seatsRemainingNow === 0
+                  ? "This car is full"
+                  : "Tap the seats you want"}
+            </p>
+            <p className="text-[11px] text-stone-500">
+              {selectedDep.departureCode} &bull; Driver sits on the right
+            </p>
+          </div>
+          <ErtigaSeatMap
+            mode={bookingMode === "batch_seats" && seatsRemainingNow > 0 ? "pick" : "view"}
+            takenSeats={liveTaken ?? []}
+            selectedSeats={bookingMode === "batch_seats" ? pickedSeats : []}
+            maxCapacity={selectedDep.maxCapacity}
+            privateCar={bookingMode === "private_vehicle"}
+            loading={seatsLoading && !liveTaken}
+            onToggleSeat={toggleSeat}
+          />
+          {seatNote && (
+            <p role="status" className="rounded-lg bg-sunset-400/15 px-3 py-2 text-xs font-medium text-copper-700">
+              {seatNote}
+            </p>
+          )}
+          {bookingMode === "batch_seats" && seatsRemainingNow > 0 && (
+            <p className="text-xs text-stone-600">
+              {pickedSeats.length > 0
+                ? `Your seats: ${pickedSeats
+                    .slice()
+                    .sort((a, b) => a - b)
+                    .map((s) => `${s} (${SEAT_INFO[s]?.label ?? "seat"})`)
+                    .join(", ")}. They are locked for you only when you continue to payment.`
+                : "Skip this and we seat your group together automatically."}
+            </p>
+          )}
+        </section>
       )}
 
-      {selectedDep && selectedDep.seatsRemaining === 0 ? (
+      {selectedDep && seatsRemainingNow === 0 ? (
         <form onSubmit={handleWaitlistSubmit} className="space-y-4 border-t border-stone-200 pt-5">
           <div>
             <h3 className="font-display text-lg font-semibold text-forest-900">

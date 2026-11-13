@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Plus_Jakarta_Sans } from "next/font/google";
+import { TapFeedback } from "@/components/TapFeedback";
 import "./globals.css";
 import { Providers } from "./providers";
 
@@ -44,7 +45,10 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${fraunces.variable} ${plusJakarta.variable}`}>
       <body className="min-h-screen text-ink-900">
-        <Providers>{children}</Providers>
+        <Providers>
+          <TapFeedback />
+          {children}
+        </Providers>
       </body>
     </html>
   );

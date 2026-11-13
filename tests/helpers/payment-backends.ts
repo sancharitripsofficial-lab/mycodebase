@@ -46,6 +46,8 @@ export interface HoldOptions {
   seats: number;
   mode?: BookingMode;
   deposit?: boolean;
+  /** Exact seats picked on the car map. */
+  preferred?: number[];
 }
 
 export interface BookingSnapshot {
@@ -89,6 +91,8 @@ export interface PaymentBackend {
   booking(bookingId: string): Promise<BookingSnapshot>;
   payment(paymentId: string): Promise<PaymentSnapshot>;
   seatsTaken(departureId: string): Promise<number>;
+  /** Seat numbers held or confirmed for one booking, lowest first. */
+  seatNumbers(bookingId: string): Promise<number[]>;
   expireHold(bookingId: string): Promise<void>;
   setAmountDue(bookingId: string, amountDuePaise: number): Promise<void>;
   cancelUnpaid(bookingId: string): Promise<boolean>;
@@ -221,7 +225,7 @@ export async function createPostgresBackend(): Promise<PaymentBackend> {
         `SELECT * FROM public.reserve_departure_seats(
            $1, $2, NULL, 'Asha Rao', 'asha@example.com', '+919800000001', $3, $4, NULL,
            $5, $6, $7, $8, $9, $10, NULL, 15, '{}'::jsonb, $11::jsonb, 'upi', $12::jsonb,
-           'open_mixed', '', false, 'test-v1')`,
+           'open_mixed', '', false, 'test-v1', $13)`,
         [
           ref,
           opts.departureId,
@@ -235,6 +239,7 @@ export async function createPostgresBackend(): Promise<PaymentBackend> {
           p.payNowPaise,
           JSON.stringify(p),
           JSON.stringify(travelers(p.seatsCount)),
+          opts.preferred ?? null,
         ]
       );
       return { bookingId: row.booking_id, amountDuePaise: p.payNowPaise, totalPaise: p.totalPaise };
@@ -329,6 +334,15 @@ export async function createPostgresBackend(): Promise<PaymentBackend> {
         lateAfterHold: p.late_after_hold,
         seatsLost: p.seats_lost,
       };
+    },
+
+    async seatNumbers(bookingId) {
+      const r = await db.query<{ seat_number: number }>(
+        `SELECT seat_number FROM public.seat_allocations
+         WHERE booking_id = $1 AND allocation_status IN ('held', 'confirmed') ORDER BY seat_number`,
+        [bookingId]
+      );
+      return r.rows.map((x) => x.seat_number);
     },
 
     async seatsTaken(departureId) {
@@ -462,6 +476,7 @@ export function createLocalBackend(): PaymentBackend {
         coTravelerPreference: "open_mixed",
         preferenceNotes: "",
         whatsappOptIn: false,
+        preferredSeats: opts.preferred ?? null,
       });
       return { bookingId: booking.id, amountDuePaise: booking.amountDuePaise, totalPaise: booking.totalPaise };
     },
@@ -506,6 +521,15 @@ export function createLocalBackend(): PaymentBackend {
         lateAfterHold: p.lateAfterHold,
         seatsLost: p.seatsLost,
       };
+    },
+
+    async seatNumbers(bookingId) {
+      return state()
+        .seatAllocations.filter(
+          (s) => s.bookingId === bookingId && (s.allocationStatus === "held" || s.allocationStatus === "confirmed")
+        )
+        .map((s) => s.seatNumber)
+        .sort((a, b) => a - b);
     },
 
     async seatsTaken(departureId) {

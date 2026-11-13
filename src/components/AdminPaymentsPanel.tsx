@@ -189,9 +189,13 @@ function PaymentCard({
             </dd>
           </div>
           <div>
-            <dt className="text-[11px] uppercase tracking-wider text-stone-600">UPI reference (UTR)</dt>
+            <dt className="text-[11px] uppercase tracking-wider text-stone-600">
+              {p.method && p.method !== "upi" && p.method !== "gateway" ? "Recorded by staff" : "UPI reference (UTR)"}
+            </dt>
             <dd className="flex items-center gap-1.5 font-mono text-base font-semibold text-ink-900">
-              {p.utr ?? "—"}
+              {p.method && p.method !== "upi" && p.method !== "gateway"
+                ? `${{ cash: "Cash", bank_transfer: "Bank transfer", upi_manual: "UPI (manual)" }[p.method]} • ${p.staffReference ?? "—"}`
+                : p.utr ?? "—"}
               {p.utr && (
                 <button
                   type="button"

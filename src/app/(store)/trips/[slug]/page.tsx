@@ -12,12 +12,19 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BookingWidget } from "@/components/BookingWidget";
+import { EnquiryForm } from "@/components/EnquiryForm";
 import { TripVideos } from "@/components/TripVideos";
 import { isOptimizableImage } from "@/lib/media";
 import { formatINR } from "@/lib/currency";
-import { getPublishedTripBySlug, getSiteSettings } from "@/lib/data/repository";
+import { getPublishedTripBySlug, getPublishedTripsWithDetails, getSiteSettings } from "@/lib/data/repository";
 
-export const dynamic = "force-dynamic";
+// Served from the CDN; refreshed every 30 s and immediately after bookings / admin edits.
+export const revalidate = 30;
+
+export async function generateStaticParams() {
+  const { trips } = await getPublishedTripsWithDetails();
+  return trips.map((t) => ({ slug: t.trip.slug }));
+}
 
 export async function generateMetadata({
   params,
@@ -320,7 +327,7 @@ export default async function TripDetailPage({
         </div>
 
         {/* Right: Sticky Seat Selection & Checkout */}
-        <aside className="lg:col-span-5">
+        <aside id="book" className="scroll-mt-24 lg:col-span-5">
           <div className="lg:sticky lg:top-24">
             <BookingWidget
               trip={trip}
@@ -330,6 +337,10 @@ export default async function TripDetailPage({
             />
           </div>
         </aside>
+      </div>
+
+      <div id="ask" className="mx-auto mt-14 max-w-2xl scroll-mt-24">
+        <EnquiryForm tripId={trip.id} tripTitle={trip.title} />
       </div>
     </div>
   );

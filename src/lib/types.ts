@@ -167,6 +167,8 @@ export interface BookingRecord {
   totalPaise: number;
   amountPaidPaise: number;
   amountDuePaise: number;
+  /** Money given back so far (recorded refunds). */
+  amountRefundedPaise?: number;
   balanceDueAt: string | null;
   holdExpiresAt: string | null;
   termsSnapshot: Record<string, unknown>;
@@ -188,6 +190,10 @@ export interface CustomerBookingView {
   comfortSummaryLabel: string;
   comfortResolutionStatus: ComfortResolutionStatus;
   assignedSeatCount: number;
+  /** Exact seat numbers on the car map (filled by the lookup API). */
+  seatNumbers?: number[];
+  /** Driver / vehicle / group link, shared only with paid bookings close to the trip. */
+  crew?: import("@/lib/data/owner-ops").CustomerTripCrew | null;
 }
 
 export interface WaitlistEntry {
@@ -287,6 +293,10 @@ export interface AdminBookingRow {
   pickupName: string | null;
   travelers: BookingTraveler[];
   comfortPreference: ComfortPreferenceRecord | null;
+  /** Seats this booking holds or owns, lowest first. */
+  seatNumbers: number[];
+  /** Signed My Booking token so staff can send the customer a working link. */
+  lookupToken?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -330,6 +340,10 @@ export interface PaymentRecord {
   reviewedAt: string | null;
   reviewNote: string | null;
   createdAt: string;
+  /** upi (customer sent UTR), cash / bank_transfer / upi_manual (recorded by staff), gateway. */
+  method?: "upi" | "cash" | "bank_transfer" | "upi_manual" | "gateway";
+  /** Receipt / bank reference typed by staff for payments they recorded. */
+  staffReference?: string | null;
 }
 
 /** What a customer may see about their own payments (UTR masked, no staff identity). */

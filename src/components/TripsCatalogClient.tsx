@@ -1,22 +1,21 @@
 "use client";
 
 import { Search } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { TripCard } from "@/components/TripCard";
 import type { TripWithDetails } from "@/lib/types";
 
-export function TripsCatalogClient({
-  trips,
-  initialMode,
-}: {
-  trips: TripWithDetails[];
-  initialMode?: string;
-}) {
+export function TripsCatalogClient({ trips }: { trips: TripWithDetails[] }) {
   const [query, setQuery] = useState("");
   const [region, setRegion] = useState("all");
   const [difficulty, setDifficulty] = useState("all");
-  const [onlyPrivateEligible, setOnlyPrivateEligible] = useState(initialMode === "private");
+  const [onlyPrivateEligible, setOnlyPrivateEligible] = useState(false);
   const [onlyWomenBatch, setOnlyWomenBatch] = useState(false);
+
+  // "Book the whole car" links land here with ?mode=private (read in the browser so the page stays cached).
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("mode") === "private") setOnlyPrivateEligible(true);
+  }, []);
 
   const regions = useMemo(
     () => ["all", ...Array.from(new Set(trips.map((t) => t.trip.region)))],

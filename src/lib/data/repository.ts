@@ -24,7 +24,7 @@ import {
 } from "@/lib/data/demo-upi";
 import { isServiceRoleConfigured, isSupabaseConfigured } from "@/lib/env";
 import { getSafeComfortCustomerLabel } from "@/lib/privacy";
-import { createSupabaseAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient, createSupabasePublicClient } from "@/lib/supabase/server";
 import type {
   AdminBookingRow,
   AdminPaymentRow,
@@ -63,7 +63,7 @@ export async function getSiteSettings(): Promise<{ settings: SiteSettings; isDem
   }
 
   try {
-    const supabase = await createSupabaseServerClient();
+    const supabase = createSupabasePublicClient();
     const { data, error } = await supabase.from("site_settings").select("key, value");
     if (error || !data || data.length === 0) {
       return { settings: getDemoState().settings, isDemoFallback: true };
@@ -98,7 +98,7 @@ export async function getPublishedTripsWithDetails(): Promise<{
   }
 
   try {
-    const supabase = await createSupabaseServerClient();
+    const supabase = createSupabasePublicClient();
     const [{ data: tripRows, error: tripErr }, { data: availRows, error: availErr }] =
       await Promise.all([
         supabase
@@ -223,7 +223,7 @@ export async function getVerifiedReviews(): Promise<VerifiedReview[]> {
     return getDemoState().reviews.filter((r) => r.isVerifiedAuthentic && r.isPublished);
   }
   try {
-    const supabase = await createSupabaseServerClient();
+    const supabase = createSupabasePublicClient();
     const { data } = await supabase
       .from("reviews")
       .select("*")
@@ -249,10 +249,17 @@ export async function getVerifiedReviews(): Promise<VerifiedReview[]> {
 
 export async function createAtomicBookingHold(
   input: ReserveSeatsDemoInput
-): Promise<{ bookingId: string; bookingReference: string; amountDuePaise: number; holdExpiresAt: string }> {
+): Promise<{
+  bookingId: string;
+  bookingReference: string;
+  amountDuePaise: number;
+  holdExpiresAt: string;
+  seatNumbers: number[];
+}> {
   if (!isSupabaseConfigured() || !isServiceRoleConfigured()) {
-    const { booking } = reserveSeatsDemo(input);
+    const { booking, assignedSeats } = reserveSeatsDemo(input);
     return {
+      seatNumbers: assignedSeats.slice().sort((a, b) => a - b),
       bookingId: booking.id,
       bookingReference: booking.bookingReference,
       amountDuePaise: booking.amountDuePaise,
@@ -339,6 +346,7 @@ export async function createAtomicBookingHold(
     p_preference_notes: input.preferenceNotes,
     p_whatsapp_opt_in: input.whatsappOptIn,
     p_policy_version: settings.bookingPolicy.policyVersion,
+    p_preferred_seats: input.preferredSeats && input.preferredSeats.length > 0 ? input.preferredSeats : null,
   });
 
   if (error || !data || !data[0]) {
@@ -350,6 +358,7 @@ export async function createAtomicBookingHold(
     bookingReference: data[0].booking_reference,
     amountDuePaise: pricing.payNowPaise,
     holdExpiresAt: data[0].hold_expires_at,
+    seatNumbers: ((data[0].assigned_seats ?? []) as number[]).map(Number).sort((a, b) => a - b),
   };
 }
 
@@ -700,6 +709,7 @@ export async function getAdminOperationsData(includeComfortPrefs: boolean): Prom
     { data: auditData },
     { data: reviewsData },
     { data: pickupsData },
+    { data: seatRows },
   ] = await Promise.all([
     admin.from("bookings").select("*").order("created_at", { ascending: false }).limit(100),
     admin.from("trips").select("*").order("sort_order", { ascending: true }),
@@ -712,7 +722,16 @@ export async function getAdminOperationsData(includeComfortPrefs: boolean): Prom
     admin.from("audit_logs").select("*").order("created_at", { ascending: false }).limit(100),
     admin.from("reviews").select("*").order("created_at", { ascending: false }).limit(50),
     admin.from("pickup_points").select("*"),
+    admin.from("seat_allocations").select("booking_id, seat_number").in("allocation_status", ["held", "confirmed"]),
   ]);
+
+  const seatsByBooking = new Map<string, number[]>();
+  for (const s of seatRows ?? []) {
+    if (!s.booking_id) continue;
+    const list = seatsByBooking.get(s.booking_id) ?? [];
+    list.push(Number(s.seat_number));
+    seatsByBooking.set(s.booking_id, list);
+  }
 
   const trips: Trip[] = (tripsData ?? []).map((row) => ({
     id: row.id,
@@ -784,6 +803,7 @@ export async function getAdminOperationsData(includeComfortPrefs: boolean): Prom
       departureCode: dep?.departureCode ?? "—",
       departureStartDate: dep?.startDate ?? "—",
       pickupName: mapped.pickupPointId ? pickupMap.get(mapped.pickupPointId)?.name ?? null : null,
+      seatNumbers: (seatsByBooking.get(mapped.id) ?? []).sort((x, y) => x - y),
       travelers: (travelersData ?? [])
         .filter((tr) => tr.booking_id === mapped.id)
         .map((tr) => ({
@@ -1101,6 +1121,7 @@ function mapBookingRow(b: Record<string, unknown>): BookingRecord {
     totalPaise: Number(b.total_paise),
     amountPaidPaise: Number(b.amount_paid_paise),
     amountDuePaise: Number(b.amount_due_paise),
+    amountRefundedPaise: Number(b.amount_refunded_paise ?? 0),
     balanceDueAt: (b.balance_due_at as string | null) ?? null,
     holdExpiresAt: (b.hold_expires_at as string | null) ?? null,
     termsSnapshot: (b.terms_snapshot as Record<string, unknown>) ?? {},
@@ -1258,6 +1279,8 @@ function mapPaymentRow(p: Record<string, unknown>): PaymentRecord {
     reviewedAt: (p.reviewed_at as string | null) ?? null,
     reviewNote: (p.review_note as string | null) ?? null,
     createdAt: String(p.created_at),
+    method: ((p.method as string | null) ?? "upi") as PaymentRecord["method"],
+    staffReference: p.provider === "manual" ? ((p.provider_payment_id as string | null) ?? null) : null,
   };
 }
 
@@ -1315,4 +1338,29 @@ export async function getAdminPayments(): Promise<AdminPaymentRow[]> {
       },
     ];
   });
+}
+
+/** Seat numbers in use on a published departure (public; no personal data). */
+export async function getDepartureSeatMap(departureId: string): Promise<number[]> {
+  if (!isSupabaseConfigured()) {
+    const state = getDemoState();
+    const now = Date.now();
+    return state.seatAllocations
+      .filter(
+        (sa) =>
+          sa.departureId === departureId &&
+          (sa.allocationStatus === "confirmed" ||
+            sa.allocationStatus === "operator_blocked" ||
+            (sa.allocationStatus === "held" && (!sa.holdExpiresAt || Date.parse(sa.holdExpiresAt) > now)))
+      )
+      .map((sa) => sa.seatNumber)
+      .sort((a, b) => a - b);
+  }
+  const supabase = createSupabasePublicClient();
+  const { data, error } = await supabase.rpc("get_departure_seat_map", { p_departure_id: departureId });
+  if (error) {
+    console.error("[seats] seat map lookup failed:", error.message);
+    return [];
+  }
+  return (data ?? []).map((r: { seat_number: number }) => Number(r.seat_number)).sort((a: number, b: number) => a - b);
 }

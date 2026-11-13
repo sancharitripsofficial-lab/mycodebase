@@ -10,6 +10,7 @@ import {
   FileText,
   Images,
   IndianRupee,
+  Inbox,
   LayoutDashboard,
   ListChecks,
   Lock,
@@ -17,6 +18,7 @@ import {
   Map,
   Menu,
   RefreshCw,
+  Route,
   ScrollText,
   Settings2,
   Star,
@@ -25,16 +27,20 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { BookingMoney } from "@/components/admin/BookingMoney";
 import { DeparturesManager } from "@/components/admin/DeparturesManager";
+import { EnquiriesSection } from "@/components/admin/EnquiriesSection";
 import { Notice, Panel, useAdminContent } from "@/components/admin/kit";
 import { MediaLibrary } from "@/components/admin/MediaLibrary";
 import { PasswordField } from "@/components/admin/PasswordField";
 import { ReviewsManager } from "@/components/admin/ReviewsManager";
 import { SiteContentManager } from "@/components/admin/SiteContentManager";
+import { TripSheets } from "@/components/admin/TripSheets";
 import { TripsManager } from "@/components/admin/TripsManager";
 import { AdminPaymentsPanel } from "@/components/AdminPaymentsPanel";
 import { AdminUpiSettings } from "@/components/AdminUpiSettings";
 import { formatINR } from "@/lib/currency";
+import type { DepartureCrew, Enquiry } from "@/lib/data/owner-ops";
 import { addDaysISO, localISODate } from "@/lib/dates";
 import type {
   AdminBookingRow,
@@ -54,6 +60,8 @@ interface OpsData {
   auditLogs: AuditLogEntry[];
   trips: Trip[];
   isDemoFallback: boolean;
+  /** Public website address for links sent to customers (works even on a separate admin host). */
+  publicSiteUrl?: string;
 }
 
 interface Actor {
@@ -71,7 +79,9 @@ interface AdminConsoleProps {
 type SectionKey =
   | "overview"
   | "payments"
+  | "enquiries"
   | "bookings"
+  | "sheets"
   | "dates"
   | "waitlist"
   | "trips"
@@ -87,12 +97,14 @@ const NAV: { group: string; items: { key: SectionKey; label: string; icon: typeo
     items: [
       { key: "overview", label: "Overview", icon: LayoutDashboard },
       { key: "payments", label: "Payments", icon: IndianRupee },
+      { key: "enquiries", label: "Enquiries", icon: Inbox },
     ],
   },
   {
     group: "Operations",
     items: [
       { key: "bookings", label: "Bookings", icon: ClipboardList },
+      { key: "sheets", label: "Trip sheets", icon: Route },
       { key: "dates", label: "Dates & seats", icon: CalendarDays },
       { key: "waitlist", label: "Waitlist", icon: Users },
     ],
@@ -130,6 +142,7 @@ export function AdminConsoleClient({ initialActor, supabaseConfigured, initialDa
         auditLogs: json.auditLogs,
         trips: json.trips,
         isDemoFallback: json.isDemoFallback,
+        publicSiteUrl: json.publicSiteUrl,
       });
     }
   }, []);
@@ -271,19 +284,75 @@ function Workspace({
   const [notice, setNotice] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
   const editor = useAdminContent();
   const canMutate = actor.staffRole === "owner" || actor.staffRole === "ops";
+  const [crew, setCrew] = useState<DepartureCrew[]>([]);
+  const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
+  const [upiId, setUpiId] = useState<string | null>(null);
+  const [siteUrl, setSiteUrl] = useState<string>("");
+
+  useEffect(() => {
+    setSiteUrl(data.publicSiteUrl || window.location.origin);
+  }, [data.publicSiteUrl]);
 
   const refreshPayments = useCallback(async () => {
     const res = await fetch("/api/admin/payments", { cache: "no-store" });
     if (res.ok) setPayments((await res.json()).payments as AdminPaymentRow[]);
   }, []);
 
+  const refreshOwner = useCallback(async () => {
+    const res = await fetch("/api/admin/owner-ops", { cache: "no-store" });
+    if (res.ok) {
+      const json = await res.json();
+      setCrew(json.crew as DepartureCrew[]);
+      setEnquiries(json.enquiries as Enquiry[]);
+    }
+  }, []);
+
   useEffect(() => {
     void refreshPayments();
-  }, [refreshPayments]);
+    void refreshOwner();
+    if (actor.staffRole === "owner" || actor.staffRole === "ops") {
+      void fetch("/api/admin/payment-settings", { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((j) => setUpiId(j?.settings?.isEnabled && j.settings.upiId ? String(j.settings.upiId) : null))
+        .catch(() => setUpiId(null));
+    }
+  }, [refreshPayments, refreshOwner, actor.staffRole]);
 
   const refreshAll = useCallback(async () => {
-    await Promise.all([refreshOps(), refreshPayments(), editor.reload()]);
-  }, [refreshOps, refreshPayments, editor]);
+    await Promise.all([refreshOps(), refreshPayments(), refreshOwner(), editor.reload()]);
+  }, [refreshOps, refreshPayments, refreshOwner, editor]);
+
+  // New-payment and new-enquiry alerts: check every 30 s while the tab is open, show a count in
+  // the browser tab title and a message when something new arrives.
+  const waitingCount = payments.filter((p) => p.payment.status === "submitted").length;
+  const newEnquiries = enquiries.filter((e) => e.status === "new").length;
+  const [lastSeen, setLastSeen] = useState<{ pay: number; enq: number } | null>(null);
+  useEffect(() => {
+    const tick = () => {
+      if (document.visibilityState !== "visible") return;
+      void refreshPayments();
+      void refreshOwner();
+    };
+    const id = window.setInterval(tick, 30_000);
+    document.addEventListener("visibilitychange", tick);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", tick);
+    };
+  }, [refreshPayments, refreshOwner]);
+  useEffect(() => {
+    if (lastSeen && (waitingCount > lastSeen.pay || newEnquiries > lastSeen.enq)) {
+      const parts = [];
+      if (waitingCount > lastSeen.pay) parts.push(`${waitingCount - lastSeen.pay} new UPI payment${waitingCount - lastSeen.pay === 1 ? "" : "s"} to check`);
+      if (newEnquiries > lastSeen.enq) parts.push(`${newEnquiries - lastSeen.enq} new enquir${newEnquiries - lastSeen.enq === 1 ? "y" : "ies"}`);
+      setNotice({ kind: "ok", text: `New: ${parts.join(" and ")}.` });
+      void refreshOps();
+    }
+    setLastSeen({ pay: waitingCount, enq: newEnquiries });
+    const total = waitingCount + newEnquiries;
+    document.title = total > 0 ? `(${total}) Sanchari Admin` : "Sanchari Admin";
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [waitingCount, newEnquiries]);
 
   const runOps = useCallback(
     async (body: Record<string, unknown>, ok: string) => {
@@ -302,7 +371,11 @@ function Workspace({
 
   const waitingPayments = payments.filter((p) => p.payment.status === "submitted").length;
   const cancelRequests = data.bookings.filter((b) => b.booking.status === "cancel_requested").length;
-  const badges: Partial<Record<SectionKey, number>> = { payments: waitingPayments, bookings: cancelRequests };
+  const badges: Partial<Record<SectionKey, number>> = {
+    payments: waitingPayments,
+    bookings: cancelRequests,
+    enquiries: newEnquiries,
+  };
   const current = NAV.flatMap((g) => g.items).find((i) => i.key === section);
 
   const nav = (
@@ -348,7 +421,7 @@ function Workspace({
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-[264px_1fr]">
       <aside
-        className={`bg-ocean fixed inset-y-0 left-0 z-50 w-[264px] overflow-y-auto px-3 py-5 text-white transition-transform lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${
+        className={`bg-ocean fixed inset-y-0 left-0 z-50 print:hidden w-[264px] overflow-y-auto px-3 py-5 text-white transition-transform lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${
           menuOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -382,7 +455,7 @@ function Workspace({
       {menuOpen && <button type="button" aria-label="Close menu" className="fixed inset-0 z-40 bg-[#0b5683]/40 lg:hidden" onClick={() => setMenuOpen(false)} />}
 
       <div className="min-w-0">
-        <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-stone-200/80 bg-white/85 px-4 py-3 backdrop-blur-md sm:px-6">
+        <header className="sticky top-0 z-30 flex items-center gap-3 print:hidden border-b border-stone-200/80 bg-white/85 px-4 py-3 backdrop-blur-md sm:px-6">
           <button type="button" className="rounded-xl border border-stone-200 bg-white p-2 lg:hidden" aria-label="Open menu" onClick={() => setMenuOpen(true)}>
             <Menu className="h-5 w-5 text-forest-900" />
           </button>
@@ -401,10 +474,20 @@ function Workspace({
           {data.isDemoFallback && (
             <Notice kind="ok">Preview mode: showing built-in sample data. Connect the database to manage real bookings and content.</Notice>
           )}
-          {notice && <Notice kind={notice.kind}>{notice.text}</Notice>}
+          {notice && (
+            <div className="print:hidden">
+              <Notice kind={notice.kind}>{notice.text}</Notice>
+            </div>
+          )}
 
           {section === "overview" && (
-            <Overview data={data} payments={payments} contentTrips={editor.content?.trips ?? null} go={setSection} />
+            <Overview
+              data={data}
+              payments={payments}
+              newEnquiries={newEnquiries}
+              contentTrips={editor.content?.trips ?? null}
+              go={setSection}
+            />
           )}
           {section === "payments" && (
             <AdminPaymentsPanel
@@ -416,7 +499,43 @@ function Workspace({
               }}
             />
           )}
-          {section === "bookings" && <BookingsSection data={data} role={actor.staffRole} runOps={runOps} />}
+          {section === "enquiries" && (
+            <EnquiriesSection
+              enquiries={enquiries}
+              trips={data.trips}
+              role={actor.staffRole}
+              onChanged={async (message) => {
+                setNotice({ kind: "ok", text: message });
+                await refreshOwner();
+              }}
+            />
+          )}
+          {section === "bookings" && (
+            <BookingsSection
+              data={data}
+              role={actor.staffRole}
+              runOps={runOps}
+              upiId={upiId}
+              siteUrl={siteUrl}
+              onMoney={async (message) => {
+                setNotice({ kind: "ok", text: message });
+                await Promise.all([refreshOps(), refreshPayments()]);
+              }}
+            />
+          )}
+          {section === "sheets" && (
+            <TripSheets
+              bookings={data.bookings}
+              departures={data.departures}
+              crew={crew}
+              role={actor.staffRole}
+              siteUrl={siteUrl}
+              onCrewSaved={async (message) => {
+                setNotice({ kind: "ok", text: message });
+                await refreshOwner();
+              }}
+            />
+          )}
           {section === "dates" && <DeparturesManager editor={editor} onSeatOverride={runOps} />}
           {section === "waitlist" && <WaitlistSection data={data} />}
           {section === "trips" && <TripsManager editor={editor} />}
@@ -443,11 +562,13 @@ function Workspace({
 function Overview({
   data,
   payments,
+  newEnquiries,
   contentTrips,
   go,
 }: {
   data: OpsData;
   payments: AdminPaymentRow[];
+  newEnquiries: number;
   contentTrips: ReturnType<typeof useAdminContent>["content"] extends infer C ? (C extends { trips: infer T } ? T | null : null) : null;
   go: (s: SectionKey) => void;
 }) {
@@ -468,8 +589,13 @@ function Overview({
     (b) => ["confirmed", "deposit_paid"].includes(b.booking.status) && b.booking.verificationStatus !== "checked"
   ).length;
 
+  const dueSoon = data.bookings.filter(
+    (b) => b.booking.status === "deposit_paid" && b.booking.amountDuePaise > 0 && b.departureStartDate <= in14
+  ).length;
   const tasks = [
     { n: waiting.length, text: "UPI payments to check", go: "payments" as const },
+    { n: newEnquiries, text: "new enquiries to answer", go: "enquiries" as const },
+    { n: dueSoon, text: "balances due for trips in the next 14 days", go: "bookings" as const },
     { n: cancels, text: "cancellation / reschedule requests", go: "bookings" as const },
     { n: comfort, text: "comfort requests to decide", go: "bookings" as const },
     { n: unverified, text: "paid bookings with ID not checked", go: "bookings" as const },
@@ -550,10 +676,16 @@ function BookingsSection({
   data,
   role,
   runOps,
+  upiId,
+  siteUrl,
+  onMoney,
 }: {
   data: OpsData;
   role: StaffRole;
   runOps: (body: Record<string, unknown>, ok: string) => Promise<void>;
+  upiId: string | null;
+  siteUrl: string;
+  onMoney: (message: string) => Promise<void>;
 }) {
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("all");
@@ -561,7 +693,9 @@ function BookingsSection({
   const rows = useMemo(() => {
     const s = q.trim().toLowerCase();
     return data.bookings.filter((row) => {
-      if (status !== "all" && row.booking.status !== status) return false;
+      if (status === "balance_due") {
+        if (!(row.booking.status === "deposit_paid" && row.booking.amountDuePaise > 0)) return false;
+      } else if (status !== "all" && row.booking.status !== status) return false;
       if (!s) return true;
       return `${row.booking.bookingReference} ${row.booking.customerName} ${row.booking.customerEmail} ${row.booking.customerPhone} ${row.departureCode} ${row.tripTitle}`
         .toLowerCase()
@@ -570,15 +704,18 @@ function BookingsSection({
   }, [data.bookings, q, status]);
 
   return (
-    <Panel title="Bookings" description="Search by reference, name, phone, email or date code. Money is confirmed under Payments, never here.">
+    <Panel
+      title="Bookings"
+      description="Search by reference, name, phone, email or date code. UPI references are checked under Payments; cash and bank transfers are recorded here."
+    >
       <div className="flex flex-wrap gap-3">
         <div className="min-w-[240px] flex-1">
           <TextInput label="Search" isLabelHidden placeholder="Search bookings…" value={q} onChange={setQ} type="search" />
         </div>
         <select value={status} onChange={(e) => setStatus(e.target.value)} className="rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm" aria-label="Filter by status">
-          {["all", "pending_payment", "deposit_paid", "confirmed", "cancel_requested", "cancelled", "expired", "refunded"].map((s) => (
+          {["all", "balance_due", "pending_payment", "deposit_paid", "confirmed", "cancel_requested", "cancelled", "expired", "refunded"].map((s) => (
             <option key={s} value={s}>
-              {s === "all" ? "All statuses" : s.replace(/_/g, " ")}
+              {s === "all" ? "All statuses" : s === "balance_due" ? "Balance still due" : s.replace(/_/g, " ")}
             </option>
           ))}
         </select>
@@ -620,6 +757,7 @@ function BookingsSection({
                   Travellers: {row.travelers.map((t) => `${t.fullName}${t.verificationChecked ? " ✓" : ""}`).join(", ")}
                 </p>
               )}
+              <BookingMoney row={row} canMutate={canMutate} upiId={upiId} siteUrl={siteUrl} onDone={onMoney} />
               {role !== "support" && row.comfortPreference && row.comfortPreference.coTravelerPreference !== "open_mixed" && (
                 <p className="rounded-xl bg-peach-100 px-3 py-2 text-xs text-ink-900">
                   Private comfort request: <strong>{row.comfortPreference.coTravelerPreference.replace(/_/g, " ")}</strong> (

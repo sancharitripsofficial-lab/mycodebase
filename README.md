@@ -127,3 +127,14 @@ Astryx (Meta, MIT) with the Sanchari brand theme in `src/themes/sanchari/` (rebu
 - **Sections:** Overview (what needs attention, next 14 days), Payments, Bookings, Dates & seats, Waitlist, Trips (details, prices, photos & videos, inclusions, day-by-day, pickup points), Text & policies (brand & contact, social & WhatsApp, booking rules, FAQs, legal), Reviews, Media library (Supabase Storage bucket `media`), UPI payments, Audit log.
 - **Safety rules in the database** (`supabase/migrations/202611130001_admin_content.sql`, tested in `tests/admin-content.test.ts`): seats per car never below seats taken; dates/cutoffs must make sense; dates or trips with bookings can't be deleted (cancel / hide instead); cancelling a date ends unpaid holds and reports paid bookings to refund; pickup points used by live bookings can't be deleted; itinerary saves are all-or-nothing; every change is audit-logged.
 - **Preview mode** (no Supabase in `.env.local`): the panel opens with a role picker and sample data; content editing is disabled with a clear message.
+
+## 10. Owner tools (seat choice, trip sheets, offline money, enquiries)
+
+Migration `supabase/migrations/202611130002_owner_operations.sql`, tested in `tests/owner-operations.test.ts` and `tests/upi-payments.test.ts` (both backends).
+
+- **Seat choice:** customers tap exact seats on the Ertiga map (1 front passenger, 2–4 middle, 5–6 back; driver on the right). The database holds exactly those seats or refuses with `SEAT_TAKEN` if someone got there first; skipping the map seats the group together automatically. `/api/departures/[id]/seats` returns seat numbers only, never names.
+- **Trip sheets** (admin → Trip sheets): one page per date with every traveller by seat, phone, emergency contact, food notes, pickup and payment state; print it or keep it open on the trip day. Driver name, mobile, vehicle number, reporting note and the trip WhatsApp group link are saved here; paid travellers see them in My Booking from 3 days before the trip.
+- **Money outside the website** (admin → Bookings): record cash, bank transfer or direct UPI with a receipt/UTR (each reference once), and record refunds with an optional "cancel and free seats". The database enforces the amount limits and statuses; everything goes to the audit log.
+- **Balance reminders:** "Remind on WhatsApp" opens WhatsApp with the amount, your UPI ID and the customer's own My Booking link.
+- **Enquiries:** the "Ask us" form on trip pages and /trips (private car on your own date, groups, custom trips) lands in admin → Enquiries; reply on WhatsApp and mark it contacted / booked / closed.
+- **Alerts:** the admin checks every 30 seconds while open; new UPI payments and enquiries show in the menu badges and in the browser tab title, e.g. `(2) Sanchari Admin`.

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireStaff } from "@/lib/auth";
 import { getAdminPayments, getUpiPaymentSettings, reviewUpiPayment } from "@/lib/data/repository";
 import { paymentErrorMessage } from "@/lib/payments/upi";
+import { refreshStorefront } from "@/lib/revalidate";
 import { upiReviewSchema } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
@@ -49,6 +50,7 @@ export async function POST(request: NextRequest) {
       actorUserId: actor.userId,
       actorRole: actor.staffRole ?? "ops",
     });
+    refreshStorefront();
     return NextResponse.json({ ok: true, ...result });
   } catch (err) {
     const raw = err instanceof Error ? err.message : null;

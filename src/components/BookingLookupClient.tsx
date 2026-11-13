@@ -1,8 +1,9 @@
 "use client";
 
 import { Badge } from "@astryxdesign/core/Badge";
-import { AlertCircle, CheckCircle2, Search, ShieldCheck } from "lucide-react";
+import { AlertCircle, Car, CheckCircle2, MessageCircle, Phone, Search, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
+import { ErtigaSeatMap } from "@/components/booking/ErtigaSeatMap";
 import { UpiPayPanel } from "@/components/UpiPayPanel";
 import { formatINR } from "@/lib/currency";
 import type { CustomerPaymentView } from "@/lib/payments/customer-view";
@@ -257,7 +258,10 @@ export function BookingLookupClient({
             <div>
               <dt className="text-xs text-stone-600">Seats Allocated</dt>
               <dd className="font-semibold text-ink-900">
-                {bookingView.assignedSeatCount} ({bookingView.booking.bookingMode.replace("_", " ")})
+                {bookingView.seatNumbers && bookingView.seatNumbers.length > 0
+                  ? `Seat ${bookingView.seatNumbers.join(", ")}`
+                  : bookingView.assignedSeatCount}{" "}
+                ({bookingView.booking.bookingMode === "private_vehicle" ? "private car" : "shared trip"})
               </dd>
             </div>
             <div>
@@ -279,6 +283,68 @@ export function BookingLookupClient({
               </dd>
             </div>
           </dl>
+
+          {bookingView.crew && (
+            <div className="space-y-3 rounded-2xl border border-lagoon-500/40 bg-gradient-to-br from-white to-lagoon-100/60 p-4">
+              <p className="flex items-center gap-2 font-display text-lg font-semibold text-forest-900">
+                <Car className="h-5 w-5 text-copper-600" aria-hidden="true" /> Your trip crew
+              </p>
+              <dl className="grid gap-3 text-sm sm:grid-cols-2">
+                {bookingView.crew.vehicleNumber && (
+                  <div>
+                    <dt className="text-xs text-stone-600">Vehicle</dt>
+                    <dd className="font-mono text-base font-bold tracking-wide text-ink-900">{bookingView.crew.vehicleNumber}</dd>
+                  </div>
+                )}
+                {(bookingView.crew.driverName || bookingView.crew.driverPhone) && (
+                  <div>
+                    <dt className="text-xs text-stone-600">Driver</dt>
+                    <dd className="font-semibold text-ink-900">
+                      {bookingView.crew.driverName}
+                      {bookingView.crew.driverPhone && (
+                        <a href={`tel:+91${bookingView.crew.driverPhone}`} className="ml-2 inline-flex items-center gap-1 text-forest-800 underline">
+                          <Phone className="h-3.5 w-3.5" aria-hidden="true" /> {bookingView.crew.driverPhone}
+                        </a>
+                      )}
+                    </dd>
+                  </div>
+                )}
+              </dl>
+              {bookingView.crew.reportingNote && (
+                <p className="rounded-xl bg-white/80 px-3 py-2 text-sm text-ink-900">{bookingView.crew.reportingNote}</p>
+              )}
+              {bookingView.crew.whatsappGroupUrl && (
+                <a
+                  href={bookingView.crew.whatsappGroupUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-full bg-[#25D366] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:brightness-95"
+                >
+                  <MessageCircle className="h-4 w-4" aria-hidden="true" /> Join the trip WhatsApp group
+                </a>
+              )}
+            </div>
+          )}
+
+          {bookingView.seatNumbers &&
+            bookingView.seatNumbers.length > 0 &&
+            ["pending_payment", "deposit_paid", "confirmed", "cancel_requested"].includes(bookingView.booking.status) && (
+              <details className="rounded-2xl border border-stone-200 bg-white p-4">
+                <summary className="cursor-pointer text-sm font-semibold text-forest-900">
+                  See where you sit (seat {bookingView.seatNumbers.join(", ")})
+                </summary>
+                <div className="mt-3">
+                  <ErtigaSeatMap
+                    mode="view"
+                    takenSeats={[]}
+                    selectedSeats={bookingView.seatNumbers}
+                    maxCapacity={bookingView.departure.maxCapacity}
+                    privateCar={bookingView.booking.bookingMode === "private_vehicle"}
+                    showLegend={false}
+                  />
+                </div>
+              </details>
+            )}
 
           <div className="rounded-xl border border-stone-200 bg-white p-4 space-y-2 text-xs">
             <p className="flex items-center gap-1.5 font-semibold text-forest-900">

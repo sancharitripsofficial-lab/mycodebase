@@ -34,6 +34,35 @@ for (const { label, create, shared } of backends) {
       dep = await be.newDeparture();
     });
 
+    it("seat choice: picked seats are held exactly, a clash is refused, others get the lowest free seats", async () => {
+      const a = await be.hold({ departureId: dep, seats: 2, preferred: [5, 2] });
+      expect(await be.seatNumbers(a.bookingId)).toEqual([2, 5]);
+      await expect(be.hold({ departureId: dep, seats: 2, preferred: [5, 6] })).rejects.toThrow(/SEAT_TAKEN: Seat 5 /);
+      const b = await be.hold({ departureId: dep, seats: 2 });
+      expect(await be.seatNumbers(b.bookingId)).toEqual([1, 3]);
+      expect(await be.seatsTaken(dep)).toBe(4);
+    });
+
+    it("seat choice: wrong count, the same seat twice or a seat that does not exist are refused", async () => {
+      await expect(be.hold({ departureId: dep, seats: 2, preferred: [1] })).rejects.toThrow(/SEAT_COUNT/);
+      await expect(be.hold({ departureId: dep, seats: 2, preferred: [3, 3] })).rejects.toThrow(/SEAT_DUPLICATE/);
+      await expect(be.hold({ departureId: dep, seats: 1, preferred: [7] })).rejects.toThrow(/SEAT_INVALID/);
+      expect(await be.seatsTaken(dep)).toBe(0);
+    });
+
+    it("seat choice: a seat freed by an expired hold can be picked again", async () => {
+      const a = await be.hold({ departureId: dep, seats: 1, preferred: [4] });
+      await expect(be.hold({ departureId: dep, seats: 1, preferred: [4] })).rejects.toThrow(/SEAT_TAKEN/);
+      await be.expireHold(a.bookingId);
+      const b = await be.hold({ departureId: dep, seats: 1, preferred: [4] });
+      expect(await be.seatNumbers(b.bookingId)).toEqual([4]);
+    });
+
+    it("seat choice: the private car ignores picks and takes all six seats", async () => {
+      const a = await be.hold({ departureId: dep, seats: 6, mode: "private_vehicle", preferred: [2] });
+      expect(await be.seatNumbers(a.bookingId)).toEqual([1, 2, 3, 4, 5, 6]);
+    });
+
     it("refuses a reference that is not exactly 12 digits", async () => {
       const { bookingId } = await be.hold({ departureId: dep, seats: 1 });
       await expect(be.submit(bookingId, "12345")).rejects.toThrow(/UTR_FORMAT/);

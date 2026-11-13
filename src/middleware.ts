@@ -37,8 +37,11 @@ export async function middleware(request: NextRequest) {
   if (gated) return gated;
 
   let response = NextResponse.next({ request });
+  const adminArea = isAdminPath(request.nextUrl.pathname);
 
-  if (isSupabaseConfigured()) {
+  // Only staff sign in, so only the admin area needs the Supabase session refresh (a network
+  // call). Customer pages skip it entirely, which keeps them instant and cacheable.
+  if (adminArea && isSupabaseConfigured()) {
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -58,7 +61,7 @@ export async function middleware(request: NextRequest) {
     await supabase.auth.getUser();
   }
 
-  if (isAdminPath(request.nextUrl.pathname)) {
+  if (adminArea) {
     // Keep the admin out of search engines without listing its path in robots.txt.
     response.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
     response.headers.set("Cache-Control", "no-store");
@@ -67,7 +70,6 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp4)$).*)",
-  ],
+  // "/" is included only for the optional ADMIN_HOST redirect; every other public page bypasses middleware.
+  matcher: ["/", "/admin", "/admin/:path*", "/api/admin/:path*"],
 };

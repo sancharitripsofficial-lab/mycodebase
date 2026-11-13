@@ -123,8 +123,8 @@ export function TripCard({ item }: { item: TripWithDetails }) {
             </p>
           </div>
           <Link
-            href={`/trips/${trip.slug}`}
-            className="rounded-full bg-forest-900 px-4 py-2 text-sm font-semibold text-cream-50 transition hover:bg-forest-800"
+            href={upcoming ? `/trips/${trip.slug}?date=${upcoming.departureId}#book` : `/trips/${trip.slug}#book`}
+            className="btn-ocean px-4 py-2 text-sm"
           >
             View &amp; Select Seats
           </Link>

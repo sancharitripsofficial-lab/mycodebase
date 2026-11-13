@@ -20,7 +20,8 @@ import {
 } from "@/lib/data/repository";
 import { buildClickToWhatsAppUrl } from "@/lib/messaging/provider";
 
-export const dynamic = "force-dynamic";
+// Served from the CDN; refreshed every 30 s and immediately after bookings / admin edits.
+export const revalidate = 30;
 
 export default async function HomePage() {
   const [{ trips }, { settings }, reviews] = await Promise.all([
@@ -81,7 +82,7 @@ export default async function HomePage() {
             {nextDeparture && (
               <Reveal delay={260}>
                 <Link
-                  href={`/trips/${nextDeparture.tripSlug}`}
+                  href={`/trips/${nextDeparture.tripSlug}?date=${nextDeparture.departureId}#book`}
                   className="glass group flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl px-4 py-3 text-sm text-white transition hover:bg-white/20"
                 >
                   <span className="rounded-full bg-copper-600 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider">
@@ -167,7 +168,7 @@ export default async function HomePage() {
           {upcomingDepartures.map((dep, i) => (
             <Reveal key={dep.departureId} delay={i * 80}>
             <Link
-              href={`/trips/${dep.tripSlug}`}
+              href={`/trips/${dep.tripSlug}?date=${dep.departureId}#book`}
               className="card-soft card-lift flex h-full flex-col justify-between p-5"
             >
               <div className="space-y-2">

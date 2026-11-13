@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { contentActionSchema, firstIssue } from "@/lib/admin/content-schemas";
 import { requireStaff } from "@/lib/auth";
 import { getAdminContent, runContentAction } from "@/lib/data/admin-content";
+import { refreshStorefront } from "@/lib/revalidate";
 
 export const dynamic = "force-dynamic";
 
@@ -42,6 +43,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const result = await runContentAction(parsed.data, { userId: actor.userId, role: actor.staffRole ?? "ops" });
+    refreshStorefront();
     return NextResponse.json({ ok: true, ...result });
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : "Could not save." }, { status: 409 });

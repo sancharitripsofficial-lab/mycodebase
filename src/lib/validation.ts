@@ -39,6 +39,7 @@ export const checkoutSchema = z
     acceptedTermsPrivacy: z.literal(true, {
       errorMap: () => ({ message: "You must review and accept the terms and privacy notice." }),
     }),
+    preferredSeats: z.array(z.number().int().min(1).max(6)).max(6).optional(),
     acceptedComfortProcessing: z.literal(true, {
       errorMap: () => ({
         message: "Please confirm consent for operational handling of your booking preferences.",
@@ -52,6 +53,15 @@ export const checkoutSchema = z
         path: ["seatsRequested"],
         message: "Private vehicle option reserves all 6 seats.",
       });
+    }
+    if (data.bookingMode === "batch_seats" && data.preferredSeats && data.preferredSeats.length > 0) {
+      if (data.preferredSeats.length !== data.seatsRequested || new Set(data.preferredSeats).size !== data.preferredSeats.length) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["preferredSeats"],
+          message: `Pick exactly ${data.seatsRequested} different seat(s) on the car map.`,
+        });
+      }
     }
     if (data.travelers.length !== data.seatsRequested) {
       ctx.addIssue({
@@ -158,4 +168,82 @@ export const upiSettingsSchema = z.object({
   upiId: z.string().max(260).default(""),
   payeeName: z.string().max(80).default(""),
   supportPhone: z.string().max(20).default(""),
+});
+
+// ---------------------------------------------------------------------------
+// Owner operations
+// ---------------------------------------------------------------------------
+
+const rupeesToPaise = z
+  .number({ invalid_type_error: "Enter the amount in rupees." })
+  .positive("Amount must be more than zero.")
+  .max(10_00_000, "That amount looks too large for one booking.")
+  .transform((r) => Math.round(r * 100));
+
+const staffNote = z.string().trim().min(5, "Write why (at least 5 characters).").max(300);
+
+export const ownerOpsActionSchema = z.discriminatedUnion("kind", [
+  z.object({
+    kind: z.literal("record_payment"),
+    bookingId: z.string().uuid(),
+    amountRupees: rupeesToPaise,
+    method: z.enum(["cash", "bank_transfer", "upi_manual"]),
+    reference: z.string().trim().min(3, "Add a reference: receipt number, bank UTR or UPI reference.").max(60),
+    note: staffNote,
+  }),
+  z.object({
+    kind: z.literal("record_refund"),
+    bookingId: z.string().uuid(),
+    amountRupees: rupeesToPaise,
+    reference: z.string().trim().min(3, "Add the refund reference (bank UTR or UPI reference).").max(60),
+    note: staffNote,
+    closeBooking: z.boolean(),
+  }),
+  z.object({
+    kind: z.literal("save_crew"),
+    departureId: z.string().uuid(),
+    driverName: z.string().trim().max(80),
+    driverPhone: z
+      .string()
+      .trim()
+      .transform((v) => v.replace(/[\s-]/g, "").replace(/^(\+91|91|0)(?=[6-9]\d{9}$)/, ""))
+      .refine((v) => v === "" || /^[6-9]\d{9}$/.test(v), "Driver phone must be a 10-digit Indian mobile number."),
+    vehicleNumber: z
+      .string()
+      .trim()
+      .max(20)
+      .transform((v) => v.toUpperCase().replace(/\s+/g, " ")),
+    whatsappGroupUrl: z
+      .string()
+      .trim()
+      .refine(
+        (v) => v === "" || /^https:\/\/chat\.whatsapp\.com\/[A-Za-z0-9]{10,40}$/.test(v),
+        "Paste the group invite link that starts with https://chat.whatsapp.com/"
+      ),
+    reportingNote: z.string().trim().max(300),
+    operatorNotes: z.string().trim().max(1000),
+  }),
+  z.object({
+    kind: z.literal("update_enquiry"),
+    id: z.string().uuid(),
+    status: z.enum(["new", "contacted", "converted", "closed"]),
+    staffNote: z.string().trim().max(500),
+  }),
+]);
+
+export const enquirySchema = z.object({
+  kind: z.enum(["private_date", "custom_trip", "group", "general"]),
+  fullName: z.string().trim().min(2, "Enter your name.").max(120),
+  phone: z
+    .string()
+    .trim()
+    .transform((v) => v.replace(/[\s-]/g, "").replace(/^(\+91|91|0)(?=[6-9]\d{9}$)/, ""))
+    .refine((v) => /^[6-9]\d{9}$/.test(v), "Enter a 10-digit Indian mobile number."),
+  email: z.union([z.literal(""), z.string().trim().email("Enter a valid email or leave it empty.").max(160)]),
+  tripId: z.string().uuid().nullable(),
+  preferredDates: z.string().trim().max(120),
+  groupSize: z.number().int().min(1).max(60).nullable(),
+  message: z.string().trim().max(1500),
+  /** Hidden field; real people leave it empty. */
+  website: z.string().max(0, "Could not send. Please WhatsApp us instead.").optional(),
 });

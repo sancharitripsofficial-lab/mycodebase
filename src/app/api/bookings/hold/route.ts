@@ -4,8 +4,10 @@ import { createAtomicBookingHold, getUpiPaymentSettings } from "@/lib/data/repos
 import { getPaymentGatewayStatus } from "@/lib/env";
 import { signBookingLookupToken } from "@/lib/lookup-token";
 import { getPaymentProvider } from "@/lib/payments/provider";
+import { paymentErrorMessage } from "@/lib/payments/upi";
 import { buildUpiInstructions } from "@/lib/payments/upi-qr";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { refreshStorefront } from "@/lib/revalidate";
 import { checkoutSchema } from "@/lib/validation";
 
 export async function POST(request: NextRequest) {
@@ -68,14 +70,17 @@ export async function POST(request: NextRequest) {
       coTravelerPreference: parsed.data.coTravelerPreference,
       preferenceNotes: parsed.data.preferenceNotes ?? "",
       whatsappOptIn: parsed.data.whatsappOptIn,
+      preferredSeats: parsed.data.bookingMode === "batch_seats" ? parsed.data.preferredSeats ?? null : null,
     });
 
+    refreshStorefront();
     const lookupToken = signBookingLookupToken(hold.bookingReference, parsed.data.customerEmail);
     const base = {
       bookingId: hold.bookingId,
       bookingReference: hold.bookingReference,
       holdExpiresAt: hold.holdExpiresAt,
       amountDuePaise: hold.amountDuePaise,
+      seatNumbers: hold.seatNumbers,
       lookupToken,
     };
 
@@ -99,7 +104,9 @@ export async function POST(request: NextRequest) {
     });
     return NextResponse.json({ ...base, paymentMethod: paymentOrder.provider, upi: null, paymentOrder });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Could not hold seats.";
-    return NextResponse.json({ error: message }, { status: 409 });
+    const raw = err instanceof Error ? err.message : null;
+    const message = paymentErrorMessage(raw, "Could not hold seats.");
+    const seatTaken = Boolean(raw && raw.startsWith("SEAT_TAKEN"));
+    return NextResponse.json({ error: message, code: seatTaken ? "SEAT_TAKEN" : undefined }, { status: 409 });
   }
 }
