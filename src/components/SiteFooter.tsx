@@ -78,6 +78,7 @@ export function SiteFooter({
             <li><Link href="/policies#terms" className="inline-flex min-h-9 items-center hover:text-white md:min-h-0">Terms</Link></li>
             <li><Link href="/policies#privacy" className="inline-flex min-h-9 items-center hover:text-white md:min-h-0">Privacy</Link></li>
             <li><Link href="/policies#refunds" className="inline-flex min-h-9 items-center hover:text-white md:min-h-0">Cancellation &amp; refunds</Link></li>
+            <li><Link href="/faqs" className="inline-flex min-h-9 items-center hover:text-white md:min-h-0">FAQs</Link></li>
             <li><Link href="/contact" className="inline-flex min-h-9 items-center hover:text-white md:min-h-0">Contact &amp; WhatsApp</Link></li>
             {looksSet(brand.supportEmail) && (
               <li>

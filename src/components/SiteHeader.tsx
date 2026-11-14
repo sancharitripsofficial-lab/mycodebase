@@ -14,6 +14,7 @@ const NAV_LINKS = [
   { href: "/blog", label: "Blog" },
   { href: "/booking-lookup", label: "My Booking" },
   { href: "/policies", label: "Policies" },
+  { href: "/faqs", label: "FAQs" },
 ];
 
 export function SiteHeader({ isDemoMode }: { isDemoMode: boolean }) {

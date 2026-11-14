@@ -128,22 +128,10 @@ export default async function HomePage() {
     ? `https://wa.me/${settings.socialLinks.whatsappNumber}?text=${encodeURIComponent(chatText)}`
     : buildClickToWhatsAppUrl(chatText);
 
-  const faqLd = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: settings.faqs.map((f) => ({
-      "@type": "Question",
-      name: f.question,
-      acceptedAnswer: { "@type": "Answer", text: f.answer },
-    })),
-  };
-
   const headline = settings.brandIdentity.headline;
 
   return (
     <div>
-      {settings.faqs.length > 0 && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }} />}
-
       {/* Hero: looping road-trip film (tea hills at sunrise) under a soft tea-green shade */}
       <section className="relative isolate overflow-hidden text-cream-50">
         <HeroCinematic
@@ -551,36 +539,6 @@ export default async function HomePage() {
               )}
             </div>
             <EnquiryForm defaultKind="group" />
-          </div>
-        </section>
-      )}
-
-      {/* FAQs (Admin → Website text → FAQs) */}
-      {home.faqSection.show && settings.faqs.length > 0 && (
-        <section className="sec-kolam">
-          <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 lg:grid-cols-3">
-            <div className="space-y-3">
-              <SectionHead text={home.faqSection} />
-              <Link
-                href="/contact"
-                className="inline-flex items-center gap-2 rounded-full border border-forest-900 px-5 py-2.5 text-sm font-semibold text-forest-900 hover:bg-forest-900 hover:text-cream-50"
-              >
-                Contact &amp; support details
-              </Link>
-            </div>
-            <div className="space-y-3 lg:col-span-2">
-              {settings.faqs.map((faq) => (
-                <details key={faq.id} className="group rounded-2xl border border-white/70 bg-white/85 p-4 shadow-[var(--shadow-soft)] open:bg-white">
-                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-display text-base font-semibold text-forest-900">
-                    {faq.question}
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-peach-100 text-lg leading-none text-copper-700 transition-transform group-open:rotate-45">
-                      +
-                    </span>
-                  </summary>
-                  <p className="mt-2.5 text-sm leading-relaxed text-stone-600">{faq.answer}</p>
-                </details>
-              ))}
-            </div>
           </div>
         </section>
       )}

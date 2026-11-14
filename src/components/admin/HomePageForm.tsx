@@ -66,16 +66,22 @@ function Group({ title, hint, children }: { title: string; hint?: string; childr
   );
 }
 
-function SectionEditor({ label, value, onChange, canEdit, bodyLabel = "Line under the title (optional)" }: {
+function SectionEditor({ label, value, onChange, canEdit, bodyLabel = "Line under the title (optional)", note }: {
   label: string;
   value: SectionText;
   onChange: (v: SectionText) => void;
   canEdit: boolean;
   bodyLabel?: string;
+  /** Set for text that is not a home page section (no show/hide switch, this note instead). */
+  note?: string;
 }) {
   return (
     <div className="space-y-3">
-      <Switch label={`Show “${label}” on the home page`} value={value.show} isDisabled={!canEdit} onChange={(v) => onChange({ ...value, show: v })} />
+      {note ? (
+        <p className="text-xs text-stone-600">{note}</p>
+      ) : (
+        <Switch label={`Show “${label}” on the home page`} value={value.show} isDisabled={!canEdit} onChange={(v) => onChange({ ...value, show: v })} />
+      )}
       <div className="grid gap-3 md:grid-cols-[0.6fr_1.4fr]">
         <TextInput label="Small heading" value={value.eyebrow} isDisabled={!canEdit} onChange={(v) => onChange({ ...value, eyebrow: v })} />
         <TextInput label="Title" value={value.title} isDisabled={!canEdit} onChange={(v) => onChange({ ...value, title: v })} />
@@ -297,7 +303,13 @@ export function HomePageForm({ initial, trips, save, canEdit }: { initial: HomeP
         <SectionEditor label="Safety" value={f.safetySection} onChange={(v) => set("safetySection", v)} canEdit={canEdit} bodyLabel="Paragraph" />
         <SectionEditor label="Reviews" value={f.reviewsSection} onChange={(v) => set("reviewsSection", v)} canEdit={canEdit} />
         <SectionEditor label="Plan my trip" value={f.planSection} onChange={(v) => set("planSection", v)} canEdit={canEdit} bodyLabel="Paragraph" />
-        <SectionEditor label="FAQs" value={f.faqSection} onChange={(v) => set("faqSection", v)} canEdit={canEdit} />
+        <SectionEditor
+          label="FAQs page"
+          value={f.faqSection}
+          onChange={(v) => set("faqSection", v)}
+          canEdit={canEdit}
+          note="Top of the FAQs page (menu → FAQs, below Policies). The questions and answers themselves are in Website text → FAQs."
+        />
       </Group>
 
       {canEdit && (
