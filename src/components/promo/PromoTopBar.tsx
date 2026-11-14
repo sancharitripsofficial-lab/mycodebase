@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { Promotion } from "@/lib/data/promotions";
 import { THEME_BG, trackPromo, useTrackView } from "./track";
+import { promoHref, scrollIfSamePage } from "./PromoBanner";
 
 const CLOSED_KEY = "promo-topbar-closed";
 
@@ -49,10 +50,13 @@ export function PromoTopBar({ promotions }: { promotions: Promotion[] }) {
           {text}
         </p>
         {current.ctaLabel && current.ctaUrl && (
-          current.ctaUrl.startsWith("/") ? (
+          promoHref(current).startsWith("/") ? (
             <Link
-              href={current.ctaUrl}
-              onClick={() => trackPromo(current.id, "click")}
+              href={promoHref(current)}
+              onClick={(e) => {
+                trackPromo(current.id, "click");
+                scrollIfSamePage(e, promoHref(current));
+              }}
               className="inline-flex shrink-0 items-center gap-1 rounded-full bg-white/20 px-3 py-1 font-semibold underline-offset-2 transition hover:bg-white/30"
             >
               {current.ctaLabel}
@@ -60,7 +64,7 @@ export function PromoTopBar({ promotions }: { promotions: Promotion[] }) {
             </Link>
           ) : (
             <a
-              href={current.ctaUrl}
+              href={promoHref(current)}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => trackPromo(current.id, "click")}

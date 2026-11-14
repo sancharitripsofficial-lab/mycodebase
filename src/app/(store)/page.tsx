@@ -352,7 +352,7 @@ export default async function HomePage() {
 
       {/* Upcoming departures: live seats, each card in its destination's colours */}
       {home.departuresSection.show && upcomingDepartures.length > 0 && (
-        <section className="sec-route mt-12 border-y border-stone-200/70">
+        <section id="upcoming-dates" className="sec-route mt-12 scroll-mt-16 border-y border-stone-200/70">
           <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
             <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
               <SectionHead text={home.departuresSection} />

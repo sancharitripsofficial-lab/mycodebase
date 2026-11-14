@@ -64,7 +64,7 @@ export function TripsCatalogClient({ trips, categories = [] }: { trips: TripWith
   }, [trips, query, region, difficulty, onlyPrivateEligible, onlyWomenBatch, category, liveCategories]);
 
   return (
-    <div className="space-y-6">
+    <div id="all-trips" className="scroll-mt-24 space-y-6">
       {liveCategories.length > 0 && (
         <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0" role="group" aria-label="Trip categories">
           <button

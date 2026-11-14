@@ -286,6 +286,7 @@ function Editor({
           })),
         ]
       : []),
+    { value: "/#upcoming-dates", label: "All upcoming dates (offer for every trip)" },
     { value: "/trips", label: "All trips" },
     { value: "/trips?mode=private", label: "Private car page" },
     { value: "/trips#ask", label: "Ask us form" },

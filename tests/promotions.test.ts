@@ -104,3 +104,14 @@ describe("offers & ads rules (real migrations)", () => {
     await expect(asAnon("UPDATE public.promotions SET title = 'hacked'")).rejects.toThrow();
   });
 });
+
+describe("offer buttons always go somewhere", async () => {
+  const { promoHref } = await import("@/components/promo/PromoBanner");
+  it("never links to the page you are on: All trips lands on the trip list, a trip's offer on its dates", () => {
+    expect(promoHref({ ctaUrl: "/trips", tripSlug: null })).toBe("/trips#all-trips");
+    expect(promoHref({ ctaUrl: "/trips", tripSlug: "hampi-boulders-and-ruins" })).toBe("/trips/hampi-boulders-and-ruins#book");
+    expect(promoHref({ ctaUrl: "/#upcoming-dates", tripSlug: null })).toBe("/#upcoming-dates");
+    expect(promoHref({ ctaUrl: "/trips/coorg?date=d1#book", tripSlug: "coorg" })).toBe("/trips/coorg?date=d1#book");
+    expect(promoHref({ ctaUrl: "https://wa.me/919800000000", tripSlug: null })).toBe("https://wa.me/919800000000");
+  });
+});

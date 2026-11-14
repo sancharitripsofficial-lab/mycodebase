@@ -117,7 +117,7 @@ export function PromoPopup({ promotions }: { promotions: Promotion[] }) {
           </h2>
           {promo.message && <p className="text-sm leading-relaxed text-stone-600">{promo.message}</p>}
           <div className="flex flex-wrap items-center gap-3 pt-1">
-            <PromoCta promo={promo} className="btn-sunset inline-flex items-center gap-2 px-5 py-3 text-sm" />
+            <PromoCta promo={promo} className="btn-sunset inline-flex items-center gap-2 px-5 py-3 text-sm" onDone={() => setPromo(null)} />
             <button type="button" onClick={() => setPromo(null)} className="rounded-full px-4 py-3 text-sm font-semibold text-stone-600 hover:bg-lagoon-100">
               Not now
             </button>

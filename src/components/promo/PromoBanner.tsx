@@ -7,11 +7,42 @@ import type { Promotion } from "@/lib/data/promotions";
 import { PromoMedia } from "./PromoMedia";
 import { THEME_BG, trackPromo, useTrackView } from "./track";
 
-export function PromoCta({ promo, className }: { promo: Promotion; className: string }) {
+/**
+ * Where an offer button really goes. An offer for one trip whose button still says "All trips"
+ * opens that trip's dates; "All trips" itself lands on the list of trips (so on the trips page it
+ * scrolls down to them instead of linking to the page you are already on).
+ */
+export function promoHref(promo: Pick<Promotion, "ctaUrl" | "tripSlug">): string {
+  if (promo.tripSlug && promo.ctaUrl === "/trips") return `/trips/${promo.tripSlug}#book`;
+  if (promo.ctaUrl === "/trips") return "/trips#all-trips";
+  return promo.ctaUrl;
+}
+
+/**
+ * A button that points at a section of the page you are already on (e.g. "/trips#all-trips" on the
+ * trips page): scroll there every time it is pressed. (A plain link does nothing on a second press,
+ * because the address does not change.)
+ */
+export function scrollIfSamePage(e: { preventDefault: () => void }, href: string): void {
+  if (typeof window === "undefined" || !href.includes("#")) return;
+  const url = new URL(href, window.location.href);
+  if (url.origin !== window.location.origin || url.pathname !== window.location.pathname || url.search !== window.location.search) return;
+  const el = document.getElementById(decodeURIComponent(url.hash.slice(1)));
+  if (!el) return;
+  e.preventDefault();
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  el.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+  if (window.location.hash !== url.hash) window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
+}
+
+export function PromoCta({ promo, className, onDone }: { promo: Promotion; className: string; onDone?: () => void }) {
   if (!promo.ctaLabel || !promo.ctaUrl) return null;
-  const onClick = () => trackPromo(promo.id, "click");
-  // An offer for one trip whose button still says "all trips" opens that trip's dates instead.
-  const href = promo.tripSlug && promo.ctaUrl === "/trips" ? `/trips/${promo.tripSlug}#book` : promo.ctaUrl;
+  const href = promoHref(promo);
+  const onClick = (e: React.MouseEvent) => {
+    trackPromo(promo.id, "click");
+    onDone?.();
+    scrollIfSamePage(e, href);
+  };
   const inner = (
     <>
       {promo.ctaLabel}
