@@ -1,4 +1,5 @@
 import { ChatAssistant } from "@/components/assistant/ChatAssistant";
+import { EARLY_LANG_SCRIPT, LanguageProvider } from "@/components/i18n/LanguageProvider";
 import type { ChatAssistantConfig } from "@/components/assistant/chat-config";
 import { PromoPopup } from "@/components/promo/PromoPopup";
 import { PromoTopBar } from "@/components/promo/PromoTopBar";
@@ -39,7 +40,10 @@ export default async function StoreLayout({ children }: { children: React.ReactN
     : null;
 
   return (
+    <LanguageProvider>
     <div className="flex min-h-screen flex-col">
+      {/* Kannada visitors: mark the page before it paints, so English never flashes. */}
+      <script dangerouslySetInnerHTML={{ __html: EARLY_LANG_SCRIPT }} />
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-md focus:bg-forest-900 focus:px-4 focus:py-2 focus:text-cream-50"
@@ -56,5 +60,6 @@ export default async function StoreLayout({ children }: { children: React.ReactN
       {chatConfig && <ChatAssistant config={chatConfig} />}
       <PromoPopup promotions={forPlacement(promotions, "popup")} />
     </div>
+    </LanguageProvider>
   );
 }

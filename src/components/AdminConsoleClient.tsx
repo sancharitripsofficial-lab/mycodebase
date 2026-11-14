@@ -551,7 +551,7 @@ function Workspace({
           )}
           {section === "dates" && <DeparturesManager editor={editor} onSeatOverride={runOps} />}
           {section === "waitlist" && <WaitlistSection data={data} />}
-          {section === "offers" && <PromotionsManager role={actor.staffRole} trips={data.trips} />}
+          {section === "offers" && <PromotionsManager role={actor.staffRole} trips={data.trips} departures={data.departures} />}
           {section === "creators" && <CreatorsManager role={actor.staffRole} trips={data.trips} />}
           {section === "trips" && <TripsManager editor={editor} />}
           {section === "website" && <SiteContentManager editor={editor} />}

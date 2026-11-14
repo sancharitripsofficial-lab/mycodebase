@@ -36,8 +36,8 @@
   --color-stone-600: #48625f;
   --color-ink-900: #10302f;
 
-  --font-sans: var(--font-plus-jakarta), ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-serif: var(--font-fraunces), ui-serif, Georgia, Cambria, serif;
+  --font-sans: var(--font-plus-jakarta), var(--font-kannada), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-serif: var(--font-fraunces), var(--font-kannada), ui-serif, Georgia, Cambria, serif;
 }
 
 @layer base {
@@ -491,3 +491,19 @@
 .admin-shell main {
   overflow-wrap: anywhere;
 }
+
+
+/* ---------- Kannada ↔ English ---------- */
+/* A returning Kannada visitor: hold the page (max 1.2 s) until the Kannada words are on it. */
+html[data-lang="kn"]:not([data-i18n-ready]) body {
+  animation: i18n-wait 1.2s steps(1, end) both;
+}
+@keyframes i18n-wait {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+/* Kannada letters are taller and join together: no squeezed lines, no letter-spacing. */
+html[lang="kn"] :is(h1, h2, h3, h4, .font-display) { line-height: 1.32; }
+html[lang="kn"] :is(.leading-none, .leading-tight, .leading-snug) { line-height: 1.3; }
+html[lang="kn"] :where(.uppercase, [class*="tracking-"]) { letter-spacing: 0 !important; }
+html[lang="kn"] body { overflow-wrap: anywhere; }

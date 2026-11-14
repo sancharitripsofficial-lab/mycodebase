@@ -519,7 +519,12 @@ export const ChatMessage = memo(function ChatMessage({
   return (
     <GuideRow look={look}>
       {(text || writing) && (
-        <div className={`${guideBubble} max-w-[94%] ${isError ? "border-[#f6c1c8] bg-[#fff6f7]" : "border-stone-200 bg-cream-50"} inline-block`}>
+        <div
+          className={`${guideBubble} max-w-[94%] ${isError ? "border-[#f6c1c8] bg-[#fff6f7]" : "border-stone-200 bg-cream-50"} inline-block`}
+          // Exact answers are English sentences built from live data: translating them word by word
+          // would mix languages, so they stay whole. (AI answers already arrive in the visitor's language.)
+          {...(message.source === "guide" ? { "data-no-translate": "" } : {})}
+        >
           <span className="sr-only">{look.guideName}: </span>
           <RichText text={text} streaming={writing} onNavigate={onNavigate} />
           {writing && <span className={styles.caret} aria-hidden="true" />}

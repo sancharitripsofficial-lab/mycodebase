@@ -13,7 +13,8 @@ import { PromoBanner } from "@/components/promo/PromoBanner";
 import { PromoMedia } from "@/components/promo/PromoMedia";
 import { getCached, setCached } from "@/lib/admin/memo-cache";
 import type { AdminPromotion, PromoMediaType, PromoPlacement, PromoTheme, Promotion } from "@/lib/data/promotions";
-import type { StaffRole, Trip } from "@/lib/types";
+import type { PublicDepartureAvailability, StaffRole, Trip } from "@/lib/types";
+import { isBookable } from "@/lib/departure-rules";
 
 const PLACEMENTS: { key: PromoPlacement; label: string; hint: string }[] = [
   { key: "home_banner", label: "Home page banner", hint: "Big banner under the opening video" },
@@ -66,7 +67,9 @@ function when(iso: string | null): string {
 }
 
 /** Admin → Offers & ads: what the website advertises, where, and when. */
-export function PromotionsManager({ role, trips }: { role: StaffRole; trips: Trip[] }) {
+type OfferDeparture = Pick<PublicDepartureAvailability, "departureId" | "tripId" | "startDate" | "endDate" | "seatsRemaining" | "status" | "bookingCutoffAt">;
+
+export function PromotionsManager({ role, trips, departures = [] }: { role: StaffRole; trips: Trip[]; departures?: OfferDeparture[] }) {
   const canEdit = role === "owner" || role === "ops";
   const [rows, setRows] = useState<AdminPromotion[] | null>(() => getCached<AdminPromotion[]>("promotions") ?? null);
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -128,7 +131,7 @@ export function PromotionsManager({ role, trips }: { role: StaffRole; trips: Tri
       ctaLabel: p.ctaLabel,
       ctaUrl: p.ctaUrl,
       placements: p.placements,
-      tripId: p.placements.includes("trip_page") ? p.tripId : null,
+      tripId: p.tripId,
       theme: p.theme,
       startsAt: p.startsAt,
       endsAt: p.endsAt,
@@ -226,6 +229,7 @@ export function PromotionsManager({ role, trips }: { role: StaffRole; trips: Tri
             draft={draft}
             setDraft={setDraft}
             trips={trips}
+            departures={departures}
             busy={busy}
             onSave={async () => {
               const ok = await send(
@@ -241,16 +245,24 @@ export function PromotionsManager({ role, trips }: { role: StaffRole; trips: Tri
   );
 }
 
+const OFFER_DATE = new Intl.DateTimeFormat("en-IN", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
+const offerDate = (iso: string) => OFFER_DATE.format(new Date(`${iso.slice(0, 10)}T12:00:00Z`));
+
+/** Where an offer's button goes when it is for one trip: that trip's dates and booking form. */
+const tripBookingLink = (slug: string) => `/trips/${slug}#book`;
+
 function Editor({
   draft,
   setDraft,
   trips,
+  departures,
   busy,
   onSave,
 }: {
   draft: Draft;
   setDraft: (d: Draft | null) => void;
   trips: Trip[];
+  departures: OfferDeparture[];
   busy: boolean;
   onSave: () => Promise<void>;
 }) {
@@ -258,13 +270,40 @@ function Editor({
   const [uploadError, setUploadError] = useState<string | null>(null);
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setDraft({ ...draft, [k]: v });
 
+  const offerTrip = trips.find((t) => t.id === draft.tripId) ?? null;
+  const tripDates = offerTrip
+    ? departures
+        .filter((d) => d.tripId === offerTrip.id && isBookable(d))
+        .sort((a, b) => a.startDate.localeCompare(b.startDate))
+    : [];
   const linkOptions = [
+    ...(offerTrip
+      ? [
+          { value: tripBookingLink(offerTrip.slug), label: `${offerTrip.title}: dates & booking (recommended)` },
+          ...tripDates.map((d) => ({
+            value: `/trips/${offerTrip.slug}?date=${d.departureId}#book`,
+            label: `Only ${offerDate(d.startDate)} – ${offerDate(d.endDate)} (${d.seatsRemaining > 0 ? `${d.seatsRemaining} seats left` : "sold out"})`,
+          })),
+        ]
+      : []),
     { value: "/trips", label: "All trips" },
     { value: "/trips?mode=private", label: "Private car page" },
     { value: "/trips#ask", label: "Ask us form" },
-    ...trips.map((t) => ({ value: `/trips/${t.slug}`, label: `Trip: ${t.title}` })),
+    ...trips.filter((t) => t.id !== offerTrip?.id).map((t) => ({ value: tripBookingLink(t.slug), label: `Trip: ${t.title} (dates & booking)` })),
     { value: "custom", label: "Other link…" },
   ];
+
+  /** Choosing the offer's trip points a general button at that trip's dates (other links are kept). */
+  const chooseTrip = (tripId: string | null) => {
+    const trip = trips.find((t) => t.id === tripId) ?? null;
+    const generic = !draft.ctaUrl || draft.ctaUrl === "/trips" || /^\/trips\/[^?#]+(?:[?#].*)?$/.test(draft.ctaUrl);
+    setDraft({
+      ...draft,
+      tripId: trip?.id ?? null,
+      ...(trip && generic ? { ctaUrl: tripBookingLink(trip.slug), ctaLabel: draft.ctaLabel || "See dates" } : {}),
+      ...(!trip && /^\/trips\/[^?#]+/.test(draft.ctaUrl) ? { ctaUrl: "/trips" } : {}),
+    });
+  };
   const linkChoice = linkOptions.some((o) => o.value === draft.ctaUrl) ? draft.ctaUrl : "custom";
 
   async function upload(file: File, target: "media" | "poster") {
@@ -296,6 +335,19 @@ function Editor({
   return (
     <Panel title={draft.id ? "Edit offer" : "New offer"} description="The preview at the bottom shows exactly how it will look.">
       <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-1.5 md:col-span-2">
+          <Selector
+            label="Which trip is this offer for?"
+            value={draft.tripId ?? "none"}
+            onChange={(v) => chooseTrip(v === "none" ? null : v)}
+            options={[{ value: "none", label: "No single trip (offer for all trips)" }, ...trips.map((t) => ({ value: t.id, label: t.title }))]}
+          />
+          <p className="text-xs text-stone-600">
+            {offerTrip
+              ? `The button opens ${offerTrip.title}'s dates and booking form, and on trip pages this offer shows only on ${offerTrip.title}.`
+              : "Pick the trip when the ad or video is about one tour, so “See dates” opens exactly that tour."}
+          </p>
+        </div>
         <TextInput label="Title" description="Short and clear, e.g. “Diwali weekend: ₹1,000 off Coorg”." value={draft.title} onChange={(v) => set("title", v)} />
         <TextInput label="Badge (optional)" description="Tiny label, e.g. “₹1,000 OFF”, “NEW”, “3 seats left”." value={draft.badge} onChange={(v) => set("badge", v.slice(0, 24))} />
         <div className="md:col-span-2">
@@ -411,14 +463,9 @@ function Editor({
             })}
           </div>
           {draft.placements.includes("trip_page") && (
-            <div className="max-w-sm">
-              <Selector
-                label="Which trip pages"
-                value={draft.tripId ?? "all"}
-                onChange={(v) => set("tripId", v === "all" ? null : v)}
-                options={[{ value: "all", label: "Every trip page" }, ...trips.map((t) => ({ value: t.id, label: t.title }))]}
-              />
-            </div>
+            <p className="text-xs text-stone-600">
+              Trip pages: {offerTrip ? `only ${offerTrip.title}` : "every trip page"} (set by “Which trip is this offer for?” above).
+            </p>
           )}
         </fieldset>
 

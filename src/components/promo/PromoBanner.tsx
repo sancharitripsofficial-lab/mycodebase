@@ -10,18 +10,20 @@ import { THEME_BG, trackPromo, useTrackView } from "./track";
 export function PromoCta({ promo, className }: { promo: Promotion; className: string }) {
   if (!promo.ctaLabel || !promo.ctaUrl) return null;
   const onClick = () => trackPromo(promo.id, "click");
+  // An offer for one trip whose button still says "all trips" opens that trip's dates instead.
+  const href = promo.tripSlug && promo.ctaUrl === "/trips" ? `/trips/${promo.tripSlug}#book` : promo.ctaUrl;
   const inner = (
     <>
       {promo.ctaLabel}
       <ArrowRight className="h-4 w-4" aria-hidden="true" />
     </>
   );
-  return promo.ctaUrl.startsWith("/") ? (
-    <Link href={promo.ctaUrl} onClick={onClick} className={className}>
+  return href.startsWith("/") ? (
+    <Link href={href} onClick={onClick} className={className}>
       {inner}
     </Link>
   ) : (
-    <a href={promo.ctaUrl} target="_blank" rel="noopener noreferrer" onClick={onClick} className={className}>
+    <a href={href} target="_blank" rel="noopener noreferrer" onClick={onClick} className={className}>
       {inner}
     </a>
   );

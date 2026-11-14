@@ -33,7 +33,10 @@ export interface Promotion {
   ctaLabel: string;
   ctaUrl: string;
   placements: PromoPlacement[];
+  /** The trip this offer is for (its button opens that trip's dates; on trip pages it shows only there). */
   tripId: string | null;
+  /** That trip's page address, filled in when loading (never saved). */
+  tripSlug?: string | null;
   theme: PromoTheme;
   startsAt: string | null;
   endsAt: string | null;
@@ -76,6 +79,7 @@ function mapPromotion(r: Record<string, unknown>): Promotion {
     ctaUrl: String(r.cta_url ?? ""),
     placements: (Array.isArray(r.placements) ? r.placements : []) as PromoPlacement[],
     tripId: (r.trip_id as string | null) ?? null,
+    tripSlug: ((r.trips as { slug?: unknown } | null)?.slug as string | undefined) ?? null,
     theme: ((r.theme as PromoTheme) ?? "sunset") as PromoTheme,
     startsAt: (r.starts_at as string | null) ?? null,
     endsAt: (r.ends_at as string | null) ?? null,
@@ -132,7 +136,7 @@ export async function getLivePromotions(): Promise<Promotion[]> {
     const supabase = createSupabasePublicClient();
     const { data, error } = await supabase
       .from("promotions")
-      .select(PUBLIC_COLUMNS)
+      .select(`${PUBLIC_COLUMNS}, trips(slug)`)
       .order("sort_order", { ascending: true })
       .limit(40);
     if (error) {
@@ -213,7 +217,7 @@ export async function savePromotion(input: PromotionInput, actor: Actor): Promis
     cta_label: input.ctaLabel,
     cta_url: input.ctaUrl,
     placements: input.placements,
-    trip_id: input.placements.includes("trip_page") ? input.tripId : null,
+    trip_id: input.tripId,
     theme: input.theme,
     starts_at: input.startsAt,
     ends_at: input.endsAt,

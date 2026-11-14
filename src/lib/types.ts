@@ -273,6 +273,8 @@ export interface SiteSettings {
   homePage: HomePageContent;
   /** Website chat guide: name, greeting, customer care number, quick questions, character media (Admin → Website text → Chat guide). */
   assistant: AssistantSettings;
+  /** Owner's Kannada wording (English text → Kannada), on top of the built-in translations (Admin → Kannada). */
+  translationsKn: Record<string, string>;
   legalDrafts: {
     ownerReviewRequired: boolean;
     termsSummary: string;

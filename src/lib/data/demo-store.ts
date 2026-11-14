@@ -715,6 +715,7 @@ function createInitialDemoState(): DemoDatabaseState {
     socialLinks: { instagramUrl: "", youtubeUrl: "", facebookUrl: "", whatsappNumber: "", whatsappChannelUrl: "" },
     homePage: DEFAULT_HOME_CONTENT,
     assistant: DEFAULT_ASSISTANT_SETTINGS,
+    translationsKn: {},
     legalDrafts: {
       ownerReviewRequired: true,
       termsSummary:

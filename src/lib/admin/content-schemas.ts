@@ -326,6 +326,20 @@ export const assistantSettingsSchema = z.object({
     }),
 });
 
+/** Owner's Kannada wording: English text → Kannada (Admin → Kannada). */
+export const translationsKnSchema = z
+  .record(z.string().trim().min(1).max(4000), z.string().max(6000))
+  .refine((m) => Object.keys(m).length <= 6000, "Too many translations in one save (at most 6000).")
+  .transform((m) => {
+    const out: Record<string, string> = {};
+    for (const [en, kn] of Object.entries(m)) {
+      const key = en.replace(/\s+/g, " ").trim();
+      const value = kn.trim();
+      if (key && value) out[key] = value;
+    }
+    return out;
+  });
+
 export const settingsSaveSchema = z.discriminatedUnion("key", [
   z.object({ key: z.literal("brand_identity"), value: brandIdentitySchema }),
   z.object({ key: z.literal("booking_policy"), value: bookingPolicySchema }),
@@ -334,6 +348,7 @@ export const settingsSaveSchema = z.discriminatedUnion("key", [
   z.object({ key: z.literal("social_links"), value: socialLinksSchema }),
   z.object({ key: z.literal("home_page"), value: homePageSchema }),
   z.object({ key: z.literal("assistant"), value: assistantSettingsSchema }),
+  z.object({ key: z.literal("translations_kn"), value: translationsKnSchema }),
 ]);
 
 export const reviewSaveSchema = z

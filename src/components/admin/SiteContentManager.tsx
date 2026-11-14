@@ -10,15 +10,17 @@ import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { AssistantForm } from "@/components/admin/AssistantForm";
 import { HomePageForm } from "@/components/admin/HomePageForm";
+import { KannadaForm } from "@/components/admin/KannadaForm";
 import { Notice, Panel, useAdminContent } from "@/components/admin/kit";
 import type { SiteSettings } from "@/lib/types";
 
 type Editor = ReturnType<typeof useAdminContent>;
-type Tab = "home" | "assistant" | "brand" | "social" | "policy" | "faqs" | "legal";
+type Tab = "home" | "assistant" | "kannada" | "brand" | "social" | "policy" | "faqs" | "legal";
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "home", label: "Home page" },
   { key: "assistant", label: "Chat guide" },
+  { key: "kannada", label: "Kannada (ಕನ್ನಡ)" },
   { key: "brand", label: "Brand & contact" },
   { key: "social", label: "Social & WhatsApp" },
   { key: "policy", label: "Booking rules" },
@@ -59,6 +61,16 @@ export function SiteContentManager({ editor }: { editor: Editor }) {
           initial={content.settings.assistant}
           aiReady={Boolean(content.assistantAiReady)}
           whatsappNumber={content.settings.socialLinks?.whatsappNumber ?? ""}
+          save={editor.save}
+          canEdit={canEdit}
+        />
+      )}
+      {tab === "kannada" && (
+        <KannadaForm
+          key="k"
+          settings={content.settings as unknown as Record<string, unknown>}
+          trips={content.trips as unknown as Parameters<typeof KannadaForm>[0]["trips"]}
+          saved={content.settings.translationsKn ?? {}}
           save={editor.save}
           canEdit={canEdit}
         />

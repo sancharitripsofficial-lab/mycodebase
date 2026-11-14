@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Plus_Jakarta_Sans } from "next/font/google";
+import { Fraunces, Noto_Sans_Kannada, Plus_Jakarta_Sans } from "next/font/google";
 import { TapFeedback } from "@/components/TapFeedback";
 import "./globals.css";
 import { Providers } from "./providers";
@@ -8,6 +8,14 @@ const fraunces = Fraunces({
   subsets: ["latin"],
   variable: "--font-fraunces",
   display: "swap",
+});
+
+// Kannada letters: only downloaded when Kannada text is on screen (unicode-range), never preloaded.
+const notoKannada = Noto_Sans_Kannada({
+  subsets: ["kannada"],
+  variable: "--font-kannada",
+  display: "swap",
+  preload: false,
 });
 
 const plusJakarta = Plus_Jakarta_Sans({
@@ -44,7 +52,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${fraunces.variable} ${plusJakarta.variable}`}>
+    // suppressHydrationWarning: the store's early script may switch lang/data-lang to Kannada before React loads.
+    <html lang="en" className={`${fraunces.variable} ${plusJakarta.variable} ${notoKannada.variable}`} suppressHydrationWarning>
       <body className="min-h-screen text-ink-900">
         <Providers>
           <TapFeedback />

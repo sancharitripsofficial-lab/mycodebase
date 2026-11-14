@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { LanguageToggle } from "@/components/i18n/LanguageToggle";
 
 const NAV_LINKS = [
   { href: "/trips", label: "Explore Trips" },
@@ -68,10 +69,13 @@ export function SiteHeader({ isDemoMode }: { isDemoMode: boolean }) {
         </nav>
 
         <div className="hidden items-center gap-2 lg:flex">
+          <LanguageToggle />
           <Link href="/trips" className="btn-sunset px-5 py-2.5 text-sm">
             Grab your seat
           </Link>
         </div>
+
+        <LanguageToggle className="ml-auto lg:hidden" />
 
         <button
           type="button"

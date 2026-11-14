@@ -62,6 +62,16 @@ function usesLocalStore(): boolean {
   return !isSupabaseConfigured() || !isServiceRoleConfigured();
 }
 
+/** Saved Kannada wording: only string → non-empty string pairs survive. */
+function cleanTranslations(value: unknown): Record<string, string> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const out: Record<string, string> = {};
+  for (const [en, kn] of Object.entries(value as Record<string, unknown>)) {
+    if (typeof kn === "string" && kn.trim() && en.trim()) out[en] = kn;
+  }
+  return out;
+}
+
 export async function getSiteSettings(): Promise<{ settings: SiteSettings; isDemoFallback: boolean }> {
   if (!isSupabaseConfigured()) {
     return { settings: getDemoState().settings, isDemoFallback: true };
@@ -89,6 +99,7 @@ export async function getSiteSettings(): Promise<{ settings: SiteSettings; isDem
         },
         homePage: mergeHomeContent(map.get("home_page")),
         assistant: mergeAssistantSettings(map.get("assistant")),
+        translationsKn: cleanTranslations(map.get("translations_kn")),
       },
     };
   } catch {
