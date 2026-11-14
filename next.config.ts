@@ -18,6 +18,11 @@ const nextConfig: NextConfig = {
   },
   images: {
     unoptimized: false,
+    // AVIF where the phone supports it (usually 20-30% smaller than WebP), else WebP.
+    formats: ["image/avif", "image/webp"],
+    // Optimised pictures stay cached for 31 days (they only change when a new file is uploaded,
+    // which gets a new address).
+    minimumCacheTTL: 2678400,
     remotePatterns: supabaseHost
       ? [{ protocol: "https", hostname: supabaseHost, pathname: "/storage/v1/object/public/**" }]
       : [],
@@ -25,13 +30,24 @@ const nextConfig: NextConfig = {
   // Local profiling only (dev, or a local build with JS_PROFILING=1): allows the browser's
   // JS Self-Profiling API and ships source maps, to find slow code. Never set on Vercel.
   ...(process.env.JS_PROFILING === "1" ? { productionBrowserSourceMaps: true } : {}),
-  ...(process.env.NODE_ENV !== "production" || process.env.JS_PROFILING === "1"
-    ? {
-        async headers() {
-          return [{ source: "/:path*", headers: [{ key: "Document-Policy", value: "js-profiling" }] }];
-        },
-      }
-    : {}),
+  async headers() {
+    // Pictures, videos and logos in /public: phones keep them for 7 days (and may use a copy up
+    // to 30 days old while quietly checking for a new one), instead of re-asking on every page.
+    const longCache = [
+      { key: "Cache-Control", value: "public, max-age=604800, stale-while-revalidate=2592000" },
+    ];
+    const rules = [
+      { source: "/media/:path*", headers: longCache },
+      { source: "/brand/:path*", headers: longCache },
+      { source: "/icon.png", headers: [{ key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" }] },
+      { source: "/apple-icon.png", headers: [{ key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" }] },
+      { source: "/favicon.ico", headers: [{ key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" }] },
+    ];
+    if (process.env.NODE_ENV !== "production" || process.env.JS_PROFILING === "1") {
+      rules.push({ source: "/:path*", headers: [{ key: "Document-Policy", value: "js-profiling" }] });
+    }
+    return rules;
+  },
 };
 
 export default nextConfig;

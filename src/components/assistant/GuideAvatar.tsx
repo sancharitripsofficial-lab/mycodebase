@@ -55,6 +55,23 @@ const safeSrc = (src: string | undefined): string | null => {
   return /^https?:\/\//i.test(s) ? s : null;
 };
 
+const IMAGE_RE = /\.(png|jpe?g|webp|avif)(?:[?#]|$)/i;
+const SUPABASE_PUBLIC = `${(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").replace(/\/+$/, "")}/storage/v1/object/public/`;
+/**
+ * Pictures are fetched at about the size they are shown (through the site's image optimiser,
+ * as AVIF/WebP), not as the full 768 px original: the 52 px chat bubble on every page needs a
+ * 256 px picture (~15 KB), not three ~100 KB ones. Videos and other sites' links stay as they are.
+ */
+function sizedSrc(src: string, px: number): string {
+  if (VIDEO_RE.test(src) || !IMAGE_RE.test(src)) return src;
+  const local = src.startsWith("/") && !src.startsWith("//") && !src.startsWith("/_next/");
+  const uploaded = SUPABASE_PUBLIC.startsWith("https://") && src.startsWith(SUPABASE_PUBLIC);
+  if (!local && !uploaded) return src;
+  const want = px * 3; // sharp on 3x phone screens
+  const w = [128, 256, 384, 640].find((x) => x >= want) ?? 640;
+  return `/_next/image?url=${encodeURIComponent(src)}&w=${w}&q=75`;
+}
+
 function MediaLayer({
   src,
   ready,
@@ -153,15 +170,19 @@ export function GuideAvatar({ emotion, media, size, name, paused = false, mini =
   const visible = usePageVisible();
   const [failed, setFailed] = useState<string[]>([]);
 
+  const sized = (v: string | undefined) => {
+    const s = safeSrc(v);
+    return s ? sizedSrc(s, size) : null;
+  };
   const pick = (e: GuideEmotion) => {
-    const s = safeSrc(media[e]);
+    const s = sized(media[e]);
     return s && !failed.includes(s) ? s : null;
   };
   // Bubble avatars are 30 px stills: never mount a <video> for each message (heavy on phones).
   // Use the idle picture, else any picture, else the Sanchari badge.
   const firstImage = () => {
     for (const v of Object.values(media)) {
-      const s = safeSrc(v);
+      const s = sized(v);
       if (s && !VIDEO_RE.test(s) && !failed.includes(s)) return s;
     }
     return null;
@@ -202,7 +223,7 @@ export function GuideAvatar({ emotion, media, size, name, paused = false, mini =
   // Every pose picture (not videos): the living layer prepares them ahead, so a change of mood
   // (reading the map -> answering) melts in at once instead of loading then.
   const poses = Object.values(media)
-    .map((v) => safeSrc(v))
+    .map((v) => sized(v))
     .filter((v, i, all): v is string => Boolean(v) && !VIDEO_RE.test(v ?? "") && !failed.includes(v ?? "") && all.indexOf(v) === i);
 
   return (
