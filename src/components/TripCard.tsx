@@ -96,29 +96,29 @@ export function TripCard({ item, weather = null }: { item: TripWithDetails; weat
 
           <p className="text-sm leading-relaxed text-stone-600 line-clamp-2">{trip.tagline}</p>
 
-          <dl className="space-y-1.5 border-t border-black/5 pt-3 text-xs text-ink-900/75">
-            <div className="flex items-center gap-2">
+          <ul className="space-y-1.5 border-t border-black/5 pt-3 text-xs text-ink-900/75">
+            <li className="flex items-center gap-2">
               <MapPin className="th-accent h-3.5 w-3.5" aria-hidden="true" />
               <span>Pickup: {trip.pickupCity} • {trip.vibe}</span>
-            </div>
+            </li>
             {upcoming && (
-              <div className="flex items-center gap-2">
+              <li className="flex items-center gap-2">
                 <Calendar className="th-accent h-3.5 w-3.5" aria-hidden="true" />
                 <span>
                   Next: {shortDate(upcoming.startDate)} – {shortDate(upcoming.endDate)}
                   {upcoming.departureType === "women_only" ? " (Women-only batch)" : ""}
                 </span>
-              </div>
+              </li>
             )}
-            <div className="flex items-center gap-2">
+            <li className="flex items-center gap-2">
               <Users className="th-accent h-3.5 w-3.5" aria-hidden="true" />
               <span>
                 {privateAvailable
                   ? "Batch seats or Private 6-seat vehicle available"
                   : "Join scheduled small batch (max 6)"}
               </span>
-            </div>
-          </dl>
+            </li>
+          </ul>
         </div>
 
         <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-black/5 pt-4">

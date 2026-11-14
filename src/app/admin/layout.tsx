@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+// Astryx component styles (buttons, inputs, switches...) for the whole admin panel.
+import "@/styles/astryx-components.css";
 
 export const metadata: Metadata = {
   title: { default: "Sanchari Admin", template: "%s | Sanchari Admin" },

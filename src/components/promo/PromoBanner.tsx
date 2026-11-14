@@ -128,7 +128,7 @@ export function PromoBanner({ promotions, className = "", preview = false }: { p
               <button type="button" onClick={() => go(-1)} aria-label="Previous offer" className="hidden h-9 w-9 items-center justify-center rounded-full bg-white/15 transition hover:bg-white/30 md:flex">
                 <ChevronLeft className="h-5 w-5" />
               </button>
-              <div className="flex gap-1.5">
+              <div className="flex gap-1">
                 {promotions.map((p, i) => (
                   <button
                     key={p.id}
@@ -136,7 +136,7 @@ export function PromoBanner({ promotions, className = "", preview = false }: { p
                     aria-label={`Offer ${i + 1} of ${count}`}
                     aria-current={i === index ? "true" : undefined}
                     onClick={() => setIndex(i)}
-                    className="flex h-6 items-center"
+                    className="flex h-6 min-w-6 items-center justify-center"
                   >
                     <span className={`block h-2 rounded-full transition-all ${i === index ? "w-6 bg-white" : "w-2 bg-white/50"}`} />
                   </button>

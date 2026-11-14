@@ -1,0 +1,6 @@
+/* Astryx component styles (Button, TextInput, Badge, Banner, Switch, Selector...).
+   Loaded only where Astryx components are used — the admin panel, booking lookup and the UPI pay
+   panel — so public pages don't wait for ~280 KB of CSS before showing anything.
+   The layer order is repeated here (same as globals.css) so it holds whichever file loads first. */
+@layer reset, theme, base, astryx-base, astryx-theme, components, utilities;
+@import "@astryxdesign/core/astryx.css";

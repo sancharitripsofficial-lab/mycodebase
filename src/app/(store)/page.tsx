@@ -186,7 +186,7 @@ export default async function HomePage() {
                   href={`/trips/${nextDeparture.tripSlug}?date=${nextDeparture.departureId}#book`}
                   className="glass group flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl px-4 py-3 text-sm text-white transition hover:bg-white/20"
                 >
-                  <span className="rounded-full bg-copper-600 px-2.5 py-0.5 text-[11px] font-bold tracking-wider uppercase">Next departure</span>
+                  <span className="rounded-full bg-copper-700 px-2.5 py-0.5 text-[11px] font-bold tracking-wider uppercase">Next departure</span>
                   <span className="font-semibold">{nextDeparture.destination.split(",")[0]}</span>
                   <span className="text-white/85">
                     {shortDate(nextDeparture.startDate)} – {shortDate(nextDeparture.endDate)}

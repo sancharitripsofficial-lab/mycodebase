@@ -3,7 +3,8 @@
 
 @import "tailwindcss";
 @import "@astryxdesign/core/reset.css";
-@import "@astryxdesign/core/astryx.css";
+/* Astryx component styles are NOT loaded here: see src/styles/astryx-components.css (admin,
+   booking lookup and the UPI pay panel import it), so public pages paint without ~280 KB of CSS. */
 /* The Sanchari Astryx theme CSS is imported by src/astryx-themes.ts (generated). */
 
 /*

@@ -9,13 +9,21 @@ import {
   Shield,
   Users,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { WOMEN_ONLY_CONFIRM_LABEL } from "@/lib/women-only";
 import { isBookable } from "@/lib/departure-rules";
 import { ErtigaSeatMap, SEAT_INFO } from "@/components/booking/ErtigaSeatMap";
 import { CarSeatPicker3D } from "@/components/three/CarSeatPicker3D";
-import { UpiPayPanel, UpiSubmittedNotice } from "@/components/UpiPayPanel";
+// The UPI pay panel (and the Astryx styles it uses) loads only once a seat is held, so the
+// trip page itself paints without that CSS. It starts downloading as soon as the visitor
+// begins the booking form, so it is ready by the time the hold succeeds.
+const loadUpiPanel = () => import("@/components/UpiPayPanel");
+const UpiPayPanel = dynamic(() => loadUpiPanel().then((m) => m.UpiPayPanel), {
+  loading: () => <p className="rounded-xl bg-white/70 p-4 text-sm text-stone-600">Loading payment details…</p>,
+});
+const UpiSubmittedNotice = dynamic(() => loadUpiPanel().then((m) => m.UpiSubmittedNotice));
 import { calculateBookingPricing, formatINR } from "@/lib/currency";
 import type {
   BookingMode,
@@ -373,6 +381,7 @@ export function BookingWidget({
     (bookingPolicy.allowDepositCheckout ? bookingPolicy.depositPercent : null);
 
   async function handleHoldSubmit(e: React.FormEvent) {
+    void loadUpiPanel(); // fetch the pay panel while the hold request runs
     e.preventDefault();
     if (!selectedDep) return;
     setErrorMsg(null);
@@ -1074,7 +1083,12 @@ export function BookingWidget({
           </button>
         </form>
       ) : (
-        <form onSubmit={handleHoldSubmit} className="space-y-6 border-t border-stone-200 pt-5">
+        <form
+          onSubmit={handleHoldSubmit}
+          onFocusCapture={() => void loadUpiPanel()}
+          onPointerDownCapture={() => void loadUpiPanel()}
+          className="space-y-6 border-t border-stone-200 pt-5"
+        >
           {/* Mode & Seat Count */}
           <div className="space-y-3">
             <p className="text-xs font-semibold uppercase tracking-wider text-stone-600">

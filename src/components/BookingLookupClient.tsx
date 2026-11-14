@@ -1,5 +1,6 @@
 "use client";
 
+import "@/styles/astryx-components.css";
 import { Badge } from "@astryxdesign/core/Badge";
 import { AlertCircle, Car, CheckCircle2, MessageCircle, Phone, Search, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";

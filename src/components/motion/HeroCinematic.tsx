@@ -169,7 +169,7 @@ export function HeroCinematic({
 /** Poster still with art direction: the portrait frame on phones, the wide frame from 768px. */
 function HeroPoster({ src, mobileSrc }: { src: string; mobileSrc?: string }) {
   if (!mobileSrc) {
-    return <Image src={src} alt="" fill priority sizes="100vw" className={styles.heroMedia} />;
+    return <Image src={src} alt="" fill priority fetchPriority="high" sizes="100vw" className={styles.heroMedia} />;
   }
   const common = { alt: "", fill: true, priority: true, sizes: "100vw" } as const;
   const {
@@ -182,8 +182,9 @@ function HeroPoster({ src, mobileSrc }: { src: string; mobileSrc?: string }) {
     <picture>
       <source media="(min-width: 768px)" srcSet={wide} />
       <source media="(max-width: 767px)" srcSet={tall} />
+      {/* The page's largest picture (what Google times as "LCP"): fetch it first, never lazily. */}
       {/* eslint-disable-next-line jsx-a11y/alt-text, @next/next/no-img-element */}
-      <img {...img} className={styles.heroMedia} />
+      <img {...img} loading="eager" fetchPriority="high" className={styles.heroMedia} />
     </picture>
   );
 }

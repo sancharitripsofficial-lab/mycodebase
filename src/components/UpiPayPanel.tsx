@@ -1,5 +1,6 @@
 "use client";
 
+import "@/styles/astryx-components.css";
 import { Badge } from "@astryxdesign/core/Badge";
 import { Banner } from "@astryxdesign/core/Banner";
 import { Button } from "@astryxdesign/core/Button";
