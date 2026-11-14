@@ -353,9 +353,14 @@ export default async function HomePage() {
           <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
             <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
               <SectionHead text={home.departuresSection} />
-              <Link href="/trips" className="inline-flex items-center gap-1.5 text-sm font-semibold text-forest-900 hover:text-copper-700">
-                Filter all dates <ArrowRight className="h-4 w-4" aria-hidden="true" />
-              </Link>
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+                <Link href="/karnataka-tour-packages" className="inline-flex min-h-10 items-center gap-1.5 text-sm font-semibold text-forest-900 hover:text-copper-700">
+                  Karnataka tour packages <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </Link>
+                <Link href="/trips" className="inline-flex min-h-10 items-center gap-1.5 text-sm font-semibold text-forest-900 hover:text-copper-700">
+                  Filter all dates <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </Link>
+              </div>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

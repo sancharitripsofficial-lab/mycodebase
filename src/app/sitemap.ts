@@ -7,7 +7,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = SITE_URL;
   const [{ trips }, { settings }] = await Promise.all([getPublishedTripsWithDetails(), getSiteSettings()]);
 
-  const staticRoutes = ["", "/trips", "/blog", "/about", "/safety", "/policies", "/faqs", "/contact", "/creators"].map(
+  const staticRoutes = ["", "/trips", "/karnataka-tour-packages", "/blog", "/about", "/safety", "/policies", "/faqs", "/contact", "/creators"].map(
     // No made-up "changed today" date on every request (Google learns to ignore those).
     (route) => ({
       url: `${baseUrl}${route}`,

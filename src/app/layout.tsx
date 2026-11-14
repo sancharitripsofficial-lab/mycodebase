@@ -33,6 +33,23 @@ export const metadata: Metadata = {
   description:
     "Weekend road trips from Bangalore to Coorg, Chikmagalur, Gokarna and Hampi with max 6 travellers per car. Pick your seat on a live car map and pay by UPI.",
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
+  // Google ignores "keywords"; Bing reads it lightly. Kept short and true to what we sell.
+  keywords: [
+    "Karnataka tour packages",
+    "weekend trips from Bangalore",
+    "tour packages from Bangalore",
+    "Coorg trip from Bangalore",
+    "Chikmagalur trip from Bangalore",
+    "Gokarna trip from Bangalore",
+    "Hampi trip from Bangalore",
+    "small group tours Bangalore",
+    "weekend getaways from Bangalore",
+    "road trips from Bangalore",
+    "tour planner Bangalore",
+    "travel agency Bangalore",
+  ],
+  applicationName: "Sanchari Micro Trips",
+  category: "travel",
   // The share picture is the official logo card (src/app/opengraph-image.tsx).
   openGraph: {
     title: "Sanchari • Micro Trips — weekend trips from Bengaluru, max 6 per car",
