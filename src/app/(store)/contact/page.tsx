@@ -6,7 +6,9 @@ import { buildClickToWhatsAppUrl } from "@/lib/messaging/provider";
 
 export const metadata: Metadata = {
   title: "Contact & WhatsApp Support",
-  description: "Reach the Sanchari • Micro Trips team in Bengaluru.",
+  description:
+    "Contact Sanchari Micro Trips in Bengaluru on WhatsApp or by email about weekend trip bookings, private car dates and pickup points.",
+  alternates: { canonical: "/contact" },
 };
 
 export default async function ContactPage() {

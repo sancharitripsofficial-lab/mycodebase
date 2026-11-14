@@ -7,6 +7,7 @@ import { getSiteSettings } from "@/lib/data/repository";
 export const metadata: Metadata = {
   title: "FAQs",
   description: "Answers before you book a Sanchari micro trip: luggage space, pickup timing, private 6-seat dates and more.",
+  alternates: { canonical: "/faqs" },
 };
 
 /**

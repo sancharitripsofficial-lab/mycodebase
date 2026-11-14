@@ -26,6 +26,8 @@ import {
 } from "@/lib/data/repository";
 import { themeClass } from "@/lib/destination-theme";
 import { getDestinationWeather } from "@/lib/weather-server";
+import { isBookable } from "@/lib/departure-rules";
+import { absoluteUrl, breadcrumbJsonLd, jsonLdText, tripSeoDescription, tripSeoTitle } from "@/lib/seo";
 
 // Served from the CDN; refreshed every 30 s and immediately after bookings / admin edits.
 export const revalidate = 30;
@@ -42,14 +44,21 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const { item } = await getPublishedTripBySlug(slug);
-  if (!item) return { title: "Trip Not Found" };
+  if (!item) return { title: "Trip Not Found", robots: { index: false } };
 
+  // Words people actually search ("Coorg trip from Bangalore"), then the trip's own name and facts.
+  const title = tripSeoTitle(item.trip);
+  const description = tripSeoDescription(item.trip);
   return {
-    title: item.trip.title,
-    description: item.trip.tagline,
+    title: { absolute: `${title} | Sanchari` },
+    description,
+    alternates: { canonical: `/trips/${item.trip.slug}` },
     openGraph: {
-      title: item.trip.title,
-      description: item.trip.tagline,
+      title,
+      description,
+      type: "website",
+      siteName: "Sanchari Micro Trips",
+      url: `/trips/${item.trip.slug}`,
       images: [item.trip.heroImageUrl],
     },
   };
@@ -83,25 +92,47 @@ export default async function TripDetailPage({
   ]);
   const initialSeatMaps = Object.fromEntries(seatPairs);
 
+  const tripUrl = absoluteUrl(`/trips/${trip.slug}`);
+  const anyBookable = openDeps.some((d) => isBookable(d));
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "TouristTrip",
+    "@id": `${tripUrl}#trip`,
     name: trip.title,
     description: trip.summary,
-    touristType: "Small-group road trip (max 6 travelers)",
+    url: tripUrl,
+    image: [absoluteUrl(trip.heroImageUrl), ...trip.galleryUrls.slice(0, 3).map((u) => absoluteUrl(u))],
+    touristType: ["Small groups (max 6 travellers per car)", "Solo travellers", "Weekend travellers from Bengaluru"],
+    provider: { "@type": "TravelAgency", "@id": `${absoluteUrl("/")}#business`, name: "Sanchari Micro Trips", url: absoluteUrl("/") },
+    ...(itinerary.length > 0 && {
+      itinerary: {
+        "@type": "ItemList",
+        numberOfItems: itinerary.length,
+        itemListElement: itinerary.map((day) => ({
+          "@type": "ListItem",
+          position: day.dayNumber,
+          name: `Day ${day.dayNumber}: ${day.title}`,
+        })),
+      },
+    }),
     offers: {
       "@type": "Offer",
       priceCurrency: "INR",
       price: (trip.basePricePaise / 100).toFixed(0),
+      url: `${tripUrl}#book`,
+      availability: anyBookable ? "https://schema.org/InStock" : "https://schema.org/SoldOut",
     },
   };
+  const breadcrumb = breadcrumbJsonLd([
+    { name: "Home", path: "/" },
+    { name: "Trips", path: "/trips" },
+    { name: trip.title, path: `/trips/${trip.slug}` },
+  ]);
 
   return (
     <div className={`${theme} mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12`}>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-      />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdText(structuredData) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdText(breadcrumb) }} />
 
       <nav aria-label="Breadcrumb" className="mb-5 text-xs text-stone-600">
         <Link href="/trips" className="hover:text-forest-900 underline">

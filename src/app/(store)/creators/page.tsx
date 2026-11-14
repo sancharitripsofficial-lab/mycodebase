@@ -8,6 +8,7 @@ export const revalidate = 300;
 export const metadata: Metadata = {
   title: "Creators programme",
   description: "Travel creators with an audience can earn discounts or free seats on Sanchari road trips.",
+  alternates: { canonical: "/creators" },
 };
 
 export default async function CreatorsPage() {

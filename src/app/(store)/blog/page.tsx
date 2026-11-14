@@ -9,8 +9,9 @@ import { getSiteSettings } from "@/lib/data/repository";
 export const revalidate = 60;
 
 export const metadata: Metadata = {
-  title: "Blog & trip videos",
+  title: "Travel Blog & Trip Videos",
   description: "Videos and stories from Sanchari's small-group road trips from Bengaluru: Coorg, Chikmagalur, Gokarna and Hampi in a six-seat car.",
+  alternates: { canonical: "/blog" },
 };
 
 const DATE = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });

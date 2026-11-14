@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowRight, CalendarDays } from "lucide-react";
 import { BlogVideo } from "@/components/blog/BlogVideo";
 import { paragraphs, visiblePosts } from "@/lib/blog";
 import { getPublishedTripsWithDetails, getSiteSettings } from "@/lib/data/repository";
+import { absoluteUrl, breadcrumbJsonLd, clip, jsonLdText } from "@/lib/seo";
 
 export const revalidate = 60;
 
@@ -20,8 +21,16 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   if (!post) return { title: "Story not found", robots: { index: false } };
   return {
     title: post.title,
-    description: post.excerpt || undefined,
-    openGraph: { title: post.title, description: post.excerpt || undefined, type: "article", images: post.posterUrl ? [post.posterUrl] : undefined },
+    description: post.excerpt ? clip(post.excerpt) : undefined,
+    alternates: { canonical: `/blog/${post.id}` },
+    openGraph: {
+      title: post.title,
+      description: post.excerpt || undefined,
+      type: "article",
+      url: `/blog/${post.id}`,
+      publishedTime: `${post.publishedOn}T12:00:00+05:30`,
+      images: post.posterUrl ? [post.posterUrl] : undefined,
+    },
   };
 }
 
@@ -30,8 +39,43 @@ export default async function BlogPostPage({ params }: { params: Promise<{ id: s
   if (!post) notFound();
   const trip = post.tripSlug ? (await getPublishedTripsWithDetails()).trips.find((t) => t.trip.slug === post.tripSlug)?.trip ?? null : null;
 
+  const postUrl = absoluteUrl(`/blog/${post.id}`);
+  const article = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: post.title,
+    description: post.excerpt || undefined,
+    datePublished: `${post.publishedOn}T12:00:00+05:30`,
+    url: postUrl,
+    mainEntityOfPage: postUrl,
+    image: post.posterUrl ? absoluteUrl(post.posterUrl) : absoluteUrl("/opengraph-image"),
+    author: { "@type": "Organization", name: "Sanchari Micro Trips", url: absoluteUrl("/") },
+    publisher: {
+      "@type": "Organization",
+      name: "Sanchari Micro Trips",
+      logo: { "@type": "ImageObject", url: absoluteUrl("/brand/sanchari-logo.png") },
+    },
+    ...(post.videoUrl && {
+      video: {
+        "@type": "VideoObject",
+        name: post.title,
+        description: post.excerpt || post.title,
+        contentUrl: absoluteUrl(post.videoUrl),
+        thumbnailUrl: post.posterUrl ? absoluteUrl(post.posterUrl) : absoluteUrl("/opengraph-image"),
+        uploadDate: `${post.publishedOn}T12:00:00+05:30`,
+      },
+    }),
+  };
+  const breadcrumb = breadcrumbJsonLd([
+    { name: "Home", path: "/" },
+    { name: "Blog", path: "/blog" },
+    { name: post.title, path: `/blog/${post.id}` },
+  ]);
+
   return (
     <div className="sec-route">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdText(article) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdText(breadcrumb) }} />
       <article className="mx-auto max-w-4xl space-y-6 px-4 py-8 sm:px-6 sm:py-12">
         <Link href="/blog" className="inline-flex min-h-10 items-center gap-1.5 text-sm font-semibold text-forest-800 hover:underline">
           <ArrowLeft className="h-4 w-4" aria-hidden="true" /> All stories

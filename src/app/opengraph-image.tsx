@@ -25,7 +25,7 @@ export default async function OpenGraphImage() {
           fontFamily: "sans-serif",
         }}
       >
-        <img src={logoSrc} width={430} height={425} alt="" style={{ objectFit: "contain" }} />
+        <img src={logoSrc} width={430} height={415} alt="" style={{ objectFit: "contain" }} />
         <div style={{ display: "flex", flexDirection: "column", maxWidth: 560, gap: 18 }}>
           <div style={{ fontSize: 30, fontWeight: 700, color: "#e8600f", letterSpacing: 2 }}>WEEKEND TRIPS FROM BENGALURU</div>
           <div style={{ fontSize: 58, fontWeight: 800, color: "#0d5f6b", lineHeight: 1.08 }}>Leave as strangers. Return as a story.</div>

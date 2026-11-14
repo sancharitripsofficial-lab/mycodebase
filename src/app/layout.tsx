@@ -29,8 +29,9 @@ export const metadata: Metadata = {
     default: "Weekend Trips from Bangalore in a 6-Seat Car | Sanchari Micro Trips",
     template: "%s | Sanchari • Micro Trips",
   },
+  // Kept under ~158 characters so Google shows it whole.
   description:
-    "Weekend road trips from Bengaluru (Bangalore) to Coorg, Chikmagalur, Gokarna and Hampi with at most 6 travellers per car. Pick your exact seat on a live car map, pay by UPI, solo, women-only or private car.",
+    "Weekend road trips from Bangalore to Coorg, Chikmagalur, Gokarna and Hampi with max 6 travellers per car. Pick your seat on a live car map and pay by UPI.",
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
   // The share picture is the official logo card (src/app/opengraph-image.tsx).
   openGraph: {

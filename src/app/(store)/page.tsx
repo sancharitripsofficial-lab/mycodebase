@@ -18,11 +18,16 @@ import { isOptimizableImage } from "@/lib/media";
 import { buildClickToWhatsAppUrl } from "@/lib/messaging/provider";
 import type { TripWithDetails } from "@/lib/types";
 import { getDestinationWeather } from "@/lib/weather-server";
+import { businessJsonLd, jsonLdText } from "@/lib/seo";
+import type { Metadata } from "next";
 import { LiveWeatherBadge } from "@/components/living/LiveWeatherBadge";
 import { isBookable } from "@/lib/departure-rules";
 
 // Served from the CDN; refreshed every 30 s and immediately after bookings / admin edits.
 export const revalidate = 30;
+
+// The one address Google should list for the home page (not ?lang=kn, not the old vercel.app link).
+export const metadata: Metadata = { alternates: { canonical: "/" } };
 
 const shortDate = (iso: string) =>
   new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "Asia/Kolkata" });
@@ -132,6 +137,8 @@ export default async function HomePage() {
 
   return (
     <div>
+      {/* Who we are, for Google (business card in search results). */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdText(businessJsonLd(settings)) }} />
       {/* Hero: looping road-trip film (tea hills at sunrise) under a soft tea-green shade */}
       <section className="relative isolate overflow-hidden text-cream-50">
         <HeroCinematic
@@ -148,10 +155,12 @@ export default async function HomePage() {
               className="float-right mb-2 ml-3 w-[104px] min-[360px]:w-[128px] md:absolute md:top-8 md:right-6 md:m-0 md:w-[232px] lg:w-[252px]"
             />
             <Reveal onLoad>
-              <p className="glass inline-flex max-w-[calc(100%-7.4rem)] items-center gap-2 rounded-2xl px-3.5 py-1.5 text-xs font-semibold tracking-wide text-white min-[360px]:max-w-[calc(100%-8.9rem)] md:max-w-none md:rounded-full">
+              {/* The page's main heading for Google: what we are ("Weekend trips from Bengaluru • Max 6 per car").
+                  Looks exactly like before (small chip); the big slogan below is a styled paragraph. */}
+              <h1 className="glass inline-flex max-w-[calc(100%-7.4rem)] items-center gap-2 rounded-2xl px-3.5 py-1.5 text-xs font-semibold tracking-wide text-white [font-family:inherit] min-[360px]:max-w-[calc(100%-8.9rem)] md:max-w-none md:rounded-full">
                 <Compass className="h-3.5 w-3.5 text-saffron-500" aria-hidden="true" />
                 {home.heroChip}
-              </p>
+              </h1>
             </Reveal>
 
             {home.kannadaLine && (
@@ -162,7 +171,7 @@ export default async function HomePage() {
               </Reveal>
             )}
 
-            <Reveal as="h1" onLoad delay={100} className="font-display text-[2.5rem] leading-[1.05] font-semibold tracking-tight sm:text-6xl lg:text-[4.1rem]">
+            <Reveal as="p" onLoad delay={100} className="font-display text-[2.5rem] leading-[1.05] font-semibold tracking-tight sm:text-6xl lg:text-[4.1rem]">
               {headline.split(".")[0]}.
               <span className="text-gradient-sunrise block">{headline.split(".").slice(1).join(".").trim() || "Return as a story."}</span>
             </Reveal>

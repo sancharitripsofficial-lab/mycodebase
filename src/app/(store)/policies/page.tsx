@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   title: "Policies & Legal Drafts",
   description:
     "Owner-review draft Terms, Privacy Notice, and Cancellation/Refund policy for Sanchari • Micro Trips.",
+  alternates: { canonical: "/policies" },
 };
 
 export default async function PoliciesPage() {

@@ -1,15 +1,16 @@
 import type { MetadataRoute } from "next";
 import { visiblePosts } from "@/lib/blog";
+import { SITE_URL } from "@/lib/seo";
 import { getPublishedTripsWithDetails, getSiteSettings } from "@/lib/data/repository";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  const baseUrl = SITE_URL;
   const [{ trips }, { settings }] = await Promise.all([getPublishedTripsWithDetails(), getSiteSettings()]);
 
   const staticRoutes = ["", "/trips", "/blog", "/about", "/safety", "/policies", "/faqs", "/contact", "/creators"].map(
+    // No made-up "changed today" date on every request (Google learns to ignore those).
     (route) => ({
       url: `${baseUrl}${route}`,
-      lastModified: new Date(),
       changeFrequency: "weekly" as const,
       priority: route === "" ? 1 : 0.8,
     })
@@ -17,7 +18,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const tripRoutes = trips.map(({ trip }) => ({
     url: `${baseUrl}/trips/${trip.slug}`,
-    lastModified: new Date(),
     changeFrequency: "weekly" as const,
     priority: 0.9,
   }));

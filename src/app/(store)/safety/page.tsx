@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   title: "Safety & Comfort Standards",
   description:
     "How Sanchari handles operational safety, privacy-protected co-traveler requests, and room allocation drafts.",
+  alternates: { canonical: "/safety" },
 };
 
 export default async function SafetyPage() {

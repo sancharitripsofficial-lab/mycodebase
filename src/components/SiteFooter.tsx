@@ -24,12 +24,20 @@ export function SiteFooter({
       <div className="road-divider mx-auto max-w-6xl opacity-80" aria-hidden="true" />
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:px-6 md:grid-cols-4">
         <div className="space-y-4 md:col-span-2">
-          <div className="flex items-center gap-3">
-            <Image src="/brand/sanchari-mark.png" alt="" width={48} height={48} className="h-12 w-12 rounded-2xl bg-white/95 p-1" />
-            <div>
-              <p className="font-display text-xl font-semibold">{brand.brandName}</p>
-              <p className="text-xs text-white/75">{brand.baseCity}</p>
-            </div>
+          {/* The official logo (mark + its own lettering) on a light card so its colours stay true. */}
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="inline-flex items-center gap-2 rounded-2xl bg-white/95 px-3 py-2">
+              <Image src="/brand/sanchari-mark.png" alt="" width={48} height={48} className="h-11 w-11" />
+              <Image
+                src="/brand/sanchari-wordmark.png"
+                alt={brand.brandName || "Sanchari Micro Trips"}
+                width={106}
+                height={36}
+                data-no-translate
+                className="h-9 w-auto"
+              />
+            </span>
+            <p className="text-xs text-white/75">{brand.baseCity}</p>
           </div>
           <p className="max-w-md text-sm leading-relaxed text-white/80">
             Curated small-group Karnataka road trips from Bengaluru, strictly capped at six travellers per car.

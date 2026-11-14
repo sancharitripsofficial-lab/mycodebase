@@ -10,9 +10,10 @@ import { getPublishedTripsWithDetails, getSiteSettings } from "@/lib/data/reposi
 export const revalidate = 30;
 
 export const metadata: Metadata = {
-  title: "Explore Karnataka Trips",
+  title: "Weekend Trips from Bangalore",
   description:
-    "Browse upcoming 6-traveler Karnataka road trips from Bengaluru with live seat counts and private vehicle options.",
+    "Upcoming weekend road trips from Bangalore to Coorg, Chikmagalur, Gokarna and Hampi. Max 6 travellers per car, live seat counts and a private car option.",
+  alternates: { canonical: "/trips" },
 };
 
 export default async function TripsPage() {
@@ -30,7 +31,7 @@ export default async function TripsPage() {
         scene="trips"
         width="6xl"
         eyebrow="Scheduled & Private Departures"
-        title="Curated Karnataka Micro Trips"
+        title="Weekend Trips from Bangalore"
         subtitle="Every route travels in an Ertiga-class vehicle capped at 6 travelers. Join an open batch for 1–5 seats or reserve all 6 seats privately when a departure is unoccupied."
       />
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12 space-y-8">

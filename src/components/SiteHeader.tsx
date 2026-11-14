@@ -43,14 +43,16 @@ export function SiteHeader({ isDemoMode }: { isDemoMode: boolean }) {
             priority
             className="h-10 w-10 transition-transform duration-300 group-hover:-rotate-6 min-[360px]:h-11 min-[360px]:w-11"
           />
-          <span className="flex flex-col leading-none">
-            <span className="font-display text-[1.2rem] font-semibold tracking-tight text-forest-900 min-[360px]:text-[1.35rem]">
-              Sanchari
-            </span>
-            <span className="mt-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-forest-700 sm:tracking-[0.28em]">
-              Micro Trips
-            </span>
-          </span>
+          {/* The logo's own lettering (the official artwork, not typed text). */}
+          <Image
+            src="/brand/sanchari-wordmark.png"
+            alt="Sanchari Micro Trips"
+            width={112}
+            height={38}
+            priority
+            data-no-translate
+            className="h-[30px] w-auto min-[360px]:h-[34px] sm:h-9"
+          />
         </Link>
 
         <nav aria-label="Primary navigation" className="hidden min-w-0 items-center gap-1 xl:flex">

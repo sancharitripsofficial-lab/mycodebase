@@ -4,8 +4,10 @@ import { LivingPhoto } from "@/components/living/LivingPhoto";
 import { getSiteSettings } from "@/lib/data/repository";
 
 export const metadata: Metadata = {
-  title: "About Sanchari • Micro Trips",
-  description: "Small-group road trips from Bengaluru capped at six travelers per departure.",
+  title: "About us",
+  description:
+    "Sanchari Micro Trips runs small-group weekend road trips from Bengaluru to Coorg, Chikmagalur, Gokarna and Hampi, with at most six travellers in one car.",
+  alternates: { canonical: "/about" },
 };
 
 export default async function AboutPage() {
