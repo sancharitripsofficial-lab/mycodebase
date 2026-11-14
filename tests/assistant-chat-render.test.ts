@@ -189,7 +189,8 @@ describe("chat guide rendering", () => {
   it("draws a see-through guide picture as a pop-out character (no circle); photos keep the round frame", () => {
     const cut = renderToStaticMarkup(createElement(GuideAvatar, { emotion: "idle", media: { idle: "/media/guide/guide-idle.webp" }, size: 52, name: "Ravi", cutout: true }));
     expect(cut).toContain('data-cutout="true"');
-    expect(cut).toContain("/media/guide/guide-idle.webp");
+    // Fetched at about the size shown (52 px bubble -> 256 px via the image optimiser), not the 768 px original.
+    expect(cut).toContain("/_next/image?url=%2Fmedia%2Fguide%2Fguide-idle.webp&amp;w=256&amp;q=75");
     const photo = renderToStaticMarkup(createElement(GuideAvatar, { emotion: "idle", media: { idle: "/media/a.jpg" }, size: 52, name: "Ravi" }));
     expect(photo).toContain('data-cutout="false"');
     // no media at all: the round Sanchari badge, never a pop-out
