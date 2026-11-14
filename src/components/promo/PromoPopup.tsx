@@ -69,8 +69,15 @@ export function PromoPopup({ promotions }: { promotions: Promotion[] }) {
     };
   }, [promotions, pathname]);
 
+  // Going to another page (for example tapping the logo to go home) closes the offer.
+  useEffect(() => {
+    setPromo(null);
+  }, [pathname]);
+
   useEffect(() => {
     if (!promo) return;
+    // Lets the header (logo, menu, language) sit above the pop-up's dimmed background.
+    document.documentElement.dataset.promoOpen = "true";
     closeRef.current?.focus();
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setPromo(null);
@@ -78,6 +85,7 @@ export function PromoPopup({ promotions }: { promotions: Promotion[] }) {
     window.addEventListener("keydown", onKey);
     return () => {
       window.removeEventListener("keydown", onKey);
+      delete document.documentElement.dataset.promoOpen;
       // Back to where the visitor was (if it is still on the page).
       const back = returnFocus.current;
       returnFocus.current = null;

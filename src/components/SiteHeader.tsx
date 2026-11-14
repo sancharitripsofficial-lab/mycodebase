@@ -24,7 +24,9 @@ export function SiteHeader({ isDemoMode }: { isDemoMode: boolean }) {
   return (
     // Phones and tablets: a near-solid bar (a blur behind a sticky bar is redrawn on every scroll
     // frame and makes phone scrolling stutter). Large screens keep the frosted look.
-    <header className="sticky top-0 z-40 border-b border-stone-200/70 bg-[#fffefc]/95 lg:bg-white/80 lg:backdrop-blur-md lg:supports-[backdrop-filter]:bg-white/70">
+    // "site-header": lifted above the offer pop-up while it is open (globals.css), so the logo,
+    // menu and language switch always work.
+    <header className="site-header sticky top-0 z-40 border-b border-stone-200/70 bg-[#fffefc]/95 lg:bg-white/80 lg:backdrop-blur-md lg:supports-[backdrop-filter]:bg-white/70">
       {isDemoMode && (
         <div className="bg-ocean px-4 py-1.5 text-center text-xs text-white/90">
           <span className="font-semibold text-saffron-500">Preview mode:</span> sample itineraries
@@ -34,7 +36,20 @@ export function SiteHeader({ isDemoMode }: { isDemoMode: boolean }) {
 
       {/* Fits a 320 px phone without sideways scrolling (tighter gaps and padding below 640 px). */}
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-3 py-2.5 sm:gap-4 sm:px-6">
-        <Link href="/" className="group flex shrink-0 items-center gap-2 whitespace-nowrap sm:gap-2.5" aria-label="Sanchari Micro Trips — home">
+        {/* The logo always goes to the home page; on the home page itself it glides back to the top. */}
+        <Link
+          href="/"
+          onClick={(e) => {
+            setMenuOpen(false);
+            if (pathname === "/" && !window.location.search && !window.location.hash) {
+              e.preventDefault();
+              const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+              window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
+            }
+          }}
+          className="group flex shrink-0 items-center gap-2 whitespace-nowrap sm:gap-2.5"
+          aria-label="Sanchari Micro Trips — home"
+        >
           <Image
             src="/brand/sanchari-mark.png"
             alt=""

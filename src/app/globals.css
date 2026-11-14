@@ -531,6 +531,12 @@
 }
 
 
+/* While the offer pop-up is open the header stays on top of its dimmed background, so the
+   logo (→ home), menu and language switch keep working. */
+html[data-promo-open] .site-header {
+  z-index: 95;
+}
+
 /* ---------- Kannada ↔ English ---------- */
 /* A returning Kannada visitor: hold the page (max 1.2 s) until the Kannada words are on it. */
 html[data-lang="kn"]:not([data-i18n-ready]) body {
