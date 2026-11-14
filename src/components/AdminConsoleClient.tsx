@@ -5,6 +5,7 @@ import { Button } from "@astryxdesign/core/Button";
 import { TextInput } from "@astryxdesign/core/TextInput";
 import {
   CalendarDays,
+  Clapperboard,
   ClipboardList,
   ExternalLink,
   FileText,
@@ -31,6 +32,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { BlogManager } from "@/components/admin/BlogManager";
 import { BookingMoney } from "@/components/admin/BookingMoney";
 import { CreatorsManager } from "@/components/admin/CreatorsManager";
 import { DeparturesManager } from "@/components/admin/DeparturesManager";
@@ -96,6 +98,7 @@ type SectionKey =
   | "offers"
   | "creators"
   | "website"
+  | "blog"
   | "reviews"
   | "media"
   | "upi"
@@ -128,6 +131,7 @@ const NAV: { group: string; items: { key: SectionKey; label: string; icon: typeo
       { key: "creators", label: "Creators & coupons", icon: Ticket },
       { key: "trips", label: "Trips", icon: Map },
       { key: "website", label: "Text & policies", icon: FileText },
+      { key: "blog", label: "Blog & videos", icon: Clapperboard },
       { key: "reviews", label: "Reviews", icon: Star },
       { key: "media", label: "Media library", icon: Images },
     ],
@@ -562,6 +566,7 @@ function Workspace({
           {section === "creators" && <CreatorsManager role={actor.staffRole} trips={data.trips} />}
           {section === "trips" && <TripsManager editor={editor} />}
           {section === "website" && <SiteContentManager editor={editor} />}
+          {section === "blog" && <BlogManager editor={editor} canEdit={canMutate && Boolean(editor.content?.editable)} />}
           {section === "reviews" && <ReviewsManager editor={editor} />}
           {section === "media" && <MediaLibrary canEdit={canMutate && Boolean(editor.content?.editable)} />}
           {section === "upi" && canMutate && (

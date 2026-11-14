@@ -1,4 +1,5 @@
 import { GUIDE_EMOTIONS, type GuideEmotion } from "@/lib/assistant/types";
+import { isSafeMediaLink } from "@/lib/blog";
 import { ICON_KEYS, THEME_KEYS, TILE_COLOURS } from "@/lib/home-content";
 import { z } from "zod";
 
@@ -340,6 +341,30 @@ export const translationsKnSchema = z
     return out;
   });
 
+const mediaLink = z
+  .string()
+  .trim()
+  .max(500)
+  .refine((v) => v === "" || isSafeMediaLink(v), "Use a file from the Media library (or an https:// link).");
+
+/** Blog / trip stories with videos (Admin → Website → Blog & videos). */
+export const blogPostsSchema = z
+  .array(
+    z.object({
+      id: z.string().trim().regex(/^[a-z0-9][a-z0-9-]{0,79}$/, "Post address: lowercase letters, numbers and dashes"),
+      title: z.string().trim().min(3, "Each post needs a title (3+ characters)").max(120, "Title: at most 120 characters"),
+      excerpt: z.string().trim().max(300, "Short text: at most 300 characters"),
+      body: z.string().trim().max(6000, "Story: at most 6,000 characters"),
+      videoUrl: mediaLink.refine((v) => v !== "", "Each post needs a video"),
+      posterUrl: mediaLink,
+      tripSlug: z.string().trim().regex(/^[a-z0-9][a-z0-9-]{0,119}$/).nullable(),
+      publishedOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Pick a date"),
+      published: z.boolean(),
+    }),
+  )
+  .max(60, "At most 60 posts")
+  .refine((list) => new Set(list.map((p) => p.id)).size === list.length, "Two posts have the same address. Change one title.");
+
 export const settingsSaveSchema = z.discriminatedUnion("key", [
   z.object({ key: z.literal("brand_identity"), value: brandIdentitySchema }),
   z.object({ key: z.literal("booking_policy"), value: bookingPolicySchema }),
@@ -349,6 +374,7 @@ export const settingsSaveSchema = z.discriminatedUnion("key", [
   z.object({ key: z.literal("home_page"), value: homePageSchema }),
   z.object({ key: z.literal("assistant"), value: assistantSettingsSchema }),
   z.object({ key: z.literal("translations_kn"), value: translationsKnSchema }),
+  z.object({ key: z.literal("blog_posts"), value: blogPostsSchema }),
 ]);
 
 export const reviewSaveSchema = z

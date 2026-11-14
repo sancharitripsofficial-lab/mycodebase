@@ -65,6 +65,7 @@ export function SiteFooter({
             <li><Link href="/trips" className="inline-flex min-h-9 items-center hover:text-white md:min-h-0">All departures</Link></li>
             <li><Link href="/trips?mode=private" className="inline-flex min-h-9 items-center hover:text-white md:min-h-0">Book the whole car</Link></li>
             <li><Link href="/about" className="inline-flex min-h-9 items-center hover:text-white md:min-h-0">About Sanchari</Link></li>
+            <li><Link href="/blog" className="inline-flex min-h-9 items-center hover:text-white md:min-h-0">Blog &amp; trip videos</Link></li>
             <li><Link href="/safety" className="inline-flex min-h-9 items-center hover:text-white md:min-h-0">Safety &amp; comfort</Link></li>
             <li><Link href="/booking-lookup" className="inline-flex min-h-9 items-center hover:text-white md:min-h-0">Find my booking</Link></li>
             <li><Link href="/creators" className="inline-flex min-h-9 items-center hover:text-white md:min-h-0">Creators programme</Link></li>

@@ -1,4 +1,5 @@
 import type { AssistantSettings } from "@/lib/assistant/settings";
+import type { BlogPost } from "@/lib/blog";
 import type { HomePageContent } from "@/lib/home-content";
 export type Difficulty = "Easy" | "Moderate" | "Active";
 
@@ -275,6 +276,8 @@ export interface SiteSettings {
   assistant: AssistantSettings;
   /** Owner's Kannada wording (English text → Kannada), on top of the built-in translations (Admin → Kannada). */
   translationsKn: Record<string, string>;
+  /** Blog / trip stories with videos (Admin → Website → Blog & videos). */
+  blogPosts: BlogPost[];
   legalDrafts: {
     ownerReviewRequired: boolean;
     termsSummary: string;

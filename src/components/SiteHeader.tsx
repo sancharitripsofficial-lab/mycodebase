@@ -11,6 +11,7 @@ const NAV_LINKS = [
   { href: "/trips", label: "Explore Trips" },
   { href: "/trips?mode=private", label: "Private 6-Seat" },
   { href: "/safety", label: "Safety & Comfort" },
+  { href: "/blog", label: "Blog" },
   { href: "/booking-lookup", label: "My Booking" },
   { href: "/policies", label: "Policies" },
 ];
@@ -29,7 +30,7 @@ export function SiteHeader({ isDemoMode }: { isDemoMode: boolean }) {
       )}
 
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-2.5 sm:px-6">
-        <Link href="/" className="group flex items-center gap-2.5" aria-label="Sanchari Micro Trips — home">
+        <Link href="/" className="group flex shrink-0 items-center gap-2.5 whitespace-nowrap" aria-label="Sanchari Micro Trips — home">
           <Image
             src="/brand/sanchari-mark.png"
             alt=""
@@ -48,7 +49,7 @@ export function SiteHeader({ isDemoMode }: { isDemoMode: boolean }) {
           </span>
         </Link>
 
-        <nav aria-label="Primary navigation" className="hidden items-center gap-1 lg:flex">
+        <nav aria-label="Primary navigation" className="hidden min-w-0 items-center gap-1 xl:flex">
           {NAV_LINKS.map((item) => {
             const active = pathname === item.href.split("?")[0] && !item.href.includes("?");
             return (
@@ -56,7 +57,7 @@ export function SiteHeader({ isDemoMode }: { isDemoMode: boolean }) {
                 key={item.href}
                 href={item.href}
                 aria-current={active ? "page" : undefined}
-                className={`rounded-full px-3.5 py-2 text-sm font-medium transition-colors ${
+                className={`whitespace-nowrap rounded-full px-3 py-2 text-sm font-medium transition-colors ${
                   active
                     ? "bg-forest-900/8 text-forest-900"
                     : "text-ink-900/80 hover:bg-lagoon-100 hover:text-forest-900"
@@ -68,28 +69,28 @@ export function SiteHeader({ isDemoMode }: { isDemoMode: boolean }) {
           })}
         </nav>
 
-        <div className="hidden items-center gap-2 lg:flex">
+        <div className="hidden items-center gap-2 xl:flex">
           <LanguageToggle />
-          <Link href="/trips" className="btn-sunset px-5 py-2.5 text-sm">
+          <Link href="/trips" className="btn-sunset whitespace-nowrap px-5 py-2.5 text-sm">
             Grab your seat
           </Link>
         </div>
 
-        <LanguageToggle className="ml-auto lg:hidden" />
+        <LanguageToggle className="ml-auto xl:hidden" />
 
         <button
           type="button"
           onClick={() => setMenuOpen((prev) => !prev)}
           aria-expanded={menuOpen}
           aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"}
-          className="inline-flex items-center justify-center rounded-xl border border-stone-200 bg-white p-2 text-forest-900 lg:hidden"
+          className="inline-flex items-center justify-center rounded-xl border border-stone-200 bg-white p-2 text-forest-900 xl:hidden"
         >
           {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
       </div>
 
       {menuOpen && (
-        <nav aria-label="Mobile navigation" className="border-t border-stone-200 bg-white px-4 py-4 lg:hidden">
+        <nav aria-label="Mobile navigation" className="border-t border-stone-200 bg-white px-4 py-4 xl:hidden">
           <ul className="flex flex-col gap-1">
             {NAV_LINKS.map((item) => (
               <li key={item.href}>

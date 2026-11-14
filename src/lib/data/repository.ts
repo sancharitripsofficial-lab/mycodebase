@@ -29,6 +29,7 @@ import { getSafeComfortCustomerLabel } from "@/lib/privacy";
 import { createSupabaseAdminClient, createSupabasePublicClient } from "@/lib/supabase/server";
 import { assertWomenOnlyConfirmed, preferenceForDeparture } from "@/lib/women-only";
 import { withoutStartedDepartures } from "@/lib/departure-rules";
+import { mergeBlogPosts } from "@/lib/blog";
 import type {
   BookingMode,
   AdminBookingRow,
@@ -100,6 +101,7 @@ export async function getSiteSettings(): Promise<{ settings: SiteSettings; isDem
         homePage: mergeHomeContent(map.get("home_page")),
         assistant: mergeAssistantSettings(map.get("assistant")),
         translationsKn: cleanTranslations(map.get("translations_kn")),
+        blogPosts: mergeBlogPosts(map.get("blog_posts")),
       },
     };
   } catch {

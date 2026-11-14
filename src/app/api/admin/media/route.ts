@@ -66,6 +66,12 @@ async function usageIndex(): Promise<Map<string, string[]>> {
   for (const [emotion, url] of Object.entries(media)) {
     if (typeof url === "string" && url) add(url, `Chat guide (${emotion})`);
   }
+  // Blog videos and their cover pictures (Admin → Website → Blog & videos).
+  const { data: blog } = await admin.from("site_settings").select("value").eq("key", "blog_posts").maybeSingle();
+  for (const post of (Array.isArray(blog?.value) ? blog.value : []) as { title?: string; videoUrl?: string; posterUrl?: string }[]) {
+    if (post.videoUrl) add(String(post.videoUrl), `Blog “${String(post.title ?? "")}” (video)`);
+    if (post.posterUrl) add(String(post.posterUrl), `Blog “${String(post.title ?? "")}” (cover)`);
+  }
   return index;
 }
 

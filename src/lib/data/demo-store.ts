@@ -1,4 +1,5 @@
 import { DEFAULT_ASSISTANT_SETTINGS } from "@/lib/assistant/settings";
+import { DEFAULT_BLOG_POSTS } from "@/lib/blog";
 import { DEFAULT_HOME_CONTENT } from "@/lib/home-content";
 import crypto from "node:crypto";
 import { calculateBookingPricing } from "@/lib/currency";
@@ -716,6 +717,7 @@ function createInitialDemoState(): DemoDatabaseState {
     homePage: DEFAULT_HOME_CONTENT,
     assistant: DEFAULT_ASSISTANT_SETTINGS,
     translationsKn: {},
+    blogPosts: DEFAULT_BLOG_POSTS,
     legalDrafts: {
       ownerReviewRequired: true,
       termsSummary:

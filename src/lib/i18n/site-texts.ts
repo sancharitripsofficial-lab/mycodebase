@@ -61,6 +61,7 @@ export function collectSiteTexts(input: {
     ["faqs", "FAQs"],
     ["legalDrafts", "Legal pages"],
     ["assistant", "Chat guide"],
+    ["blogPosts", "Blog"],
   ];
   for (const [key, label] of sections) walk(s[key], label, out);
   for (const p of input.promotions ?? []) walk(p, `Offer: ${p.title}`, out);
