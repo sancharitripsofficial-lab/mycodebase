@@ -100,7 +100,7 @@ async function fromMetNo(where: Coords, timeoutMs: number): Promise<LiveWeather 
   try {
     const url = `https://api.met.no/weatherapi/locationforecast/2.0/complete?lat=${where.latitude.toFixed(4)}&lon=${where.longitude.toFixed(4)}`;
     const res = await fetch(url, {
-      headers: { "User-Agent": "SanchariMicroTrips/1.0 https://mycodebase-gray.vercel.app", Accept: "application/json" },
+      headers: { "User-Agent": "SanchariMicroTrips/1.0 https://sancharitrips.com", Accept: "application/json" },
       next: { revalidate: FRESH_SECONDS },
       signal: AbortSignal.timeout(timeoutMs),
     });
