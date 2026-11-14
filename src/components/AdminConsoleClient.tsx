@@ -11,6 +11,7 @@ import {
   Images,
   IndianRupee,
   Inbox,
+  KeyRound,
   LayoutDashboard,
   ListChecks,
   Lock,
@@ -24,6 +25,7 @@ import {
   Settings2,
   Star,
   Ticket,
+  UserCog,
   Users,
   X,
 } from "lucide-react";
@@ -39,6 +41,7 @@ import { PasswordField } from "@/components/admin/PasswordField";
 import { PromotionsManager } from "@/components/admin/PromotionsManager";
 import { ReviewsManager } from "@/components/admin/ReviewsManager";
 import { SiteContentManager } from "@/components/admin/SiteContentManager";
+import { MyPasswordForm, StaffManager } from "@/components/admin/StaffManager";
 import { TripSheets } from "@/components/admin/TripSheets";
 import { TripsManager } from "@/components/admin/TripsManager";
 import { AdminPaymentsPanel } from "@/components/AdminPaymentsPanel";
@@ -96,9 +99,11 @@ type SectionKey =
   | "reviews"
   | "media"
   | "upi"
+  | "staff"
+  | "account"
   | "audit";
 
-const NAV: { group: string; items: { key: SectionKey; label: string; icon: typeof LayoutDashboard; ownerOps?: boolean }[] }[] = [
+const NAV: { group: string; items: { key: SectionKey; label: string; icon: typeof LayoutDashboard; ownerOps?: boolean; ownerOnly?: boolean }[] }[] = [
   {
     group: "Today",
     items: [
@@ -131,6 +136,8 @@ const NAV: { group: string; items: { key: SectionKey; label: string; icon: typeo
     group: "Settings",
     items: [
       { key: "upi", label: "UPI payments", icon: Settings2, ownerOps: true },
+      { key: "staff", label: "Staff & access", icon: UserCog, ownerOnly: true },
+      { key: "account", label: "My password", icon: KeyRound },
       { key: "audit", label: "Audit log", icon: ScrollText },
     ],
   },
@@ -398,7 +405,7 @@ function Workspace({
           <p className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-white/55">{g.group}</p>
           <ul className="space-y-0.5">
             {g.items
-              .filter((i) => !i.ownerOps || canMutate)
+              .filter((i) => (!i.ownerOps || canMutate) && (!i.ownerOnly || actor.staffRole === "owner"))
               .map((i) => {
                 const active = i.key === section;
                 const count = badges[i.key] ?? 0;
@@ -566,6 +573,8 @@ function Workspace({
               }}
             />
           )}
+          {section === "staff" && actor.staffRole === "owner" && <StaffManager />}
+          {section === "account" && <MyPasswordForm email={actor.email} />}
           {section === "audit" && <AuditSection logs={data.auditLogs} />}
           {editor.loadError && <Notice kind="error">{editor.loadError}</Notice>}
         </main>
