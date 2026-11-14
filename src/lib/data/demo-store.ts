@@ -896,6 +896,7 @@ export interface ReserveSeatsDemoInput {
   travelers: {
     fullName: string;
     ageGroup: "adult" | "senior";
+    ageYears?: number | null;
     emergencyContact: string;
     dietaryNotes?: string;
     seatRowRequest: "no_preference" | "front_middle" | "rear_window";
@@ -1068,6 +1069,7 @@ export function reserveSeatsDemo(
       bookingId,
       fullName: t.fullName,
       ageGroup: t.ageGroup,
+      ageYears: t.ageYears ?? null,
       emergencyContact: t.emergencyContact,
       dietaryNotes: t.dietaryNotes || "",
       seatRowRequest: t.seatRowRequest,

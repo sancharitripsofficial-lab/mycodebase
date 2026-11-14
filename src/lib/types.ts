@@ -129,6 +129,8 @@ export interface TripWithDetails {
 export interface TravelerInput {
   fullName: string;
   ageGroup: "adult" | "senior";
+  /** Exact age in years (adults 18-59, seniors 60+); null on bookings made before it was asked. */
+  ageYears?: number | null;
   emergencyContact: string;
   dietaryNotes?: string;
   seatRowRequest: SeatRowRequest;

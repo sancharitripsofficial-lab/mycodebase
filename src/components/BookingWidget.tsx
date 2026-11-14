@@ -13,6 +13,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { WOMEN_ONLY_CONFIRM_LABEL } from "@/lib/women-only";
+import { AGE_RANGES } from "@/lib/age";
 import { isBookable } from "@/lib/departure-rules";
 import { ErtigaSeatMap, SEAT_INFO } from "@/components/booking/ErtigaSeatMap";
 import { CarSeatPicker3D } from "@/components/three/CarSeatPicker3D";
@@ -50,6 +51,8 @@ interface BookingWidgetProps {
 interface TravelerFormRow {
   fullName: string;
   ageGroup: "adult" | "senior";
+  /** Typed age (kept as text while typing; sent as a number). */
+  ageYears: string;
   emergencyContact: string;
   dietaryNotes: string;
   seatRowRequest: SeatRowRequest;
@@ -82,6 +85,7 @@ function emptyTraveler(): TravelerFormRow {
   return {
     fullName: "",
     ageGroup: "adult",
+    ageYears: "",
     emergencyContact: "",
     dietaryNotes: "",
     seatRowRequest: "no_preference",
@@ -405,7 +409,10 @@ export function BookingWidget({
           customerEmail,
           customerPhone,
           payDepositOnly,
-          travelers,
+          travelers: travelers.map(({ ageYears, ...t }) => ({
+            ...t,
+            ageYears: ageYears.trim() ? Number(ageYears) : undefined,
+          })),
           coTravelerPreference,
           preferenceNotes,
           whatsappOptIn,
@@ -1249,6 +1256,29 @@ export function BookingWidget({
                         <option value="adult">Adult (18–59)</option>
                         <option value="senior">Senior (60+)</option>
                       </select>
+                    </label>
+                    {/* Exact age, inside the chosen group: 18–59 for adults, 60+ for seniors. */}
+                    <label className="block text-xs font-medium">
+                      Age (years)
+                      <input
+                        required
+                        type="number"
+                        inputMode="numeric"
+                        min={AGE_RANGES[t.ageGroup].min}
+                        max={AGE_RANGES[t.ageGroup].max}
+                        step={1}
+                        placeholder={t.ageGroup === "adult" ? "18 to 59" : "60 or above"}
+                        value={t.ageYears}
+                        onChange={(e) => {
+                          const next = [...travelers];
+                          next[index] = { ...t, ageYears: e.target.value.replace(/[^0-9]/g, "").slice(0, 3) };
+                          setTravelers(next);
+                        }}
+                        className="mt-1 w-full rounded-lg border border-stone-300 px-2.5 py-1.5 text-sm"
+                      />
+                      <span className="mt-1 block text-[11px] font-normal text-stone-600">
+                        {t.ageGroup === "adult" ? "Adults: any age from 18 to 59." : "Seniors: 60 or above."}
+                      </span>
                     </label>
                     <label className="block text-xs font-medium">
                       Emergency Contact Phone

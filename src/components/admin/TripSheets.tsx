@@ -265,6 +265,7 @@ export function TripSheets({
                               <p key={t.id} className="leading-snug">
                                 <strong className="text-ink-900">{t.fullName}</strong>
                                 <span className="text-xs text-stone-600">
+                                  {"ageYears" in t && t.ageYears ? ` • ${t.ageYears} yrs` : ""}
                                   {t.ageGroup === "senior" ? " • senior" : ""}
                                   {t.dietaryNotes ? ` • food: ${t.dietaryNotes}` : ""}
                                   {t.verificationChecked ? " • ID ✓" : ""}

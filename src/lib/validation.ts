@@ -1,8 +1,17 @@
 import { z } from "zod";
 
+import { AGE_RANGES } from "@/lib/age";
+
+export { AGE_RANGES };
+
 export const travelerInputSchema = z.object({
   fullName: z.string().trim().min(2, "Traveler name must be at least 2 characters").max(120),
   ageGroup: z.enum(["adult", "senior"]).default("adult"),
+  // Optional so a page opened before this field existed can still book; the form requires it.
+  ageYears: z.preprocess(
+    (v) => (v === "" || v === null || v === undefined ? undefined : typeof v === "string" ? Number(v) : v),
+    z.number({ message: "Enter the traveller's age as a number" }).int("Enter the age in whole years").min(1).max(110).optional()
+  ),
   emergencyContact: z
     .string()
     .trim()
@@ -15,6 +24,19 @@ export const travelerInputSchema = z.object({
   roomPreference: z
     .enum(["shared_same_gender", "private_room_request", "couple_friends_room_request"])
     .default("shared_same_gender"),
+}).superRefine((t, ctx) => {
+  if (t.ageYears === undefined) return;
+  const range = AGE_RANGES[t.ageGroup];
+  if (t.ageYears < range.min || t.ageYears > range.max) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["ageYears"],
+      message:
+        t.ageGroup === "adult"
+          ? "Adult travellers must be 18 to 59 years old (choose Senior for 60+)."
+          : "Senior travellers must be 60 or older (choose Adult for 18 to 59).",
+    });
+  }
 });
 
 export const checkoutSchema = z
