@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { usePageVisible, usePrefersReducedMotion } from "@/components/motion/useMotionHooks";
 import type { GuideEmotion } from "@/lib/assistant/types";
+import { LivingGuide } from "./LivingGuide";
 import styles from "./assistant.module.css";
 
 export interface GuideAvatarProps {
@@ -18,6 +19,8 @@ export interface GuideAvatarProps {
   paused?: boolean;
   /** Small still avatar for message bubbles: no motion, no effects. */
   mini?: boolean;
+  /** See-through pictures: a 3D pop-out character with no circle (photos with a background keep the round frame). */
+  cutout?: boolean;
   className?: string;
 }
 
@@ -145,7 +148,7 @@ function MediaLayer({
  * (cross-fading 350 ms between emotions), or the Sanchari badge when none is uploaded,
  * and adds a light motion per emotion: breathing, leaning in, thinking, talking, waving…
  */
-export function GuideAvatar({ emotion, media, size, name, paused = false, mini = false, className = "" }: GuideAvatarProps) {
+export function GuideAvatar({ emotion, media, size, name, paused = false, mini = false, cutout = false, className = "" }: GuideAvatarProps) {
   const reduced = usePrefersReducedMotion();
   const visible = usePageVisible();
   const [failed, setFailed] = useState<string[]>([]);
@@ -191,6 +194,11 @@ export function GuideAvatar({ emotion, media, size, name, paused = false, mini =
   const ringW = Math.max(2, Math.round(size * 0.045));
   const fxIcon = Math.max(10, Math.round(size * 0.24));
   const showFx = !mini && size >= 44;
+  // Cut-out pictures (no background) are drawn as a pop-out character; the badge fallback stays round.
+  const popOut = cutout && Boolean(cur);
+  // A cut-out still picture comes alive (3D depth, breathing, random small actions, looks at you).
+  const canLive = popOut && !mini && !reduced && Boolean(cur) && !VIDEO_RE.test(cur ?? "");
+  const [livingOn, setLivingOn] = useState(false);
 
   return (
     <span
@@ -199,12 +207,15 @@ export function GuideAvatar({ emotion, media, size, name, paused = false, mini =
       data-emotion={mini ? "idle" : emotion}
       data-paused={stopped}
       data-mini={mini}
+      data-cutout={popOut}
       {...(mini ? { "aria-hidden": true } : { role: "img", "aria-label": `${name}, your Sanchari guide` })}
     >
       {!mini && <span className={styles.halo} aria-hidden="true" />}
+      {!mini && <span className={styles.floor} aria-hidden="true" />}
+      <span className={styles.tilt} aria-hidden="true">
       <span className={styles.motion} aria-hidden="true">
         <span className={styles.ring} />
-        <span className={styles.face}>
+        <span className={styles.face} data-living={canLive && livingOn ? "true" : undefined}>
           {cur ? (
             <>
               {prev && prev !== cur && (
@@ -226,6 +237,7 @@ export function GuideAvatar({ emotion, media, size, name, paused = false, mini =
                 onFail={() => markFailed(cur)}
                 onFadeEnd={dropPrev}
               />
+              {canLive && cur && <LivingGuide key={`l:${cur}`} src={cur} emotion={emotion} paused={stopped} onLive={setLivingOn} />}
             </>
           ) : (
             <Image
@@ -237,6 +249,7 @@ export function GuideAvatar({ emotion, media, size, name, paused = false, mini =
             />
           )}
         </span>
+      </span>
       </span>
       {showFx && (
         <span className={styles.fx} aria-hidden="true">

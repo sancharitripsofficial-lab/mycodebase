@@ -79,7 +79,7 @@ export default async function TripDetailPage({
   const openDeps = departures.filter((d) => d.status !== "cancelled" && d.status !== "completed");
   const [seatPairs, weather] = await Promise.all([
     Promise.all(openDeps.map(async (d) => [d.departureId, await getDepartureSeatMap(d.departureId)] as const)),
-    getDestinationWeather(trip.slug, trip.region, { timeoutMs: 2500 }),
+    getDestinationWeather(trip.slug, trip.region, { timeoutMs: 2500, destination: trip.destination }),
   ]);
   const initialSeatMaps = Object.fromEntries(seatPairs);
 

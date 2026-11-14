@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { isOptimizableImage } from "@/lib/media";
 import type { LivingHandle } from "./engine";
 import { resolveScene } from "./scenes";
-import { fetchLiveWeather, NEUTRAL_WEATHER, seedLiveWeather, type LiveWeather } from "./weather";
+import { fetchLiveWeather, NEUTRAL_WEATHER, seedLiveWeather, watchLiveWeather, weatherTime, type LiveWeather } from "./weather";
 
 export type LivingPhotoProps = {
   src: string;
@@ -74,14 +74,18 @@ export function LivingPhoto({
   // Live weather for this destination (one request per destination, shared by all its photos).
   useEffect(() => {
     let cancelled = false;
-    fetchLiveWeather(scene.weatherKey).then((w) => {
+    const apply = (w: LiveWeather) => {
       if (cancelled) return;
       weatherRef.current = w;
       handleRef.current?.setWeather(w);
       setWeather(w);
-    });
+    };
+    fetchLiveWeather(scene.weatherKey).then(apply);
+    // Keep it live: re-check every 10 minutes while the page is open and visible.
+    const stop = watchLiveWeather(scene.weatherKey, apply);
     return () => {
       cancelled = true;
+      stop();
     };
   }, [scene]);
 
@@ -212,6 +216,9 @@ function WeatherChip({ weather }: { weather: LiveWeather }) {
         </svg>
         <span>
           wind {weather.windKmh} km/h from {weather.windFrom}
+          {weather.todayMaxC != null && weather.todayMinC != null && <> · today {weather.todayMinC}–{weather.todayMaxC}°C</>}
+          {weather.rainChance != null && <> · rain {weather.rainChance}%</>}
+          {weatherTime(weather) && <> · {weather.stale ? "last update" : "updated"} {weatherTime(weather)}</>}
         </span>
       </span>
       <style>{"@keyframes living-chip-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}"}</style>

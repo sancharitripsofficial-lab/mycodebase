@@ -450,6 +450,7 @@ export function SuggestionChips({ items, onPick, disabled }: { items: string[]; 
 export interface GuideLook {
   guideName: string;
   media: Partial<Record<GuideEmotion, string>>;
+  cutout?: boolean;
 }
 
 export const guideBubble =
@@ -458,7 +459,7 @@ export const guideBubble =
 export function GuideRow({ look, children }: { look: GuideLook; children: ReactNode }) {
   return (
     <div className={`${styles.msgIn} flex items-start gap-2`}>
-      <GuideAvatar mini size={30} emotion="idle" media={look.media} name={look.guideName} className="mt-0.5" />
+      <GuideAvatar mini size={30} emotion="idle" media={look.media} cutout={look.cutout} name={look.guideName} className="mt-0.5" />
       <div className="min-w-0 flex-1">{children}</div>
     </div>
   );

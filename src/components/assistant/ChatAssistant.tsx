@@ -108,7 +108,7 @@ function WindowFallback({ config, onClose }: { config: ChatAssistantConfig; onCl
       className={`${styles.panel} ${styles.panelIn} fixed top-0 right-0 left-0 z-[65] flex h-[100dvh] flex-col overflow-hidden bg-cream-50 sm:top-auto sm:right-4 sm:bottom-4 sm:left-auto sm:h-[min(680px,calc(100dvh-2rem))] sm:w-[min(400px,calc(100vw-2rem))] sm:rounded-[1.6rem] sm:shadow-[0_30px_80px_-24px_rgb(13_95_107/0.55)] lg:right-6 lg:bottom-6`}
     >
       <div className={`${styles.header} flex items-center gap-3 px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-4 text-white`}>
-        <GuideAvatar emotion="wave" media={config.guideMedia} size={64} name={config.guideName} />
+        <GuideAvatar emotion="wave" media={config.guideMedia} cutout={config.guideCutout} size={64} name={config.guideName} />
         <p className="flex-1 font-display text-xl font-semibold">{config.guideName}</p>
         <button
           type="button"
@@ -301,14 +301,20 @@ export function ChatAssistant({ config }: { config: ChatAssistantConfig }) {
           aria-label={`Ask ${name} — live trip answers from your Sanchari guide`}
           aria-haspopup="dialog"
           aria-expanded={phase === "open"}
-          className="relative flex items-center gap-3 rounded-full bg-cream-50 p-1 shadow-[0_14px_34px_-12px_rgb(13_95_107/0.55),0_2px_6px_rgb(13_95_107/0.12)] ring-1 ring-stone-200 hover:-translate-y-0.5 hover:ring-lagoon-500/50 sm:p-1.5 sm:pr-5"
+          className={
+            config.guideCutout
+              ? // Cut-out guide: he stands on his own on phones (no round background); on wider
+                // screens the "Ask" pill sits beside him and he steps out of its left edge.
+                "relative flex items-end gap-2 rounded-full p-1 pt-3 hover:-translate-y-0.5 sm:bg-cream-50 sm:pr-5 sm:shadow-[0_14px_34px_-12px_rgb(13_95_107/0.55),0_2px_6px_rgb(13_95_107/0.12)] sm:ring-1 sm:ring-stone-200 sm:hover:ring-lagoon-500/50"
+              : "relative flex items-center gap-3 rounded-full bg-cream-50 p-1 shadow-[0_14px_34px_-12px_rgb(13_95_107/0.55),0_2px_6px_rgb(13_95_107/0.12)] ring-1 ring-stone-200 hover:-translate-y-0.5 hover:ring-lagoon-500/50 sm:p-1.5 sm:pr-5"
+          }
         >
           <span className="relative block">
-            <span className={styles.launcherPulse} aria-hidden="true" />
-            <GuideAvatar emotion={closed ? emotion : "idle"} media={config.guideMedia} size={52} name={name} paused={!closed} />
+            {!config.guideCutout && <span className={styles.launcherPulse} aria-hidden="true" />}
+            <GuideAvatar emotion={closed ? emotion : "idle"} media={config.guideMedia} cutout={config.guideCutout} size={52} name={name} paused={!closed} />
             <span className={styles.onlineDot} aria-hidden="true" />
           </span>
-          <span className="hidden text-left leading-tight sm:block" aria-hidden="true">
+          <span className={`hidden text-left leading-tight sm:block ${config.guideCutout ? "self-center" : ""}`} aria-hidden="true">
             <span className="block text-sm font-bold text-forest-900">Ask {name}</span>
             <span className="block text-xs text-stone-600">Live trip answers</span>
           </span>

@@ -27,6 +27,11 @@ export interface AssistantSettings {
    * Missing emotions fall back to "idle", then to the built-in Sanchari badge.
    */
   guideMedia: Partial<Record<GuideEmotion, string>>;
+  /**
+   * The pictures have a see-through background: show the guide as a 3D pop-out character with no
+   * circle around him. Switch off for photos that have their own background (they get a round frame).
+   */
+  guideCutout: boolean;
 }
 
 export const DEFAULT_ASSISTANT_SETTINGS: AssistantSettings = {
@@ -48,10 +53,18 @@ export const DEFAULT_ASSISTANT_SETTINGS: AssistantSettings = {
   smartAnswers: true,
   // Ravi, the photoreal guide (wearing the official Sanchari S mark). Missing emotions use idle.
   guideMedia: {
-    idle: "/media/guide/guide-idle.jpg",
-    wave: "/media/guide/guide-wave.jpg",
-    thinking: "/media/guide/guide-thinking.jpg",
+    idle: "/media/guide/guide-idle.webp",
+    wave: "/media/guide/guide-wave.webp",
+    thinking: "/media/guide/guide-thinking.webp",
   },
+  guideCutout: true,
+};
+
+/** The first built-in pictures had a studio background; saved copies of them move to the cut-outs. */
+const OLD_BUILT_IN: Record<string, string> = {
+  "/media/guide/guide-idle.jpg": "/media/guide/guide-idle.webp",
+  "/media/guide/guide-wave.jpg": "/media/guide/guide-wave.webp",
+  "/media/guide/guide-thinking.jpg": "/media/guide/guide-thinking.webp",
 };
 
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
@@ -66,7 +79,7 @@ export function mergeAssistantSettings(saved: unknown): AssistantSettings {
   if (isObj(saved.guideMedia)) {
     for (const e of GUIDE_EMOTIONS) {
       const v = saved.guideMedia[e];
-      if (typeof v === "string" && v.trim()) media[e] = v.trim();
+      if (typeof v === "string" && v.trim()) media[e] = OLD_BUILT_IN[v.trim()] ?? v.trim();
     }
   }
   return {
@@ -81,6 +94,7 @@ export function mergeAssistantSettings(saved: unknown): AssistantSettings {
       : d.quickQuestions,
     smartAnswers: typeof saved.smartAnswers === "boolean" ? saved.smartAnswers : d.smartAnswers,
     guideMedia: media,
+    guideCutout: typeof saved.guideCutout === "boolean" ? saved.guideCutout : d.guideCutout,
   };
 }
 

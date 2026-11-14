@@ -299,7 +299,9 @@ export function resolveScene(src: string, slug?: string | null, region?: string 
     ...base,
     ...(photo ?? {}),
     effects,
-    weatherKey: dest ? (slug && DESTINATIONS[slug] ? { slug } : { region: region ?? undefined }) : null,
+    // Always by the trip when we know it: the server then uses the trip's own destination
+    // (exact place) for trips without built-in coordinates, not the region's generic spot.
+    weatherKey: slug ? { slug, ...(region ? { region } : {}) } : region && dest ? { region } : null,
     known: Boolean(photo),
   };
 }

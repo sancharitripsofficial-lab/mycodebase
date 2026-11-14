@@ -366,6 +366,13 @@ export function AssistantForm({
         title={`Guide character pictures & videos (${filledMedia}/${GUIDE_EMOTIONS.length})`}
         hint="Upload the files in Admin → Media library, copy the link, paste here (or press Choose). Videos (.mp4/.webm) play silently on loop; photos get gentle motion. Use the same person in the same outfit for every emotion so the guide looks real and consistent. Empty emotions use the Idle one; with no Idle, the chat shows the Sanchari badge."
       >
+        <Switch
+          label="Pictures have a see-through background (show the guide as a 3D pop-out, no circle)"
+          description="On for cut-out PNG/WebP pictures like the built-in ones. Switch off if your pictures or videos have their own background: they are then shown in a round frame."
+          value={f.guideCutout}
+          isDisabled={!canEdit}
+          onChange={(v) => set("guideCutout", v)}
+        />
         <div className="grid gap-3 xl:grid-cols-2">
           {GUIDE_EMOTIONS.map((e) => {
             const url = f.guideMedia[e] ?? "";

@@ -18,6 +18,8 @@ export interface ChatAssistantConfig {
   whatsappUrl: string | null;
   /** Picture or video per emotion (Admin → Media). */
   guideMedia: Partial<Record<GuideEmotion, string>>;
+  /** See-through pictures: show the guide as a pop-out character, no circle. */
+  guideCutout: boolean;
 }
 
 /** Drives the guide's emotion (owned by ChatAssistant, used by the chat window). */

@@ -119,7 +119,10 @@ export default function ChatWindow({ config, emotion, mood, closing, onClose }: 
   const name = config.guideName;
   const care = config.careNumber;
   const careHref = care ? `tel:+${care}` : null;
-  const look: GuideLook = useMemo(() => ({ guideName: config.guideName, media: config.guideMedia }), [config.guideName, config.guideMedia]);
+  const look: GuideLook = useMemo(
+    () => ({ guideName: config.guideName, media: config.guideMedia, cutout: config.guideCutout }),
+    [config.guideName, config.guideMedia, config.guideCutout],
+  );
 
   useEffect(() => {
     messagesRef.current = messages;
@@ -590,7 +593,7 @@ export default function ChatWindow({ config, emotion, mood, closing, onClose }: 
       {/* ---------- Header: the guide + customer care ---------- */}
       <header className={`${styles.header} relative shrink-0 px-4 pt-[max(0.9rem,env(safe-area-inset-top))] pb-3.5 text-white sm:pt-4`}>
         <div className="flex items-start gap-3">
-          <GuideAvatar emotion={emotion} media={config.guideMedia} size={compact ? 52 : 76} name={name} paused={closing} />
+          <GuideAvatar emotion={emotion} media={config.guideMedia} cutout={config.guideCutout} size={compact ? 52 : 76} name={name} paused={closing} />
           <div className="min-w-0 flex-1 pt-0.5">
             <h2 id={titleId} className="truncate font-display text-xl leading-tight font-semibold text-white">
               {name}

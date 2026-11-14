@@ -593,7 +593,7 @@ export async function loadKnowledgeBase(): Promise<KnowledgeBase> {
       const weatherP = tripsP.then(async ({ trips }) => {
         const entries = await Promise.all(
           trips.map(async ({ trip }) => {
-            const w = await weatherMod.getDestinationWeather(trip.slug, trip.region, { timeoutMs: 2000 }).catch(() => null);
+            const w = await weatherMod.getDestinationWeather(trip.slug, trip.region, { timeoutMs: 2000, destination: trip.destination }).catch(() => null);
             return [trip.slug, w] as const;
           })
         );

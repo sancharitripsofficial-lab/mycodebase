@@ -314,6 +314,7 @@ export const assistantSettingsSchema = z.object({
     .array(z.string().trim().min(3, "Each quick question needs at least 3 characters").max(80, "Each quick question: at most 80 characters"))
     .max(8, "At most 8 quick questions"),
   smartAnswers: z.boolean(),
+  guideCutout: z.boolean().default(true),
   guideMedia: z
     .object(guideMediaShape)
     .default({})

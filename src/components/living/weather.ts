@@ -19,7 +19,22 @@ export type LiveWeather = {
   humidity: number;
   cloudCover: number;
   precipMm: number;
+  /** Today's high / low in °C and highest chance of rain in % (IST day), when known. */
+  todayMaxC?: number | null;
+  todayMinC?: number | null;
+  rainChance?: number | null;
+  /** When the reading was taken (ISO). */
+  updatedAt?: string;
+  /** The weather service was unreachable: this is the last good reading (shown with its time). */
+  stale?: boolean;
 };
+
+/** How often the weather is re-checked while a page stays open. */
+export const WEATHER_REFRESH_MS = 10 * 60 * 1000;
+
+const TIME = new Intl.DateTimeFormat("en-IN", { hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" });
+/** "2:05 pm" (IST) for the reading time, or "" when unknown. */
+export const weatherTime = (w: LiveWeather) => (w.updatedAt ? TIME.format(new Date(w.updatedAt)) : "");
 
 export const NEUTRAL_WEATHER: LiveWeather = {
   live: false,
@@ -78,7 +93,7 @@ function isLiveWeather(v: unknown): v is LiveWeather {
   );
 }
 
-const cache = new Map<string, Promise<LiveWeather>>();
+const cache = new Map<string, { at: number; p: Promise<LiveWeather> }>();
 
 function cacheKey(key: { slug?: string; region?: string }): string {
   return key.slug ? `slug=${encodeURIComponent(key.slug)}` : `region=${encodeURIComponent(key.region ?? "")}`;
@@ -88,20 +103,42 @@ function cacheKey(key: { slug?: string; region?: string }): string {
 export function seedLiveWeather(key: { slug?: string; region?: string } | null, weather: LiveWeather): void {
   if (!key || (!key.slug && !key.region) || !weather.live) return;
   const qs = cacheKey(key);
-  if (!cache.has(qs)) cache.set(qs, Promise.resolve(weather));
+  if (!cache.has(qs)) cache.set(qs, { at: Date.now(), p: Promise.resolve(weather) });
 }
 
 /** Browser: one request per destination per page view, shared by every photo of that trip. */
 export function fetchLiveWeather(key: { slug?: string; region?: string } | null): Promise<LiveWeather> {
   if (!key || (!key.slug && !key.region)) return Promise.resolve(NEUTRAL_WEATHER);
   const qs = cacheKey(key);
-  let p = cache.get(qs);
-  if (!p) {
-    p = fetch(`/api/weather?${qs}`, { credentials: "omit" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((j: unknown) => (isLiveWeather(j) ? j : NEUTRAL_WEATHER))
-      .catch(() => NEUTRAL_WEATHER);
-    cache.set(qs, p);
-  }
+  const hit = cache.get(qs);
+  // Shared by every photo / badge of that destination, re-checked every 10 minutes.
+  if (hit && Date.now() - hit.at < WEATHER_REFRESH_MS) return hit.p;
+  const previous = hit?.p;
+  const p = fetch(`/api/weather?${qs}`, { credentials: "omit" })
+    .then((r) => (r.ok ? r.json() : null))
+    .then((j: unknown) => (isLiveWeather(j) ? j : null))
+    .catch(() => null)
+    // A failed re-check keeps what is already on screen instead of blanking it.
+    .then(async (w) => w ?? (previous ? await previous : NEUTRAL_WEATHER));
+  cache.set(qs, { at: Date.now(), p });
   return p;
+}
+
+/** Calls `onWeather` with fresh weather every 10 minutes while the page is visible (and on return). */
+export function watchLiveWeather(key: { slug?: string; region?: string } | null, onWeather: (w: LiveWeather) => void): () => void {
+  if (!key || (!key.slug && !key.region) || typeof window === "undefined") return () => {};
+  let stopped = false;
+  const check = () => {
+    if (stopped || document.visibilityState !== "visible") return;
+    void fetchLiveWeather(key).then((w) => {
+      if (!stopped) onWeather(w);
+    });
+  };
+  const timer = window.setInterval(check, WEATHER_REFRESH_MS);
+  document.addEventListener("visibilitychange", check);
+  return () => {
+    stopped = true;
+    window.clearInterval(timer);
+    document.removeEventListener("visibilitychange", check);
+  };
 }

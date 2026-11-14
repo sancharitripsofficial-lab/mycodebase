@@ -36,6 +36,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
         careHours: assistant.customerCareHours,
         whatsappUrl: whatsappUrl ?? null,
         guideMedia: assistant.guideMedia,
+        guideCutout: assistant.guideCutout,
       }
     : null;
 

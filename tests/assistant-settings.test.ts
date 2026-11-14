@@ -8,6 +8,16 @@ const withValue = (patch: Partial<AssistantSettings>) => ({ ...DEFAULT_ASSISTANT
 const saves = (patch: Partial<AssistantSettings>) => settingsSaveSchema.safeParse({ key: "assistant", value: withValue(patch) }).success;
 
 describe("chat guide settings", () => {
+  it("uses the cut-out guide pictures, also for saved copies of the old built-in photos", () => {
+    expect(DEFAULT_ASSISTANT_SETTINGS.guideCutout).toBe(true);
+    expect(DEFAULT_ASSISTANT_SETTINGS.guideMedia.idle).toBe("/media/guide/guide-idle.webp");
+    const saved = mergeAssistantSettings({ guideName: "Sandeep", guideMedia: { idle: "/media/guide/guide-idle.jpg", wave: "/media/own-wave.mp4" } });
+    expect(saved.guideMedia.idle).toBe("/media/guide/guide-idle.webp");
+    expect(saved.guideMedia.wave).toBe("/media/own-wave.mp4"); // the owner's own uploads stay
+    expect(saved.guideCutout).toBe(true);
+    expect(mergeAssistantSettings({ guideCutout: false }).guideCutout).toBe(false);
+  });
+
   it("the built-in default passes the same rules the admin save uses", () => {
     const parsed = settingsSaveSchema.parse({ key: "assistant", value: DEFAULT_ASSISTANT_SETTINGS });
     expect(parsed.key).toBe("assistant");

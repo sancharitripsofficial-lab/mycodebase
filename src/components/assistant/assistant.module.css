@@ -540,3 +540,166 @@
     display: none;
   }
 }
+
+
+/* =========================================================================
+ * 3D "emoji badge" look: a glossy sphere on a bevelled ring that floats over
+ * a soft shadow, sways slowly in 3D, tilts toward the visitor on hover, and
+ * carries the official logo on a raised badge in front.
+ * ======================================================================= */
+.avatar:not([data-mini="true"]) {
+  perspective: 420px;
+}
+.tilt {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transition: transform 450ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.avatar:not([data-mini="true"]) .tilt {
+  animation: guide-sway 7s ease-in-out infinite;
+}
+.avatar:not([data-mini="true"]) .motion {
+  transform-style: preserve-3d;
+}
+/* The chat button: lean toward the visitor when pointed at. */
+button:hover > span > .avatar:not([data-mini="true"]) .tilt,
+button:focus-visible > span > .avatar:not([data-mini="true"]) .tilt {
+  animation-play-state: paused;
+  transform: rotateX(10deg) rotateY(-14deg) translateZ(6px);
+}
+/* Bevel: light on top, shade underneath, like a real rim. */
+.avatar:not([data-mini="true"]) .ring {
+  box-shadow:
+    0 10px 22px -10px color-mix(in srgb, var(--guide-ring) 80%, #0b3b3b),
+    inset 0 2px 3px rgb(255 255 255 / 0.65),
+    inset 0 -3px 5px rgb(0 0 0 / 0.28);
+}
+/* Glass: a curved highlight and depth shading over the face. */
+.face::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    radial-gradient(120% 70% at 30% 8%, rgb(255 255 255 / 0.42), rgb(255 255 255 / 0) 42%),
+    radial-gradient(90% 60% at 50% 115%, rgb(4 30 30 / 0.32), rgb(4 30 30 / 0) 60%);
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.35),
+    inset 0 -8px 16px -8px rgb(0 0 0 / 0.35);
+}
+.avatar[data-mini="true"] .face::after {
+  background: radial-gradient(120% 70% at 30% 8%, rgb(255 255 255 / 0.3), rgb(255 255 255 / 0) 45%);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.3);
+}
+/* Soft shadow on the "floor" that breathes with the float. */
+.floor {
+  position: absolute;
+  left: 16%;
+  right: 16%;
+  bottom: -11%;
+  height: 14%;
+  border-radius: 9999px;
+  background: radial-gradient(closest-side, rgb(8 52 52 / 0.38), rgb(8 52 52 / 0));
+  filter: blur(1.5px);
+  pointer-events: none;
+  animation: guide-floor 7s ease-in-out infinite;
+}
+@keyframes guide-sway {
+  0%, 100% { transform: rotateY(-7deg) rotateX(3deg) translateY(0); }
+  50% { transform: rotateY(7deg) rotateX(-2deg) translateY(-3%); }
+}
+@keyframes guide-floor {
+  0%, 100% { transform: scaleX(1); opacity: 1; }
+  50% { transform: scaleX(0.86); opacity: 0.7; }
+}
+.avatar[data-paused="true"] .tilt,
+.avatar[data-paused="true"] .floor {
+  animation-play-state: paused !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tilt,
+  .floor {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
+
+/* =========================================================================
+ * Cut-out guide: a 3D pop-out character, no circle. The picture (with a
+ * see-through background) rises above its box, lit like a 3D emoji: soft
+ * contact shadow, rim light, gentle sway and lean toward the visitor.
+ * ======================================================================= */
+.avatar[data-cutout="true"] .ring {
+  display: none;
+}
+.avatar[data-cutout="true"] .halo {
+  inset: -18% 4% 22%;
+  border-radius: 50%;
+  opacity: 0.22;
+}
+.avatar[data-cutout="true"] .face {
+  inset: -30% -14% 0;
+  overflow: visible;
+  border-radius: 0;
+  background: none;
+  isolation: auto;
+}
+.avatar[data-cutout="true"] .face::after {
+  display: none;
+}
+.avatar[data-cutout="true"] .layer {
+  object-fit: contain;
+  object-position: 50% 100%;
+  /* The picture ends at his chest: fade it out softly instead of a hard straight cut. */
+  -webkit-mask-image:
+    linear-gradient(to bottom, #000 93%, rgb(0 0 0 / 0) 100%),
+    linear-gradient(to right, rgb(0 0 0 / 0) 0%, #000 9%, #000 91%, rgb(0 0 0 / 0) 100%);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(to bottom, #000 93%, rgb(0 0 0 / 0) 100%),
+    linear-gradient(to right, rgb(0 0 0 / 0) 0%, #000 9%, #000 91%, rgb(0 0 0 / 0) 100%);
+  mask-composite: intersect;
+  /* 3D depth: a tight contact shadow, a soft ambient one, and a teal rim light. */
+  filter:
+    drop-shadow(0 1px 0 rgb(255 255 255 / 0.55))
+    drop-shadow(0 6px 6px rgb(6 40 40 / 0.35))
+    drop-shadow(0 14px 18px rgb(6 40 40 / 0.22))
+    drop-shadow(0 0 1.5px color-mix(in srgb, var(--guide-ring) 70%, white));
+}
+.avatar[data-cutout="true"] .floor {
+  bottom: -9%;
+  left: 8%;
+  right: 8%;
+  height: 16%;
+}
+/* Bubble avatars: just the head and shoulders, no frame, no lift. */
+.avatar[data-cutout="true"][data-mini="true"] .face {
+  inset: -12% -10% 0;
+}
+.avatar[data-cutout="true"][data-mini="true"] .layer {
+  filter: drop-shadow(0 2px 2px rgb(6 40 40 / 0.3));
+}
+/* Inside the chat window header there is no room above: he rises less, so his cap is never cut. */
+.header .avatar[data-cutout="true"] .face {
+  inset: -6% -12% 0;
+}
+
+/* Living guide (real-time 3D): the canvas takes over from the still picture once it moves. */
+.living {
+  opacity: 0;
+  transition: opacity 260ms ease;
+}
+.face[data-living="true"] .living {
+  opacity: 1;
+}
+.face[data-living="true"] img.layer {
+  opacity: 0 !important;
+}
+/* He moves by himself now: no extra CSS sway on top. */
+.tilt:has(.face[data-living="true"]) {
+  animation: none !important;
+}

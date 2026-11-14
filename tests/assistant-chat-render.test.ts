@@ -176,6 +176,7 @@ describe("chat guide rendering", () => {
           careHours: "Mon–Sun, 9 AM – 8 PM",
           whatsappUrl: "https://wa.me/919876543210",
           guideMedia: {},
+          guideCutout: true,
         },
       }),
     );
@@ -183,6 +184,18 @@ describe("chat guide rendering", () => {
     expect(html).toContain('aria-expanded="false"');
     expect(html).not.toContain('role="dialog"');
     expect(html).not.toContain("Namaskara!");
+  });
+
+  it("draws a see-through guide picture as a pop-out character (no circle); photos keep the round frame", () => {
+    const cut = renderToStaticMarkup(createElement(GuideAvatar, { emotion: "idle", media: { idle: "/media/guide/guide-idle.webp" }, size: 52, name: "Ravi", cutout: true }));
+    expect(cut).toContain('data-cutout="true"');
+    expect(cut).toContain("/media/guide/guide-idle.webp");
+    const photo = renderToStaticMarkup(createElement(GuideAvatar, { emotion: "idle", media: { idle: "/media/a.jpg" }, size: 52, name: "Ravi" }));
+    expect(photo).toContain('data-cutout="false"');
+    // no media at all: the round Sanchari badge, never a pop-out
+    const badge = renderToStaticMarkup(createElement(GuideAvatar, { emotion: "idle", media: {}, size: 52, name: "Ravi", cutout: true }));
+    expect(badge).toContain('data-cutout="false"');
+    expect(badge).toContain("sanchari-mark");
   });
 
   it("renders the guide badge and an uploaded picture", () => {

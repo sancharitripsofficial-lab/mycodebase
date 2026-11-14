@@ -1,4 +1,4 @@
-import { ArrowRight, Bus, Calendar, Car, Check, CloudRain, CloudSun, Compass, MessageCircle, Sun, X } from "lucide-react";
+import { ArrowRight, Bus, Calendar, Car, Check, Compass, MessageCircle, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { CountUp, HeroCinematic, Reveal, SeatPulse } from "@/components/motion";
@@ -18,17 +18,11 @@ import { isOptimizableImage } from "@/lib/media";
 import { buildClickToWhatsAppUrl } from "@/lib/messaging/provider";
 import type { TripWithDetails } from "@/lib/types";
 import { getDestinationWeather } from "@/lib/weather-server";
+import { LiveWeatherBadge } from "@/components/living/LiveWeatherBadge";
 import { isBookable } from "@/lib/departure-rules";
 
 // Served from the CDN; refreshed every 30 s and immediately after bookings / admin edits.
 export const revalidate = 30;
-
-function WeatherIcon({ w }: { w: LiveWeather }) {
-  const cls = "h-3.5 w-3.5 shrink-0";
-  if (w.condition === "rain" || w.condition === "storm") return <CloudRain className={cls} aria-hidden="true" />;
-  if (w.condition === "clear" && w.isDay) return <Sun className={cls} aria-hidden="true" />;
-  return <CloudSun className={cls} aria-hidden="true" />;
-}
 
 const shortDate = (iso: string) =>
   new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "Asia/Kolkata" });
@@ -73,7 +67,7 @@ export default async function HomePage() {
   const weatherBySlug = new Map(
     await Promise.all(
       trips.map(
-        async (t) => [t.trip.slug, await getDestinationWeather(t.trip.slug, t.trip.region, { timeoutMs: 2500 })] as const
+        async (t) => [t.trip.slug, await getDestinationWeather(t.trip.slug, t.trip.region, { timeoutMs: 2500, destination: t.trip.destination })] as const
       )
     )
   );
@@ -279,11 +273,14 @@ export default async function HomePage() {
                     <span className="absolute top-2.5 left-2.5 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-bold tracking-wider text-ink-900 uppercase">
                       {v.trips.length} {v.trips.length === 1 ? "trip" : "trips"}
                     </span>
-                    {v.weather?.live && (
-                      <span className="absolute top-2.5 right-2.5 flex items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-ink-900">
-                        <WeatherIcon w={v.weather} />
-                        {v.weather.tempC}°C
-                      </span>
+                    {v.trips[0] && (
+                      <LiveWeatherBadge
+                        slug={v.trips[0].trip.slug}
+                        region={v.trips[0].trip.region}
+                        initial={v.weather}
+                        variant="temp"
+                        className="absolute top-2.5 right-2.5 flex items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-ink-900"
+                      />
                     )}
                     <h3 className="absolute right-3 bottom-2.5 left-3 font-display text-xl leading-tight font-semibold text-white [text-shadow:0_1px_3px_rgb(0_0_0/0.35)]">
                       {v.category.name}
@@ -298,11 +295,14 @@ export default async function HomePage() {
                         </li>
                       ))}
                     </ul>
-                    {v.weather?.live && (
-                      <p className="th-text flex items-center gap-1 text-[11px] font-semibold">
-                        <WeatherIcon w={v.weather} />
-                        Now in {v.weather.place}: {v.weather.label}
-                      </p>
+                    {v.trips[0] && (
+                      <LiveWeatherBadge
+                        slug={v.trips[0].trip.slug}
+                        region={v.trips[0].trip.region}
+                        initial={v.weather}
+                        variant="now"
+                        className="th-text flex items-center gap-1 text-[11px] font-semibold"
+                      />
                     )}
                     <div className="mt-auto flex flex-wrap items-end justify-between gap-1 border-t border-black/5 pt-2.5">
                       <span className="text-sm font-bold text-ink-900">
