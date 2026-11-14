@@ -84,6 +84,36 @@ describe("live weather", () => {
     expect(later).toMatchObject({ live: true, stale: true, tempC: 30, place: "Gokarna" });
   });
 
+  it("switches to the backup service (MET Norway) when Open-Meteo refuses, keeping it live", async () => {
+    const met = {
+      properties: {
+        timeseries: [
+          {
+            time: "2026-11-14T07:00:00Z",
+            data: {
+              instant: { details: { air_temperature: 25.1, relative_humidity: 50, cloud_area_fraction: 94, wind_speed: 1.6, wind_from_direction: 115 } },
+              next_1_hours: { summary: { symbol_code: "lightrainshowers_day" }, details: { precipitation_amount: 0.6 } },
+            },
+          },
+          { time: "2026-11-14T10:00:00Z", data: { instant: { details: { air_temperature: 27.4 } } } },
+          { time: "2026-11-14T16:00:00Z", data: { instant: { details: { air_temperature: 19.6 } } } },
+          { time: "2026-11-14T20:00:00Z", data: { instant: { details: { air_temperature: 15 } } } }, // next day in IST
+        ],
+      },
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (String(url).includes("api.open-meteo.com")) return new Response("too many", { status: 429 });
+        expect(new Headers(init?.headers).get("User-Agent")).toMatch(/Sanchari/); // MET Norway requires an identifying UA
+        return new Response(JSON.stringify(met), { status: 200 });
+      }),
+    );
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const w = await getDestinationWeather("coorg-rainforest-slow-drive", "Western Ghats");
+    expect(w).toMatchObject({ live: true, source: "met-no", place: "Kodagu", tempC: 25, label: "light rain", windKmh: 6, todayMaxC: 27, todayMinC: 20, rainChance: null });
+  });
+
   it("hides the weather (never invents it) when there has never been a good reading", async () => {
     mockFetch(() => null);
     const w = await getDestinationWeather("chikmagalur-coffee-trails", "Western Ghats");

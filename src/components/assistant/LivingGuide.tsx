@@ -284,21 +284,21 @@ export function LivingGuide({
         tx = Math.max(-1, Math.min(1, (pointer.x - cx) / 420));
         ty = Math.max(-0.8, Math.min(0.8, (cy - pointer.y) / 420));
       }
-      // talking: small rhythmic nods on top
-      const talk = emo === "talking" ? Math.sin(t * 9) * 0.08 : 0;
-      // happy: a few bounces
-      const bounce = emo === "happy" ? Math.abs(Math.sin(t * 7)) * 0.025 : 0;
+      // talking: slow, gentle nods; happy: a soft lift (no fast bobbing, nothing that reads as shaking)
+      const talk = emo === "talking" ? Math.sin(t * 3.2) * 0.035 : 0;
+      const bounce = emo === "happy" ? 0.012 * (0.5 - 0.5 * Math.cos(t * 3.6)) : 0;
 
-      // springy, natural easing toward the target (no robotic linear moves)
-      const spring = (k: keyof typeof cur, target: number, stiff = 26, damp = 9) => {
-        vel[k] += (target - cur[k]) * stiff * dt - vel[k] * damp * dt;
+      // Critically damped easing: every move eases in and settles without overshoot or wobble.
+      const spring = (k: keyof typeof cur, target: number, stiff = 9) => {
+        const damp = 2 * Math.sqrt(stiff);
+        vel[k] += ((target - cur[k]) * stiff - vel[k] * damp) * dt;
         cur[k] += vel[k] * dt;
       };
       spring("x", tx);
       spring("y", ty + talk);
-      spring("roll", act.roll + Math.sin(t * 0.7) * 0.015);
-      spring("lean", act.lean);
-      spring("lift", bounce, 60, 10);
+      spring("roll", act.roll + Math.sin(t * 0.45) * 0.01);
+      spring("lean", act.lean, 6);
+      spring("lift", bounce, 20);
 
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);

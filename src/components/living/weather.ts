@@ -27,6 +27,10 @@ export type LiveWeather = {
   updatedAt?: string;
   /** The weather service was unreachable: this is the last good reading (shown with its time). */
   stale?: boolean;
+  /** Which service answered ("open-meteo" first, "met-no" as backup). */
+  source?: string;
+  /** Why there is no live reading (for checking only, never shown). */
+  reason?: string;
 };
 
 /** How often the weather is re-checked while a page stays open. */

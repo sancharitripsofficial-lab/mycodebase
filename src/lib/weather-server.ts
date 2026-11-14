@@ -81,6 +81,75 @@ export async function resolveWeatherPlace(
   return r ? { latitude: r.latitude, longitude: r.longitude, place: r.place } : null;
 }
 
+/** MET Norway symbol (e.g. "lightrainshowers_day") -> the WMO-style code classifyWeather understands. */
+function symbolToCode(symbol: string): number {
+  const s = symbol.replace(/_(day|night|polartwilight)$/, "");
+  if (s.includes("thunder")) return 95;
+  if (s.startsWith("heavy") && (s.includes("rain") || s.includes("sleet"))) return 65;
+  if (s.startsWith("light") && s.includes("rain")) return 61;
+  if (s.includes("rain") || s.includes("sleet")) return 63;
+  if (s === "fog") return 45;
+  if (s === "cloudy") return 3;
+  if (s === "partlycloudy") return 2;
+  if (s === "fair") return 1;
+  return 0;
+}
+
+/** Backup source: MET Norway (free, no key, identifies the site as required by its terms). */
+async function fromMetNo(where: Coords, timeoutMs: number): Promise<LiveWeather | null> {
+  try {
+    const url = `https://api.met.no/weatherapi/locationforecast/2.0/complete?lat=${where.latitude.toFixed(4)}&lon=${where.longitude.toFixed(4)}`;
+    const res = await fetch(url, {
+      headers: { "User-Agent": "SanchariMicroTrips/1.0 https://mycodebase-gray.vercel.app", Accept: "application/json" },
+      next: { revalidate: FRESH_SECONDS },
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    if (!res.ok) {
+      console.error("[weather] backup lookup failed:", res.status);
+      return null;
+    }
+    type Step = { time: string; data: { instant: { details: Record<string, number> }; next_1_hours?: { summary?: { symbol_code?: string }; details?: Record<string, number> }; next_6_hours?: { summary?: { symbol_code?: string } } } };
+    const json = (await res.json()) as { properties?: { timeseries?: Step[] } };
+    const steps = json.properties?.timeseries ?? [];
+    const now = steps[0];
+    const d = now?.data.instant.details;
+    if (!now || !d || typeof d.air_temperature !== "number") return null;
+    const symbol = now.data.next_1_hours?.summary?.symbol_code ?? now.data.next_6_hours?.summary?.symbol_code ?? "cloudy";
+    const precipMm = now.data.next_1_hours?.details?.precipitation_amount ?? 0;
+    const humidity = d.relative_humidity ?? 60;
+    const cloudCover = d.cloud_area_fraction ?? 30;
+    const { condition, label } = classifyWeather({ code: symbolToCode(symbol), precipMm, cloudCover, humidity });
+    // Today's range from the hours still left today (IST).
+    const istDay = (iso: string) => new Date(Date.parse(iso) + 330 * 60_000).toISOString().slice(0, 10);
+    const today = istDay(now.time);
+    const temps = steps.filter((x) => istDay(x.time) === today).map((x) => x.data.instant.details.air_temperature).filter((t) => typeof t === "number");
+    const windKmh = (d.wind_speed ?? 0) * 3.6;
+    const windFromDeg = d.wind_from_direction ?? 0;
+    const hourIst = new Date(Date.parse(now.time) + 330 * 60_000).getUTCHours();
+    return {
+      live: true,
+      place: where.place,
+      condition,
+      label,
+      tempC: Math.round(d.air_temperature),
+      windKmh: Math.round(windKmh),
+      windFromDeg: Math.round(windFromDeg),
+      windFrom: compassPoint(windFromDeg),
+      isDay: symbol.endsWith("_night") ? false : symbol.endsWith("_day") ? true : hourIst >= 6 && hourIst < 18,
+      humidity: Math.round(humidity),
+      cloudCover: Math.round(cloudCover),
+      precipMm,
+      todayMaxC: temps.length ? Math.round(Math.max(...temps)) : null,
+      todayMinC: temps.length ? Math.round(Math.min(...temps)) : null,
+      rainChance: null, // not given for India by this source: hidden rather than guessed
+      updatedAt: new Date(now.time).toISOString(),
+      source: "met-no",
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function getDestinationWeather(
   slug?: string | null,
   region?: string | null,
@@ -90,10 +159,10 @@ export async function getDestinationWeather(
   const where = await resolveWeatherPlace(slug, region, opts.destination, Math.min(timeoutMs, 2500));
   if (!where) return NEUTRAL_WEATHER;
   const key = `${where.latitude.toFixed(3)},${where.longitude.toFixed(3)}`;
-  const fallback = (): LiveWeather => {
+  const fallback = (reason = "unavailable"): LiveWeather => {
     const kept = lastGood.get(key);
     if (kept && Date.now() - kept.at < KEEP_LAST_GOOD_MS) return { ...kept.weather, stale: true };
-    return { ...NEUTRAL_WEATHER, place: where.place };
+    return { ...NEUTRAL_WEATHER, place: where.place, reason };
   };
 
   try {
@@ -110,7 +179,12 @@ export async function getDestinationWeather(
     }
     if (!res || !res.ok) {
       console.error("[weather] lookup failed:", res ? res.status : "network/timeout");
-      return fallback();
+      const backup = await fromMetNo(where, timeoutMs);
+      if (backup) {
+        lastGood.set(key, { at: Date.now(), weather: backup });
+        return backup;
+      }
+      return fallback(res ? `open-meteo ${res.status}` : "open-meteo timeout");
     }
 
     const json = (await res.json()) as { current?: Record<string, unknown>; daily?: Record<string, unknown> };
@@ -154,6 +228,7 @@ export async function getDestinationWeather(
       todayMinC: minC === null ? null : Math.round(minC),
       rainChance: rain === null ? null : Math.round(rain),
       updatedAt: new Date(time).toISOString(),
+      source: "open-meteo",
     };
     lastGood.set(key, { at: Date.now(), weather });
     return weather;

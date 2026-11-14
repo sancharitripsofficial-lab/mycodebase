@@ -703,3 +703,8 @@ button:focus-visible > span > .avatar:not([data-mini="true"]) .tilt {
 .tilt:has(.face[data-living="true"]) {
   animation: none !important;
 }
+/* While he moves in 3D, the older CSS mood motions (bob, wiggle, bounce) stay off so the two never
+   stack into a jitter. */
+.motion:has(.face[data-living="true"]) {
+  animation: none !important;
+}
