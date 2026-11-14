@@ -67,20 +67,39 @@ export function PromoMedia({ promo, sizes, priority = false }: { promo: Promotio
   const { boxRef, fit } = useSmartFit(dims);
   const objectFit = fit === "contain" ? "object-contain" : "object-cover";
 
+  // The clip is fetched only when it comes near the screen (not with the page), then plays while
+  // at least a quarter of it is visible.
+  const [near, setNear] = useState(false);
+  const onScreen = useRef(false);
+  const reduceMotion = useRef(false);
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduce) return;
+    reduceMotion.current = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const nearIo = new IntersectionObserver(
+      ([e]) => {
+        if (e?.isIntersecting) {
+          setNear(true);
+          nearIo.disconnect();
+        }
+      },
+      { rootMargin: "300px 0px" }
+    );
+    nearIo.observe(v);
     const io = new IntersectionObserver(
       ([e]) => {
-        if (e?.isIntersecting) void v.play().catch(() => undefined);
+        onScreen.current = Boolean(e?.isIntersecting && e.intersectionRatio >= 0.25);
+        if (reduceMotion.current) return;
+        if (onScreen.current) void v.play().catch(() => undefined);
         else v.pause();
       },
-      { threshold: 0.25 }
+      { threshold: [0, 0.25] }
     );
     io.observe(v);
-    return () => io.disconnect();
+    return () => {
+      nearIo.disconnect();
+      io.disconnect();
+    };
   }, [promo.mediaUrl]);
 
   if (promo.mediaType === "image" && promo.mediaUrl) {
@@ -135,14 +154,17 @@ export function PromoMedia({ promo, sizes, priority = false }: { promo: Promotio
       <FitBox boxRef={boxRef} backdrop={backdrop}>
         <video
           ref={videoRef}
-          src={promo.mediaUrl}
+          src={near ? promo.mediaUrl : undefined}
           poster={promo.posterUrl || undefined}
           muted
           loop
           playsInline
-          preload="metadata"
+          preload={near ? "metadata" : "none"}
           aria-hidden="true"
           onLoadedMetadata={(e) => setDims({ w: e.currentTarget.videoWidth, h: e.currentTarget.videoHeight })}
+          onCanPlay={(e) => {
+            if (onScreen.current && !reduceMotion.current) void e.currentTarget.play().catch(() => undefined);
+          }}
           className={`absolute inset-0 h-full w-full ${objectFit}`}
         />
       </FitBox>

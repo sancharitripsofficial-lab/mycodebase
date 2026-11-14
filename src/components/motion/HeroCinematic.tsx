@@ -62,6 +62,28 @@ export function HeroCinematic({
   const pageVisible = usePageVisible();
   const playing = onScreen && pageVisible && !reducedMotion;
   const videoMode = Boolean(videoSrc) && !videoFailed && !reducedMotion;
+  // The video waits until the page has loaded and the phone is idle: the poster picture fills the
+  // hero first (that is what Google times), then the film fades in over it.
+  const [afterLoad, setAfterLoad] = useState(false);
+  useEffect(() => {
+    if (!videoMode) return;
+    let idle = 0;
+    let timer = 0;
+    const go = () => {
+      if (typeof window.requestIdleCallback === "function") {
+        idle = window.requestIdleCallback(() => setAfterLoad(true), { timeout: 1500 });
+      } else {
+        timer = window.setTimeout(() => setAfterLoad(true), 600);
+      }
+    };
+    if (document.readyState === "complete") go();
+    else window.addEventListener("load", go, { once: true });
+    return () => {
+      window.removeEventListener("load", go);
+      if (idle && typeof window.cancelIdleCallback === "function") window.cancelIdleCallback(idle);
+      window.clearTimeout(timer);
+    };
+  }, [videoMode]);
   const count = slides.length;
 
   // Slideshow clock. Only ticks while the hero is on screen, so phones are not kept busy.
@@ -91,7 +113,7 @@ export function HeroCinematic({
       const id = requestAnimationFrame(() => setVideoFailed(true));
       return () => cancelAnimationFrame(id);
     }
-    if (!playing) {
+    if (!playing || !afterLoad) {
       video.pause();
       return;
     }
@@ -100,7 +122,7 @@ export function HeroCinematic({
       if (err instanceof DOMException && err.name === "AbortError") return; // paused mid-start
       setVideoFailed(true);
     });
-  }, [videoMode, playing]);
+  }, [videoMode, playing, afterLoad]);
 
   const rootStyle = {
     "--hero-fade": `${fadeMs}ms`,
@@ -130,7 +152,7 @@ export function HeroCinematic({
             muted
             loop
             playsInline
-            preload="metadata"
+            preload={afterLoad ? "auto" : "none"}
             tabIndex={-1}
             disablePictureInPicture
             onPlaying={() => setVideoReady(true)}
