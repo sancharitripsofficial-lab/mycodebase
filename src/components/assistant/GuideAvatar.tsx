@@ -199,6 +199,11 @@ export function GuideAvatar({ emotion, media, size, name, paused = false, mini =
   // A cut-out still picture comes alive (3D depth, breathing, random small actions, looks at you).
   const canLive = popOut && !mini && !reduced && Boolean(cur) && !VIDEO_RE.test(cur ?? "");
   const [livingOn, setLivingOn] = useState(false);
+  // Every pose picture (not videos): the living layer prepares them ahead, so a change of mood
+  // (reading the map -> answering) melts in at once instead of loading then.
+  const poses = Object.values(media)
+    .map((v) => safeSrc(v))
+    .filter((v, i, all): v is string => Boolean(v) && !VIDEO_RE.test(v ?? "") && !failed.includes(v ?? "") && all.indexOf(v) === i);
 
   return (
     <span
@@ -237,7 +242,7 @@ export function GuideAvatar({ emotion, media, size, name, paused = false, mini =
                 onFail={() => markFailed(cur)}
                 onFadeEnd={dropPrev}
               />
-              {canLive && cur && <LivingGuide key={`l:${cur}`} src={cur} emotion={emotion} paused={stopped} onLive={setLivingOn} />}
+              {canLive && cur && <LivingGuide src={cur} sources={poses} emotion={emotion} paused={stopped} onLive={setLivingOn} />}
             </>
           ) : (
             <Image

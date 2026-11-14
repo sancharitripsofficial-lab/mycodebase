@@ -693,6 +693,11 @@ button:focus-visible > span > .avatar:not([data-mini="true"]) .tilt {
   opacity: 0;
   transition: opacity 260ms ease;
 }
+/* It fades its own edges, per pose (a raised hand or the map reaches the side and shows in full). */
+.avatar[data-cutout="true"] .layer.living {
+  -webkit-mask-image: none;
+  mask-image: none;
+}
 .face[data-living="true"] .living {
   opacity: 1;
 }

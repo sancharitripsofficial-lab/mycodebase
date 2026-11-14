@@ -12,6 +12,8 @@ import styles from "./assistant.module.css";
  *    settle, curious tilt, look at you), never a fixed loop.
  *  - Aware: on a computer he turns toward the mouse; the chat's mood changes how he behaves.
  *  - Breathes all the time.
+ *  - One 3D layer for the whole chat: every pose (wave, reading the map, answering) is prepared
+ *    ahead and melts into the next in the same layer, so a change never flickers or 'buffers'.
  * Shows nothing (the still picture stays) without WebGL, with reduced motion, or on Save-Data.
  */
 
@@ -23,8 +25,12 @@ void main() { v = p * 0.5 + 0.5; gl_Position = vec4(p, 0.0, 1.0); }`;
 const FRAG = `
 precision mediump float;
 varying vec2 v;
-uniform sampler2D img;
+uniform sampler2D img;   // the pose on screen
 uniform sampler2D dep;
+uniform sampler2D img2;  // the pose fading in (same as img when no change is running)
+uniform sampler2D dep2;
+uniform float blend;     // 0 = img only .. 1 = img2 only
+uniform vec2 edge;       // soft side fade for img / img2 (fraction of the width)
 uniform vec2 look;      // where he looks: x = turn, y = up/down
 uniform float roll;     // head tilt (radians)
 uniform float lift;     // whole-body bounce (uv units)
@@ -32,6 +38,18 @@ uniform float breathe;  // 0..1
 uniform float lean;     // >0 leans toward the viewer (scale)
 uniform vec4 fit;       // image rect inside the canvas: x, y, w, h (uv units, y up)
 vec2 toImg(vec2 c) { return vec2((c.x - fit.x) / fit.z, 1.0 - (c.y - fit.y) / fit.w); }
+// parallax: near parts (head) move more than far parts (shoulder edges)
+vec2 parallax(sampler2D d, vec2 c) {
+  vec2 uv = toImg(c);
+  float z = texture2D(d, uv).r;
+  uv = toImg(c - look * (z - 0.35) * 0.06);
+  z = texture2D(d, uv).r;
+  return toImg(c - look * (z - 0.35) * 0.06);
+}
+vec4 pick(sampler2D t, vec2 uv) {
+  if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) return vec4(0.0);
+  return texture2D(t, uv);
+}
 void main() {
   vec2 c = v;
   c.y -= lift;
@@ -43,14 +61,12 @@ void main() {
   float cr = cos(roll), sr = sin(roll);
   vec2 d = c - neck;
   c = neck + vec2(cr * d.x - sr * d.y, sr * d.x + cr * d.y);
-  // parallax: near parts (head) move more than far parts (shoulder edges)
-  vec2 uv = toImg(c);
-  float z = texture2D(dep, uv).r;
-  uv = toImg(c - look * (z - 0.35) * 0.06);
-  z = texture2D(dep, uv).r;
-  uv = toImg(c - look * (z - 0.35) * 0.06);
-  if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) { gl_FragColor = vec4(0.0); return; }
-  gl_FragColor = texture2D(img, uv);
+  vec4 col = pick(img, parallax(dep, c));
+  if (blend > 0.0) col = mix(col, pick(img2, parallax(dep2, c)), blend);
+  // the picture ends at his chest and at its sides: fade out softly instead of a hard straight cut
+  float e = max(0.001, mix(edge.x, edge.y, blend));
+  float fade = clamp(v.y / 0.07, 0.0, 1.0) * clamp(v.x / e, 0.0, 1.0) * clamp((1.0 - v.x) / e, 0.0, 1.0);
+  gl_FragColor = col * fade;
 }`;
 
 type Act = { look: [number, number]; roll: number; lean: number; hold: number };
@@ -145,13 +161,39 @@ function depthFrom(img: HTMLImageElement): HTMLCanvasElement {
   return c;
 }
 
+/** How long one pose takes to melt into the next (map reading -> answering, wave -> listening...). */
+const FADE_MS = 450;
+
+/** Side fade for a pose: light where an arm, hand or map reaches the side of the picture (so it
+ *  shows in full), softer where only the shoulders meet the side. */
+function edgeFor(img: HTMLImageElement): number {
+  const N = 64;
+  const c = document.createElement("canvas");
+  c.width = c.height = N;
+  const ctx = c.getContext("2d", { willReadFrequently: true });
+  if (!ctx) return 0.09;
+  ctx.drawImage(img, 0, 0, N, N);
+  const d = ctx.getImageData(0, 0, N, N).data;
+  let high = 0;
+  for (let y = 0; y < Math.round(N * 0.6); y++) {
+    if (d[(y * N + 0) * 4 + 3] > 128) high++;
+    if (d[(y * N + N - 1) * 4 + 3] > 128) high++;
+  }
+  return high >= 6 ? 0.035 : 0.09;
+}
+
+type Pose = { src: string; img: HTMLImageElement; tex: WebGLTexture; dep: WebGLTexture; side: number; edge: number };
+
 export function LivingGuide({
   src,
+  sources = [],
   emotion,
   paused,
   onLive,
 }: {
   src: string;
+  /** Every pose picture he may switch to: prepared in quiet moments so a switch never waits. */
+  sources?: string[];
   emotion: GuideEmotion;
   paused: boolean;
   /** Called with true once he is moving (the still picture can hide), false if he can't. */
@@ -164,6 +206,10 @@ export function LivingGuide({
   pausedRef.current = paused;
   const onLiveRef = useRef(onLive);
   onLiveRef.current = onLive;
+  const srcRef = useRef(src);
+  srcRef.current = src;
+  const api = useRef<{ show: (s: string) => void; prepare: (list: string[]) => void } | null>(null);
+  const sourcesKey = sources.join("\n");
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -176,24 +222,23 @@ export function LivingGuide({
     if (!gl) return onLiveRef.current(false);
 
     let disposed = false;
+    let lost = false;
     let raf = 0;
     // The browser can drop WebGL (low memory): then the still picture simply shows again.
     const onLost = (e: Event) => {
       e.preventDefault();
+      lost = true;
       cancelAnimationFrame(raf);
       onLiveRef.current(false);
     };
     canvas.addEventListener("webglcontextlost", onLost);
     if (gl.isContextLost()) return;
-    const img = new Image();
-    img.decoding = "async";
-    if (/^https?:/i.test(src)) img.crossOrigin = "anonymous";
 
     const compile = (type: number, code: string) => {
-      const s = gl.createShader(type)!;
-      gl.shaderSource(s, code);
-      gl.compileShader(s);
-      return s;
+      const sh = gl.createShader(type)!;
+      gl.shaderSource(sh, code);
+      gl.compileShader(sh);
+      return sh;
     };
     const prog = gl.createProgram()!;
     gl.attachShader(prog, compile(gl.VERTEX_SHADER, VERT));
@@ -209,23 +254,107 @@ export function LivingGuide({
     gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
     const u = (n: string) => gl.getUniformLocation(prog, n);
     const uLook = u("look"), uRoll = u("roll"), uLift = u("lift"), uBreathe = u("breathe"), uLean = u("lean"), uFit = u("fit");
+    const uBlend = u("blend"), uEdge = u("edge");
+    gl.uniform1i(u("img"), 0);
+    gl.uniform1i(u("dep"), 1);
+    gl.uniform1i(u("img2"), 2);
+    gl.uniform1i(u("dep2"), 3);
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
 
-    const texture = (unit: number, source: TexImageSource) => {
-      const t = gl.createTexture();
-      gl.activeTexture(gl.TEXTURE0 + unit);
+    // Uploads go through unit 4 so they never disturb the four textures being drawn.
+    const upload = (t: WebGLTexture, source: TexImageSource) => {
+      gl.activeTexture(gl.TEXTURE4);
       gl.bindTexture(gl.TEXTURE_2D, t);
-      gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
+    };
+    const makeTexture = (source: TexImageSource) => {
+      const t = gl.createTexture()!;
+      gl.activeTexture(gl.TEXTURE4);
+      gl.bindTexture(gl.TEXTURE_2D, t);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
+      upload(t, source);
+      return t;
     };
+
+    // Sharp at any size: each picture is resized by the browser's high-quality scaler to exactly
+    // the pixels it fills on screen (1 picture pixel = 1 screen pixel), never stretched by the GPU.
+    const sharp = document.createElement("canvas");
+    const sharpen = (p: Pose, side: number) => {
+      if (p.side === side) return;
+      p.side = side;
+      const px = Math.max(8, Math.min(1024, side));
+      sharp.width = sharp.height = px;
+      const c2 = sharp.getContext("2d")!;
+      c2.imageSmoothingEnabled = true;
+      c2.imageSmoothingQuality = "high";
+      c2.clearRect(0, 0, px, px);
+      c2.drawImage(p.img, 0, 0, px, px);
+      upload(p.tex, sharp);
+    };
+
+    // ---------- poses: loaded once, kept for the whole chat ----------
+    const ready = new Map<string, Pose>();
+    const loading = new Map<string, Promise<Pose | null>>();
+    const failed = new Set<string>();
+    const load = (s: string): Promise<Pose | null> => {
+      let pr = loading.get(s);
+      if (!pr) {
+        pr = new Promise<Pose | null>((resolve) => {
+          const img = new Image();
+          img.decoding = "async";
+          if (/^https?:/i.test(s)) img.crossOrigin = "anonymous";
+          img.onload = () => {
+            if (disposed || lost) return resolve(null);
+            try {
+              const pose: Pose = { src: s, img, tex: makeTexture(img), dep: makeTexture(depthFrom(img)), side: 0, edge: edgeFor(img) };
+              ready.set(s, pose);
+              resolve(pose);
+            } catch {
+              failed.add(s); // e.g. a picture from another site without CORS
+              resolve(null);
+            }
+          };
+          img.onerror = () => {
+            failed.add(s);
+            resolve(null);
+          };
+          img.src = s;
+        });
+        loading.set(s, pr);
+      }
+      return pr;
+    };
+
+    let target = srcRef.current;
+    let cur: Pose | null = null;
+    let next: Pose | null = null;
+    let fadeStart = 0;
+    const show = (s: string) => {
+      target = s;
+      if (!ready.has(s) && !failed.has(s)) void load(s);
+    };
+    const idle = (fn: () => void) => {
+      const w = window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number };
+      if (w.requestIdleCallback) w.requestIdleCallback(fn, { timeout: 2500 });
+      else setTimeout(fn, 400);
+    };
+    const prepare = (list: string[]) => {
+      for (const s of list) {
+        if (s && !loading.has(s)) idle(() => {
+          if (!disposed) void load(s);
+        });
+      }
+    };
+    api.current = { show, prepare };
+    show(target);
 
     // ---------- behaviour ----------
     let seed = (Math.random() * 1e9) | 0;
     const rnd = () => ((seed = (seed * 1664525 + 1013904223) | 0) >>> 0) / 4294967296;
-    const cur = { x: 0, y: 0, roll: 0, lean: 0, lift: 0 };
+    const st = { x: 0, y: 0, roll: 0, lean: 0, lift: 0 };
     const vel = { x: 0, y: 0, roll: 0, lean: 0, lift: 0 };
     let act: Act = nextAct(emotionRef.current, rnd);
     let actUntil = 0;
@@ -243,13 +372,46 @@ export function LivingGuide({
     });
     io.observe(canvas);
 
+    const bind = (unit: number, t: WebGLTexture) => {
+      gl.activeTexture(gl.TEXTURE0 + unit);
+      gl.bindTexture(gl.TEXTURE_2D, t);
+    };
+
     let last = performance.now();
     let shownOnce = false;
     const frame = (now: number) => {
       raf = requestAnimationFrame(frame);
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
-      if (pausedRef.current || !visible || document.visibilityState !== "visible") return;
+      if (lost || pausedRef.current || !visible || document.visibilityState !== "visible") return;
+
+      // Which pose: the first one appears as soon as it is ready; every later one melts in.
+      if (!cur) {
+        cur = ready.get(target) ?? null;
+        if (!cur) {
+          if (failed.has(target)) onLiveRef.current(false);
+          return;
+        }
+      } else if (!next && target !== cur.src) {
+        const p = ready.get(target);
+        if (p) {
+          next = p;
+          fadeStart = now;
+        } else if (failed.has(target)) {
+          onLiveRef.current(false); // this pose cannot be drawn: the still picture shows it instead
+          return;
+        }
+      }
+      let k = 0;
+      if (next) {
+        k = Math.min(1, (now - fadeStart) / FADE_MS);
+        if (k >= 1) {
+          cur = next;
+          next = null;
+          k = 0;
+        }
+      }
+      const blend = k * k * (3 - 2 * k);
 
       // size (DPR-aware, small)
       const rect = canvas.getBoundingClientRect();
@@ -264,7 +426,15 @@ export function LivingGuide({
       // the square picture, contained and standing on the bottom edge
       const side = Math.min(w, h);
       gl.uniform4f(uFit, (w - side) / 2 / w, 0, side / w, side / h);
-      if (side !== sharpSide) uploadSharp(side);
+      sharpen(cur, side);
+      if (next) sharpen(next, side);
+      const inc = next ?? cur;
+      bind(0, cur.tex);
+      bind(1, cur.dep);
+      bind(2, inc.tex);
+      bind(3, inc.dep);
+      gl.uniform1f(uBlend, next ? blend : 0);
+      gl.uniform2f(uEdge, cur.edge, inc.edge);
 
       // mood changed: react right away
       const emo = emotionRef.current;
@@ -291,10 +461,10 @@ export function LivingGuide({
       const bounce = emo === "happy" ? 0.012 * (0.5 - 0.5 * Math.cos(t * 3.6)) : 0;
 
       // Critically damped easing: every move eases in and settles without overshoot or wobble.
-      const spring = (k: keyof typeof cur, target: number, stiff = 9) => {
+      const spring = (key: keyof typeof st, goal: number, stiff = 9) => {
         const damp = 2 * Math.sqrt(stiff);
-        vel[k] += ((target - cur[k]) * stiff - vel[k] * damp) * dt;
-        cur[k] += vel[k] * dt;
+        vel[key] += ((goal - st[key]) * stiff - vel[key] * damp) * dt;
+        st[key] += vel[key] * dt;
       };
       spring("x", tx);
       spring("y", ty + talk);
@@ -304,10 +474,11 @@ export function LivingGuide({
 
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
-      gl.uniform2f(uLook, cur.x, cur.y);
-      gl.uniform1f(uRoll, cur.roll);
-      gl.uniform1f(uLean, cur.lean);
-      gl.uniform1f(uLift, cur.lift);
+      gl.uniform2f(uLook, st.x, st.y);
+      gl.uniform1f(uRoll, st.roll);
+      // while one pose melts into the next he settles in a little, like a real change of posture
+      gl.uniform1f(uLean, st.lean + (next ? 0.012 * Math.sin(Math.PI * k) : 0));
+      gl.uniform1f(uLift, st.lift);
       gl.uniform1f(uBreathe, 0.5 + 0.5 * Math.sin(t * 1.6));
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
       // Only now does the still picture step aside: never an empty moment.
@@ -316,47 +487,33 @@ export function LivingGuide({
         onLiveRef.current(true);
       }
     };
-
-    // Sharp at any size: the picture is resized by the browser's high-quality scaler to exactly the
-    // pixels it fills on screen (1 picture pixel = 1 screen pixel), never stretched by the GPU.
-    let sharpSide = 0;
-    const sharp = document.createElement("canvas");
-    const uploadSharp = (side: number) => {
-      sharpSide = side;
-      const px = Math.max(8, Math.min(1024, side));
-      sharp.width = sharp.height = px;
-      const c2 = sharp.getContext("2d")!;
-      c2.imageSmoothingEnabled = true;
-      c2.imageSmoothingQuality = "high";
-      c2.clearRect(0, 0, px, px);
-      c2.drawImage(img, 0, 0, px, px);
-      texture(0, sharp);
-    };
-
-    img.onload = () => {
-      if (disposed) return;
-      try {
-        texture(0, img);
-        texture(1, depthFrom(img));
-        gl.uniform1i(u("img"), 0);
-        gl.uniform1i(u("dep"), 1);
-        raf = requestAnimationFrame(frame);
-      } catch {
-        onLiveRef.current(false); // e.g. a picture from another site without CORS
-      }
-    };
-    img.onerror = () => onLiveRef.current(false);
-    img.src = src;
+    raf = requestAnimationFrame(frame);
 
     return () => {
       disposed = true;
+      api.current = null;
       cancelAnimationFrame(raf);
       io.disconnect();
       if (finePointer) window.removeEventListener("pointermove", onPointer);
       canvas.removeEventListener("webglcontextlost", onLost);
-      // The context is not force-lost here: a quick re-run (React dev mode, a new picture) reuses it.
+      if (!lost) {
+        for (const p of ready.values()) {
+          gl.deleteTexture(p.tex);
+          gl.deleteTexture(p.dep);
+        }
+      }
+      // The context itself is not force-lost here: a quick re-run (React dev mode) reuses it.
     };
+  }, []);
+
+  // A new pose melts in inside the same 3D layer (no rebuild, no flash of the flat picture).
+  useEffect(() => {
+    api.current?.show(src);
   }, [src]);
+
+  useEffect(() => {
+    api.current?.prepare(sourcesKey ? sourcesKey.split("\n") : []);
+  }, [sourcesKey]);
 
   return <canvas ref={canvasRef} className={`${styles.layer} ${styles.living}`} aria-hidden="true" />;
 }
