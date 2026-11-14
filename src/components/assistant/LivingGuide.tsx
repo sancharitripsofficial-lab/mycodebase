@@ -244,6 +244,7 @@ export function LivingGuide({
     io.observe(canvas);
 
     let last = performance.now();
+    let shownOnce = false;
     const frame = (now: number) => {
       raf = requestAnimationFrame(frame);
       const dt = Math.min(0.05, (now - last) / 1000);
@@ -309,6 +310,11 @@ export function LivingGuide({
       gl.uniform1f(uLift, cur.lift);
       gl.uniform1f(uBreathe, 0.5 + 0.5 * Math.sin(t * 1.6));
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      // Only now does the still picture step aside: never an empty moment.
+      if (!shownOnce) {
+        shownOnce = true;
+        onLiveRef.current(true);
+      }
     };
 
     // Sharp at any size: the picture is resized by the browser's high-quality scaler to exactly the
@@ -335,7 +341,6 @@ export function LivingGuide({
         gl.uniform1i(u("img"), 0);
         gl.uniform1i(u("dep"), 1);
         raf = requestAnimationFrame(frame);
-        onLiveRef.current(true);
       } catch {
         onLiveRef.current(false); // e.g. a picture from another site without CORS
       }
