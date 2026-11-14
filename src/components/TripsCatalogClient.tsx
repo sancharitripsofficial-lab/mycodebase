@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { TripCard } from "@/components/TripCard";
 import type { HomeCategory } from "@/lib/home-content";
 import type { TripWithDetails } from "@/lib/types";
+import { isBookable } from "@/lib/departure-rules";
 
 export function TripsCatalogClient({ trips, categories = [] }: { trips: TripWithDetails[]; categories?: HomeCategory[] }) {
   const [query, setQuery] = useState("");
@@ -44,13 +45,13 @@ export function TripsCatalogClient({ trips, categories = [] }: { trips: TripWith
       if (difficulty !== "all" && item.trip.difficulty !== difficulty) return false;
       if (
         onlyPrivateEligible &&
-        !item.departures.some((d) => d.seatsTaken === 0 && d.status !== "cancelled")
+        !item.departures.some((d) => d.seatsTaken === 0 && isBookable(d))
       ) {
         return false;
       }
       if (
         onlyWomenBatch &&
-        !item.departures.some((d) => d.departureType === "women_only" && d.status !== "cancelled")
+        !item.departures.some((d) => d.departureType === "women_only" && isBookable(d))
       ) {
         return false;
       }

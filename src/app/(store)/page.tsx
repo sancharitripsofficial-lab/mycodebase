@@ -18,6 +18,7 @@ import { isOptimizableImage } from "@/lib/media";
 import { buildClickToWhatsAppUrl } from "@/lib/messaging/provider";
 import type { TripWithDetails } from "@/lib/types";
 import { getDestinationWeather } from "@/lib/weather-server";
+import { isBookable } from "@/lib/departure-rules";
 
 // Served from the CDN; refreshed every 30 s and immediately after bookings / admin edits.
 export const revalidate = 30;
@@ -32,7 +33,8 @@ function WeatherIcon({ w }: { w: LiveWeather }) {
 const shortDate = (iso: string) =>
   new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "Asia/Kolkata" });
 
-const isOpen = (d: TripWithDetails["departures"][number]) => d.status !== "cancelled" && d.status !== "completed";
+/** Dates a visitor can still book (not cancelled, not left yet, booking cut-off not passed). */
+const isOpen = (d: TripWithDetails["departures"][number]) => isBookable(d);
 
 /** Eyebrow + title (+ optional line) heading used by every section; all words come from Admin. */
 function SectionHead({ text, id, light = false }: { text: SectionText; id?: string; light?: boolean }) {

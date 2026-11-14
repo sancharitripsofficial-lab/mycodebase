@@ -12,6 +12,7 @@ import {
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { WOMEN_ONLY_CONFIRM_LABEL } from "@/lib/women-only";
+import { isBookable } from "@/lib/departure-rules";
 import { ErtigaSeatMap, SEAT_INFO } from "@/components/booking/ErtigaSeatMap";
 import { CarSeatPicker3D } from "@/components/three/CarSeatPicker3D";
 import { UpiPayPanel, UpiSubmittedNotice } from "@/components/UpiPayPanel";
@@ -88,7 +89,8 @@ export function BookingWidget({
   initialSeatMaps,
 }: BookingWidgetProps) {
   const initialDep =
-    departures.find((d) => d.status !== "sold_out" && d.status !== "cancelled") ??
+    departures.find((d) => isBookable(d) && d.status !== "sold_out") ??
+    departures.find((d) => isBookable(d)) ??
     departures[0] ??
     null;
 
@@ -835,6 +837,7 @@ export function BookingWidget({
         <div className="grid gap-2.5">
           {departures.map((dep) => {
             const active = dep.departureId === departureId;
+            const closed = !isBookable(dep);
             return (
               <label
                 key={dep.departureId}
@@ -850,6 +853,7 @@ export function BookingWidget({
                     name="departureId"
                     value={dep.departureId}
                     checked={active}
+                    disabled={closed}
                     onChange={() => {
                       setDepartureId(dep.departureId);
                       setErrorMsg(null);
@@ -880,9 +884,13 @@ export function BookingWidget({
                     </p>
                     <p className="text-xs text-stone-600">
                       Code: {dep.departureCode} • Min batch {dep.minOccupancy} •{" "}
-                      {dep.seatsRemaining === 0
-                        ? "Sold out (waitlist open)"
-                        : `${dep.seatsRemaining} of ${dep.maxCapacity} seats open`}
+                      {closed
+                        ? dep.status === "cancelled"
+                          ? "Cancelled"
+                          : "Booking closed"
+                        : dep.seatsRemaining === 0
+                          ? "Sold out (waitlist open)"
+                          : `${dep.seatsRemaining} of ${dep.maxCapacity} seats open`}
                     </p>
                   </div>
                 </div>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { formatINR } from "@/lib/currency";
 import { themeClass } from "@/lib/destination-theme";
 import type { DepartureStatus, TripWithDetails } from "@/lib/types";
+import { isBookable } from "@/lib/departure-rules";
 
 const shortDate = (iso: string) =>
   new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "Asia/Kolkata" });
@@ -37,8 +38,8 @@ function getStatusBadge(status: DepartureStatus, seatsRemaining: number, maxCapa
 export function TripCard({ item, weather = null }: { item: TripWithDetails; weather?: LiveWeather | null }) {
   const { trip, departures } = item;
   const upcoming =
-    departures.find((d) => d.status !== "sold_out" && d.status !== "cancelled") ??
-    departures[0] ??
+    departures.find((d) => isBookable(d) && d.status !== "sold_out") ??
+    departures.find((d) => isBookable(d)) ??
     null;
 
   const badge = upcoming

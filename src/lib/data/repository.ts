@@ -28,6 +28,7 @@ import { isServiceRoleConfigured, isSupabaseConfigured } from "@/lib/env";
 import { getSafeComfortCustomerLabel } from "@/lib/privacy";
 import { createSupabaseAdminClient, createSupabasePublicClient } from "@/lib/supabase/server";
 import { assertWomenOnlyConfirmed, preferenceForDeparture } from "@/lib/women-only";
+import { withoutStartedDepartures } from "@/lib/departure-rules";
 import type {
   BookingMode,
   AdminBookingRow,
@@ -95,7 +96,19 @@ export async function getSiteSettings(): Promise<{ settings: SiteSettings; isDem
   }
 }
 
-export async function getPublishedTripsWithDetails(): Promise<{
+/**
+ * Published trips with their dates, itinerary and pickups. Dates that have already left (IST)
+ * are left out unless `includeStarted` (the chat guide uses them to say a trip is under way).
+ */
+export async function getPublishedTripsWithDetails(opts: { includeStarted?: boolean } = {}): Promise<{
+  trips: TripWithDetails[];
+  isDemoFallback: boolean;
+}> {
+  const res = await loadPublishedTripsWithDetails();
+  return opts.includeStarted ? res : { ...res, trips: withoutStartedDepartures(res.trips) };
+}
+
+async function loadPublishedTripsWithDetails(): Promise<{
   trips: TripWithDetails[];
   isDemoFallback: boolean;
 }> {

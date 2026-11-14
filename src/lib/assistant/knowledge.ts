@@ -589,7 +589,7 @@ export async function loadKnowledgeBase(): Promise<KnowledgeBase> {
         import("@/lib/data/promotions"),
         import("@/lib/weather-server"),
       ]);
-      const tripsP = repo.getPublishedTripsWithDetails();
+      const tripsP = repo.getPublishedTripsWithDetails({ includeStarted: true });
       const weatherP = tripsP.then(async ({ trips }) => {
         const entries = await Promise.all(
           trips.map(async ({ trip }) => {
