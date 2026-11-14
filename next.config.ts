@@ -10,6 +10,12 @@ const supabaseHost = (() => {
 })();
 
 const nextConfig: NextConfig = {
+  // Styles arrive inside the HTML instead of as separate files the phone must fetch before it can
+  // draw anything (faster first paint for new visitors from Google; public pages' CSS is ~34 KB
+  // compressed since the Astryx component CSS moved to admin/booking-only pages).
+  experimental: {
+    inlineCss: true,
+  },
   images: {
     unoptimized: false,
     remotePatterns: supabaseHost
