@@ -252,7 +252,7 @@ export function LivingGuide({
 
       // size (DPR-aware, small)
       const rect = canvas.getBoundingClientRect();
-      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      const dpr = Math.min(3, window.devicePixelRatio || 1);
       const w = Math.max(2, Math.round(rect.width * dpr));
       const h = Math.max(2, Math.round(rect.height * dpr));
       if (canvas.width !== w || canvas.height !== h) {
@@ -263,6 +263,7 @@ export function LivingGuide({
       // the square picture, contained and standing on the bottom edge
       const side = Math.min(w, h);
       gl.uniform4f(uFit, (w - side) / 2 / w, 0, side / w, side / h);
+      if (side !== sharpSide) uploadSharp(side);
 
       // mood changed: react right away
       const emo = emotionRef.current;
@@ -308,6 +309,22 @@ export function LivingGuide({
       gl.uniform1f(uLift, cur.lift);
       gl.uniform1f(uBreathe, 0.5 + 0.5 * Math.sin(t * 1.6));
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    };
+
+    // Sharp at any size: the picture is resized by the browser's high-quality scaler to exactly the
+    // pixels it fills on screen (1 picture pixel = 1 screen pixel), never stretched by the GPU.
+    let sharpSide = 0;
+    const sharp = document.createElement("canvas");
+    const uploadSharp = (side: number) => {
+      sharpSide = side;
+      const px = Math.max(8, Math.min(1024, side));
+      sharp.width = sharp.height = px;
+      const c2 = sharp.getContext("2d")!;
+      c2.imageSmoothingEnabled = true;
+      c2.imageSmoothingQuality = "high";
+      c2.clearRect(0, 0, px, px);
+      c2.drawImage(img, 0, 0, px, px);
+      texture(0, sharp);
     };
 
     img.onload = () => {
