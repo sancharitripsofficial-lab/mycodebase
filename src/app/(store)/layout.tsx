@@ -1,4 +1,4 @@
-import { ChatAssistant } from "@/components/assistant/ChatAssistant";
+import { LazyChatAssistant } from "@/components/assistant/LazyChatAssistant";
 import { EARLY_LANG_SCRIPT, LanguageProvider } from "@/components/i18n/LanguageProvider";
 import type { ChatAssistantConfig } from "@/components/assistant/chat-config";
 import { PromoPopup } from "@/components/promo/PromoPopup";
@@ -58,7 +58,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
       </main>
       <SiteFooter social={settings.socialLinks} brand={settings.brandIdentity} />
       {whatsappUrl && <WhatsAppFloat href={whatsappUrl} />}
-      {chatConfig && <ChatAssistant config={chatConfig} />}
+      {chatConfig && <LazyChatAssistant config={chatConfig} />}
       <PromoPopup promotions={forPlacement(promotions, "popup")} />
     </div>
     </LanguageProvider>

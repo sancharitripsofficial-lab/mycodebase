@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Fraunces, Noto_Sans_Kannada, Plus_Jakarta_Sans } from "next/font/google";
 import { TapFeedback } from "@/components/TapFeedback";
 import "./globals.css";
+// Sanchari Astryx theme styles (CSS only; the Theme JavaScript loads only where Astryx is used).
+import "@/themes/sanchari/sanchari.css";
 import { Providers } from "./providers";
 
 const fraunces = Fraunces({
@@ -71,7 +73,14 @@ export default function RootLayout({
 }>) {
   return (
     // suppressHydrationWarning: the store's early script may switch lang/data-lang to Kannada before React loads.
-    <html lang="en" className={`${fraunces.variable} ${plusJakarta.variable} ${notoKannada.variable}`} suppressHydrationWarning>
+    // data-theme / data-astryx-theme: what the Astryx Theme used to set from JavaScript, now static.
+    <html
+      lang="en"
+      data-theme="light"
+      data-astryx-theme="sanchari"
+      className={`${fraunces.variable} ${plusJakarta.variable} ${notoKannada.variable}`}
+      suppressHydrationWarning
+    >
       <body className="min-h-screen text-ink-900">
         <Providers>
           <TapFeedback />

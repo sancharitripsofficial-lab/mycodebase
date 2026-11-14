@@ -1,18 +1,9 @@
-"use client";
-
-import { LinkProvider } from "@astryxdesign/core/Link";
-import { Theme } from "@astryxdesign/core/theme";
-import Link from "next/link";
-import { defaultThemeSlug, themes } from "@/astryx-themes";
-
 /**
- * Astryx design system with the Sanchari brand theme (built by `npm run astryx -- theme build`).
- * Light mode only: the whole site is designed on the light, misty canvas.
+ * App-wide wrapper. The Astryx Theme (~140 KB of JavaScript) is no longer loaded on every page:
+ * public pages get the theme attributes statically on <html> (src/app/layout.tsx) and only the
+ * screens that use Astryx components wrap themselves in <AstryxShell> (admin, booking lookup,
+ * UPI pay panel).
  */
 export function Providers({ children }: { children: React.ReactNode }) {
-  return (
-    <Theme theme={themes[defaultThemeSlug]} mode="light">
-      <LinkProvider component={Link}>{children}</LinkProvider>
-    </Theme>
-  );
+  return <>{children}</>;
 }

@@ -21,10 +21,10 @@ import { CarSeatPicker3D } from "@/components/three/CarSeatPicker3D";
 // trip page itself paints without that CSS. It starts downloading as soon as the visitor
 // begins the booking form, so it is ready by the time the hold succeeds.
 const loadUpiPanel = () => import("@/components/UpiPayPanel");
-const UpiPayPanel = dynamic(() => loadUpiPanel().then((m) => m.UpiPayPanel), {
+const UpiPayPanel = dynamic(() => loadUpiPanel().then((m) => m.UpiPayPanelThemed), {
   loading: () => <p className="rounded-xl bg-white/70 p-4 text-sm text-stone-600">Loading payment details…</p>,
 });
-const UpiSubmittedNotice = dynamic(() => loadUpiPanel().then((m) => m.UpiSubmittedNotice));
+const UpiSubmittedNotice = dynamic(() => loadUpiPanel().then((m) => m.UpiSubmittedNoticeThemed));
 import { calculateBookingPricing, formatINR } from "@/lib/currency";
 import type {
   BookingMode,

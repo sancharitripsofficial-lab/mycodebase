@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { PageBanner3D } from "@/components/banners/PageBanner3D";
+import { AstryxShell } from "@/components/AstryxShell";
 import { BookingLookupClient } from "@/components/BookingLookupClient";
 
 export const metadata: Metadata = {
@@ -30,11 +31,13 @@ export default async function BookingLookupPage({
           Other travelers’ personal details are never displayed.
         </p>
 
-        <BookingLookupClient
-          initialRef={params.ref}
-          initialEmail={params.email}
-          initialToken={params.token}
-        />
+        <AstryxShell>
+          <BookingLookupClient
+            initialRef={params.ref}
+            initialEmail={params.email}
+            initialToken={params.token}
+          />
+        </AstryxShell>
       </div>
     </>
   );

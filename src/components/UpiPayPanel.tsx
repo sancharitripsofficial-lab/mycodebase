@@ -1,6 +1,7 @@
 "use client";
 
 import "@/styles/astryx-components.css";
+import { AstryxShell } from "@/components/AstryxShell";
 import { Badge } from "@astryxdesign/core/Badge";
 import { Banner } from "@astryxdesign/core/Banner";
 import { Button } from "@astryxdesign/core/Button";
@@ -318,6 +319,24 @@ export function UpiPayPanel({
         {mode === "pay" && <Badge variant="teal" label="No extra fees • Any UPI app" />}
       </div>
     </section>
+  );
+}
+
+/** The pay panel inside the Astryx theme (for the trip page's booking box, which loads it lazily). */
+export function UpiPayPanelThemed(props: React.ComponentProps<typeof UpiPayPanel>) {
+  return (
+    <AstryxShell>
+      <UpiPayPanel {...props} />
+    </AstryxShell>
+  );
+}
+
+/** The "reference sent" notice inside the Astryx theme. */
+export function UpiSubmittedNoticeThemed(props: React.ComponentProps<typeof UpiSubmittedNotice>) {
+  return (
+    <AstryxShell>
+      <UpiSubmittedNotice {...props} />
+    </AstryxShell>
   );
 }
 
