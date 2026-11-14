@@ -31,7 +31,7 @@ export function PromoCta({ promo, className }: { promo: Promotion; className: st
 
 /**
  * Offers carousel for one place on the site (home, all trips, trip page). Swipe on phones,
- * arrows on desktop, moves on by itself every 7 s unless the visitor is hovering or reading.
+ * arrows on desktop, moves on by itself every 6 s unless the visitor is hovering or reading.
  */
 export function PromoBanner({ promotions, className = "", preview = false }: { promotions: Promotion[]; className?: string; preview?: boolean }) {
   const [index, setIndex] = useState(0);
@@ -49,7 +49,7 @@ export function PromoBanner({ promotions, className = "", preview = false }: { p
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const t = window.setInterval(() => {
       if (document.visibilityState === "visible") go(1);
-    }, 7000);
+    }, 6000);
     return () => window.clearInterval(t);
   }, [count, paused, go]);
 
