@@ -203,6 +203,15 @@
     backdrop-filter: blur(14px) saturate(1.2);
     -webkit-backdrop-filter: blur(14px) saturate(1.2);
   }
+  /* Phones: a see-through lagoon tint instead of a live blur. A blur over the playing hero film
+     is redrawn every frame and makes the first swipe stutter. */
+  @media (hover: none) {
+    .glass {
+      background: rgb(11 79 90 / 0.42);
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+  }
 
   /* Thin road-line divider: dashed centre line in brand gradient. */
   .road-divider {
@@ -254,6 +263,16 @@
   :where(a[href], button, [role="button"], summary):focus-visible {
     transform: none;
   }
+
+  /* Phones: the press shows after a moment's touch, so a finger that starts a scroll on a card
+     or button never makes it twitch (the browser cancels the press as the scroll begins), and
+     large cards are never re-painted with a filter mid-scroll. */
+  @media (hover: none) {
+    :where(a[href], button:not(:disabled), [role="button"]:not([aria-disabled="true"]), summary, .tap):active {
+      transition-delay: 70ms;
+      filter: none;
+    }
+  }
 }
 
 @layer components {
@@ -274,6 +293,14 @@
   .btn-ocean:active {
     transform: scale(0.96);
     filter: brightness(0.95);
+  }
+
+  @media (hover: none) {
+    .card-lift:active,
+    .btn-sunset:active,
+    .btn-ocean:active {
+      transition-delay: 70ms;
+    }
   }
 }
 
@@ -482,6 +509,16 @@
   }
 }
 
+/* Store + admin: a grid with no phone column setting (e.g. "grid gap-10 lg:grid-cols-12") gets one
+   column that may shrink to the screen, instead of the browser's automatic column, which grows to
+   its widest word and pushed long Kannada headings past the edge of a 320 px phone. Grids that set
+   their own columns (grid-cols-2, sm:grid-cols-3 from 640 px up, ...) are unaffected. */
+@layer components {
+  :where(.grid:not([class*=" grid-cols-"]):not([class^="grid-cols-"])) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 /* Admin: grid and flex children may shrink below their content, so a long title or link can
    never push the page wider than a phone screen (text wraps or truncates instead). */
 .admin-shell :where(.grid) > *,
@@ -506,7 +543,9 @@ html[data-lang="kn"]:not([data-i18n-ready]) body {
 html[lang="kn"] :is(h1, h2, h3, h4, .font-display) { line-height: 1.32; }
 html[lang="kn"] :is(.leading-none, .leading-tight, .leading-snug) { line-height: 1.3; }
 html[lang="kn"] :where(.uppercase, [class*="tracking-"]) { letter-spacing: 0 !important; }
-html[lang="kn"] body { overflow-wrap: anywhere; }
+/* Long Kannada words may break only when they would not fit at all ("break-word"). Never
+   "anywhere": that lets a squeezed box shrink to one letter per line. */
+html[lang="kn"] body { overflow-wrap: break-word; }
 /* Kannada words are longer: a slightly tighter top menu keeps it on one line on laptops. */
 html[lang="kn"] nav[aria-label="Primary navigation"] a { padding-inline: 0.55rem; font-size: 0.8125rem; }
 html[lang="kn"] header .btn-sunset { padding-inline: 1rem; font-size: 0.8125rem; }

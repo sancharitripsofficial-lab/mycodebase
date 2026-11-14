@@ -8,7 +8,8 @@ const INTERACTIVE = 'a[href], button:not(:disabled), [role="button"], summary, l
 /**
  * Makes every tap feel answered immediately:
  *  1. Touch: iOS only shows :active "pressed" styles when a touchstart listener exists, so one
- *     passive listener is added; Android phones also get a tiny 8 ms vibration on buttons/cards.
+ *     passive listener is added; Android phones also get a tiny 8 ms vibration on buttons/cards,
+ *     only for a real tap (never when the finger starts a scroll on a card).
  *  2. Navigation: a thin sunset progress bar starts the moment an internal link is tapped and
  *     finishes when the new page is on screen, so a tap never looks ignored.
  */
@@ -31,8 +32,9 @@ export function TapFeedback() {
     const noop = () => {};
     document.addEventListener("touchstart", noop, { passive: true });
 
-    const onPointerDown = (e: PointerEvent) => {
-      if (e.pointerType !== "touch") return;
+    // On "click", not "pointerdown": a click only fires for a tap, so scrolling never buzzes.
+    const onTap = (e: MouseEvent) => {
+      if ((e as PointerEvent).pointerType !== "touch") return;
       const el = (e.target as Element | null)?.closest(INTERACTIVE);
       if (!el || el.getAttribute("aria-disabled") === "true") return;
       if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -61,11 +63,11 @@ export function TapFeedback() {
       }, 120);
     };
 
-    document.addEventListener("pointerdown", onPointerDown, { passive: true });
+    document.addEventListener("click", onTap, { passive: true, capture: true });
     document.addEventListener("click", onClick, true);
     return () => {
       document.removeEventListener("touchstart", noop);
-      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("click", onTap, true);
       document.removeEventListener("click", onClick, true);
       if (timer.current) window.clearInterval(timer.current);
     };

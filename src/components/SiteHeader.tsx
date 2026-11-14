@@ -21,7 +21,9 @@ export function SiteHeader({ isDemoMode }: { isDemoMode: boolean }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-stone-200/70 bg-white/80 backdrop-blur-md supports-[backdrop-filter]:bg-white/70">
+    // Phones and tablets: a near-solid bar (a blur behind a sticky bar is redrawn on every scroll
+    // frame and makes phone scrolling stutter). Large screens keep the frosted look.
+    <header className="sticky top-0 z-40 border-b border-stone-200/70 bg-[#fffefc]/95 lg:bg-white/80 lg:backdrop-blur-md lg:supports-[backdrop-filter]:bg-white/70">
       {isDemoMode && (
         <div className="bg-ocean px-4 py-1.5 text-center text-xs text-white/90">
           <span className="font-semibold text-saffron-500">Preview mode:</span> sample itineraries
@@ -29,21 +31,22 @@ export function SiteHeader({ isDemoMode }: { isDemoMode: boolean }) {
         </div>
       )}
 
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-2.5 sm:px-6">
-        <Link href="/" className="group flex shrink-0 items-center gap-2.5 whitespace-nowrap" aria-label="Sanchari Micro Trips — home">
+      {/* Fits a 320 px phone without sideways scrolling (tighter gaps and padding below 640 px). */}
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-3 py-2.5 sm:gap-4 sm:px-6">
+        <Link href="/" className="group flex shrink-0 items-center gap-2 whitespace-nowrap sm:gap-2.5" aria-label="Sanchari Micro Trips — home">
           <Image
             src="/brand/sanchari-mark.png"
             alt=""
             width={44}
             height={44}
             priority
-            className="h-11 w-11 transition-transform duration-300 group-hover:-rotate-6"
+            className="h-10 w-10 transition-transform duration-300 group-hover:-rotate-6 min-[360px]:h-11 min-[360px]:w-11"
           />
           <span className="flex flex-col leading-none">
-            <span className="font-display text-[1.35rem] font-semibold tracking-tight text-forest-900">
+            <span className="font-display text-[1.2rem] font-semibold tracking-tight text-forest-900 min-[360px]:text-[1.35rem]">
               Sanchari
             </span>
-            <span className="mt-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-forest-700">
+            <span className="mt-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-forest-700 sm:tracking-[0.28em]">
               Micro Trips
             </span>
           </span>

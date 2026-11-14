@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { isOptimizableImage } from "@/lib/media";
+import { whenScrollIdle } from "@/lib/scroll-idle";
 import type { LivingHandle } from "./engine";
 import { resolveScene } from "./scenes";
 import { fetchLiveWeather, NEUTRAL_WEATHER, seedLiveWeather, watchLiveWeather, weatherTime, type LiveWeather } from "./weather";
@@ -115,8 +116,13 @@ export function LivingPhoto({
         }
         if (cancelled || !img.naturalWidth) return;
         await whenIdle(variant === "hero" ? 300 : 900); // never compete with the first paint
+        // Loading the 3D engine and preparing a photo is heavy work: never while the page is
+        // moving under the visitor's finger, only once it rests.
+        await whenScrollIdle();
         if (cancelled) return;
         const { mountLiving } = await import("./engine");
+        if (cancelled) return;
+        await whenScrollIdle();
         if (cancelled) return;
         const h = await mountLiving({
           canvas,
@@ -193,7 +199,7 @@ function WeatherChip({ weather }: { weather: LiveWeather }) {
   const blowingTo = (weather.windFromDeg + 180) % 360;
   return (
     <p
-      className="pointer-events-none absolute bottom-2 left-2 z-10 flex max-w-[calc(100%-1rem)] flex-wrap items-center gap-x-2 gap-y-0 rounded-2xl border border-white/70 bg-cream-50/90 px-2.5 py-1 text-[10px] font-semibold leading-snug text-forest-900 shadow-[0_6px_20px_-8px_rgb(14_94_143/0.55)] backdrop-blur-sm sm:bottom-3 sm:left-3 sm:px-3 sm:py-1.5 sm:text-xs"
+      className="pointer-events-none absolute bottom-2 left-2 z-10 flex max-w-[calc(100%-1rem)] flex-wrap items-center gap-x-2 gap-y-0 rounded-2xl border border-white/70 bg-cream-50/90 px-2.5 py-1 text-[10px] font-semibold leading-snug text-forest-900 shadow-[0_6px_20px_-8px_rgb(14_94_143/0.55)] sm:backdrop-blur-sm sm:bottom-3 sm:left-3 sm:px-3 sm:py-1.5 sm:text-xs"
       style={{ animation: "living-chip-in 0.6s ease both" }}
     >
       <span className="flex items-center gap-1.5">

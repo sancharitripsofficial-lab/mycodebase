@@ -25,12 +25,12 @@ function getStatusBadge(status: DepartureStatus, seatsRemaining: number, maxCapa
     case "filling_fast":
       return {
         label: `Filling fast • ${seatsRemaining} left`,
-        className: "bg-saffron-500/15 text-copper-700 border-saffron-500/40",
+        className: "bg-[#fff1d9]/95 text-copper-700 border-saffron-500/40 sm:bg-saffron-500/15",
       };
     default:
       return {
         label: `Open • ${seatsRemaining} of ${maxCapacity} seats`,
-        className: "bg-forest-900/10 text-forest-900 border-forest-700/25",
+        className: "bg-[#e3f1ee]/95 text-forest-900 border-forest-700/25 sm:bg-forest-900/10",
       };
   }
 }
@@ -67,7 +67,7 @@ export function TripCard({ item, weather = null }: { item: TripWithDetails; weat
         />
         <div className="absolute inset-x-3 top-3 flex flex-wrap items-center justify-between gap-2">
           <span
-            className={`rounded-full border px-2.5 py-1 text-xs font-semibold backdrop-blur-xs ${badge.className}`}
+            className={`rounded-full border px-2.5 py-1 text-xs font-semibold sm:backdrop-blur-xs ${badge.className}`}
           >
             {badge.label}
           </span>

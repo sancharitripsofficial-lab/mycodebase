@@ -18,7 +18,7 @@ export function LanguageToggle({ className = "" }: { className?: string }) {
       data-no-translate
       className={`inline-flex shrink-0 items-center gap-0.5 rounded-full border border-stone-200 bg-white p-0.5 text-[13px] font-semibold shadow-sm ${className}`}
     >
-      <Languages className="ml-1.5 h-3.5 w-3.5 text-forest-700" aria-hidden="true" />
+      <Languages className="ml-1.5 hidden h-3.5 w-3.5 text-forest-700 min-[360px]:block" aria-hidden="true" />
       {OPTIONS.map((o) => {
         const active = lang === o.lang;
         return (

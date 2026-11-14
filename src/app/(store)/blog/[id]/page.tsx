@@ -51,9 +51,11 @@ export default async function BlogPostPage({ params }: { params: Promise<{ id: s
             ))}
           </div>
         )}
+        {/* The heading keeps a real width (never squeezed to one letter per line, e.g. in Kannada);
+            on phones the button drops below it at full width. */}
         <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-stone-200 bg-white p-5">
-          <p className="min-w-0 flex-1 font-display text-lg font-semibold text-forest-900">{trip ? trip.title : "Ready for your own weekend?"}</p>
-          <Link href={trip ? `/trips/${trip.slug}#book` : "/trips"} className="btn-sunset inline-flex items-center gap-2 px-5 py-3 text-sm">
+          <p className="min-w-0 flex-[1_1_15rem] font-display text-lg font-semibold text-forest-900">{trip ? trip.title : "Ready for your own weekend?"}</p>
+          <Link href={trip ? `/trips/${trip.slug}#book` : "/trips"} className="btn-sunset inline-flex w-full items-center justify-center gap-2 px-5 py-3 text-center text-sm sm:w-auto">
             {trip ? "See dates" : "See trips and dates"} <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </Link>
         </div>

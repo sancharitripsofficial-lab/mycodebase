@@ -23,6 +23,7 @@ import {
   POLE_VERT,
 } from "./shaders";
 import type { LiveWeather } from "./weather";
+import { isScrolling, onScrollActivity, whenScrollIdle } from "@/lib/scroll-idle";
 
 export type LivingVariant = "card" | "hero";
 
@@ -344,6 +345,9 @@ class Engine {
   private frameNo = 0;
   private counter = 0;
   private lastNow = 0;
+  /** Animation time in seconds. Only moves while frames are drawn, so a pause never makes a photo jump. */
+  private clock = 0;
+  private offScroll: () => void = () => {};
   private intervalEma = 16.7;
   private cpuEma = 0;
   private slowFrames = 0;
@@ -413,6 +417,11 @@ class Engine {
     this.gl.addEventListener("webglcontextrestored", this.onRestored, false);
     document.addEventListener("visibilitychange", this.onVisibility);
     if (!this.tier.mobile) window.addEventListener("pointermove", this.onPointer, { passive: true });
+    // While the page is scrolling every photo holds its last frame (the phone spends the frame on
+    // the scroll); they carry on from the same moment as soon as the page comes to rest.
+    this.offScroll = onScrollActivity((scrolling) => {
+      if (!scrolling) this.kick();
+    });
 
     // ---- photo quad ----
     const v4 = () => new THREE.Vector4(0, 0, 0.001, 0.001);
@@ -674,6 +683,7 @@ class Engine {
           return null;
         }
         if (!img.naturalWidth || !img.naturalHeight) return null;
+        await whenScrollIdle(); // reading the photo's pixels is heavy: never while the page moves
         const built = buildMask(img, scene);
         if (!built) return null;
         // Resize off the main thread before the GPU upload: uploading a full-size photo (and its
@@ -789,6 +799,7 @@ class Engine {
     this.gl.removeEventListener("webglcontextrestored", this.onRestored);
     document.removeEventListener("visibilitychange", this.onVisibility);
     window.removeEventListener("pointermove", this.onPointer);
+    this.offScroll();
     for (const d of this.disposables) d.dispose();
     this.renderer.dispose();
     this.renderer.forceContextLoss();
@@ -816,7 +827,7 @@ class Engine {
   }
 
   private kick() {
-    if (!this.raf && !this.lost && !document.hidden) {
+    if (!this.raf && !this.lost && !document.hidden && !isScrolling()) {
       this.lastNow = 0;
       this.raf = requestAnimationFrame(this.frame);
     }
@@ -828,7 +839,7 @@ class Engine {
     if (vis.length > this.tier.maxLive) {
       vis.sort((a, b) => (b.opts.variant === "hero" ? 1e9 : b.w * b.h) - (a.opts.variant === "hero" ? 1e9 : a.w * a.h));
       // Photos over the limit keep their last frame (drawn at least once so they are not blank).
-      for (const i of vis.slice(this.tier.maxLive)) if (i.dirty) this.render(i, performance.now() / 1000, 0.016);
+      for (const i of vis.slice(this.tier.maxLive)) if (i.dirty) this.render(i, this.clock, 0.016);
       vis.length = this.tier.maxLive;
     }
     return vis;
@@ -837,6 +848,7 @@ class Engine {
   private frame = (now: number) => {
     this.raf = 0;
     if (this.lost || document.hidden) return;
+    if (isScrolling()) return; // resumes from onScrollActivity when the page rests
     const live = this.pickLive();
     if (live.length === 0) return; // nothing on screen: stop the loop until something scrolls in
     this.raf = requestAnimationFrame(this.frame);
@@ -847,8 +859,9 @@ class Engine {
     this.frameNo++;
 
     const t0 = performance.now();
-    const t = now / 1000;
     const dt = Math.min(0.1, dtMs / 1000);
+    this.clock += dt;
+    const t = this.clock;
     for (const i of live) {
       const half = (this.tier.cardHalfRate || this.quality < 1) && i.opts.variant === "card";
       if (half && !i.dirty && (this.frameNo + i.index) % 2 === 1) continue;
@@ -1100,7 +1113,7 @@ class Engine {
     const gl = this.renderer.getContext();
     const t0 = performance.now();
     for (let n = 0; n < frames; n++) {
-      for (const i of live) this.render(i, performance.now() / 1000, 0.016);
+      for (const i of live) this.render(i, this.clock, 0.016);
       gl.finish();
     }
     return { photos: live.length, msPerFrame: Math.round(((performance.now() - t0) / frames) * 100) / 100 };
