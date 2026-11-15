@@ -22,7 +22,9 @@ import { businessJsonLd, jsonLdText } from "@/lib/seo";
 import type { Metadata } from "next";
 import { LiveWeatherBadge } from "@/components/living/LiveWeatherBadge";
 import { isBookable } from "@/lib/departure-rules";
-import { BUILT_IN_MEDIA, resolveHero } from "@/lib/site-media";
+import { BUILT_IN_MEDIA, resolveHero, resolveJourney } from "@/lib/site-media";
+import { JourneyReel } from "@/components/JourneyReel";
+import { HeroJourneySteps } from "@/components/HeroJourneySteps";
 
 // Served from the CDN; refreshed every 30 s and immediately after bookings / admin edits.
 export const revalidate = 30;
@@ -144,7 +146,11 @@ export default async function HomePage() {
       <section className="relative isolate overflow-hidden text-cream-50">
         {/* Video and still pictures: Admin → Site pictures & videos (built-in film when nothing is set). */}
         <HeroCinematic {...resolveHero(settings.siteMedia)} />
-        <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 pt-12 pb-20 sm:px-6 md:grid-cols-[1.15fr_0.85fr] md:pt-20 md:pb-28">
+        {/* The trip in five steps, see-through over the film (upcoming steps from Admin → Home page). */}
+        <div className="relative mx-auto max-w-6xl px-4 pt-4 sm:px-6 md:pt-6">
+          <HeroJourneySteps upcoming={home.beyondSection.upcomingSteps} />
+        </div>
+        <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 pt-6 pb-20 sm:px-6 md:grid-cols-[1.15fr_0.85fr] md:pt-12 md:pb-28">
           <div className="max-w-xl space-y-5 [text-shadow:0_1px_3px_rgb(10_40_30/0.45)]">
             {/* Game-style minimap: floats beside the headline on phones, pinned top-right from md up */}
             <RoadTripMinimap
@@ -403,30 +409,23 @@ export default async function HomePage() {
       {/* Coming soon: resorts, hotel rooms and pick-up-to-drop planning (words and cards from Admin) */}
       {home.beyondSection.show && (
         <section className="sec-sunrise mt-12 border-y border-stone-200/70" aria-labelledby="beyond-trip">
-          <div className="mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:px-6 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
-            <div className="space-y-5">
-              <SectionHead text={home.beyondSection} id="beyond-trip" />
-              <ol aria-label="Your trip, end to end" className="flex flex-wrap items-center gap-y-2 text-xs font-semibold text-forest-900">
-                {["Pick-up", "Stay", "Drop"].map((stop, i) => (
-                  <li key={stop} className="flex items-center">
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 shadow-sm ring-1 ring-stone-200">
-                      <span className={`h-2 w-2 rounded-full ${i === 1 ? "bg-forest-700" : "bg-copper-600"}`} aria-hidden="true" />
-                      {stop}
-                    </span>
-                    {i < 2 && <span aria-hidden="true" className="mx-1.5 w-6 border-t-2 border-dashed border-forest-800/35 sm:w-10" />}
-                  </li>
-                ))}
-              </ol>
-              {home.beyondSection.tagline && (
-                <p className="font-display text-xl leading-snug font-semibold text-copper-700 sm:text-2xl">{home.beyondSection.tagline}</p>
-              )}
-              {home.beyondSection.buttonLabel && (
-                <Link href={home.planSection.show ? "#plan" : "/contact"} className="btn-sunset px-6 py-3 text-sm">
-                  {home.beyondSection.buttonLabel}
-                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                </Link>
-              )}
-            </div>
+          <div className="mx-auto grid max-w-6xl gap-6 px-4 py-14 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-8">
+            {/* The card's whole background is the pick-up → journey → moments → stay → drop film
+                (made in Canva from free clips; replaceable in Admin → Pictures & videos). */}
+            <JourneyReel {...resolveJourney(settings.siteMedia)} watermark={home.beyondSection.watermark} upcoming={home.beyondSection.upcomingSteps} className="p-6 pt-12 sm:p-8 sm:pt-14 lg:min-h-[470px]">
+              <div className="space-y-5">
+                <SectionHead text={home.beyondSection} id="beyond-trip" light />
+                {home.beyondSection.tagline && (
+                  <p className="font-display text-xl leading-snug font-semibold text-peach-100 sm:text-2xl">{home.beyondSection.tagline}</p>
+                )}
+                {home.beyondSection.buttonLabel && (
+                  <Link href={home.planSection.show ? "#plan" : "/contact"} className="btn-sunset px-6 py-3 text-sm [text-shadow:none]">
+                    {home.beyondSection.buttonLabel}
+                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                  </Link>
+                )}
+              </div>
+            </JourneyReel>
             {home.beyondCards.length > 0 && (
               <div className="grid gap-4 sm:grid-cols-2">
                 {home.beyondCards.map((item, i) => (

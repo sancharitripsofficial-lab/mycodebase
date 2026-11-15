@@ -43,6 +43,10 @@ export interface SiteMedia {
   /** About page photo. */
   aboutPhoto: string;
   banners: Record<BannerPage, BannerMedia>;
+  /** Home 'Pick-up to drop' card film: landscape (computers), portrait (phones), still picture. */
+  journeyVideo: string;
+  journeyPhoneVideo: string;
+  journeyPoster: string;
 }
 
 /** The files that ship with the site. */
@@ -53,6 +57,14 @@ export const BUILT_IN_MEDIA = {
   heroMobilePoster: "/media/motion/hero-loop-mobile-poster.jpg",
   safetyPhoto: "/media/story-coffee-morning.jpg",
   aboutPhoto: "/media/story-coffee-morning.jpg",
+} as const;
+
+/** Built-in 'Pick-up to drop' film (made in Canva from free clips): pick-up → journey → moments → stay → drop. */
+export const BUILT_IN_JOURNEY = {
+  wide: "/media/journey/journey-card-wide.mp4",
+  tall: "/media/journey/journey-card-tall.mp4",
+  widePoster: "/media/journey/journey-card-wide-poster.jpg",
+  tallPoster: "/media/journey/journey-card-tall-poster.jpg",
 } as const;
 
 /** Built-in still of a page's 3D banner scene (shown in Admin as the "Built-in" preview). */
@@ -72,6 +84,9 @@ export const EMPTY_SITE_MEDIA: SiteMedia = {
   safetyPhoto: "",
   aboutPhoto: "",
   banners: Object.fromEntries(BANNER_PAGES.map((p) => [p, EMPTY_BANNER])) as Record<BannerPage, BannerMedia>,
+  journeyVideo: "",
+  journeyPhoneVideo: "",
+  journeyPoster: "",
 };
 
 export const isVideoLink = (url: string) => /\.(mp4|webm)(\?|#|$)/i.test(url);
@@ -111,6 +126,9 @@ export function mergeSiteMedia(saved: unknown): SiteMedia {
         return [p, { image: imageStr(b.image), mobileImage: imageStr(b.mobileImage), video: videoStr(b.video) }];
       })
     ) as Record<BannerPage, BannerMedia>,
+    journeyVideo: videoStr(saved.journeyVideo),
+    journeyPhoneVideo: videoStr(saved.journeyPhoneVideo),
+    journeyPoster: imageStr(saved.journeyPoster),
   };
 }
 
@@ -143,4 +161,28 @@ export function resolveHero(m: SiteMedia): {
 export function customBanner(m: SiteMedia, page: BannerPage): BannerMedia | null {
   const b = m.banners[page];
   return b && (b.image || b.mobileImage || b.video) ? b : null;
+}
+
+/**
+ * Films for the 'Pick-up to drop' card. Nothing set → the built-in film. The owner's film is used
+ * for both screens when only one is given; their still picture (or the built-in one) shows first.
+ */
+export function resolveJourney(m: SiteMedia): {
+  wideSrc: string;
+  tallSrc: string;
+  widePoster: string;
+  tallPoster: string;
+  custom: boolean;
+} {
+  const own = m.journeyVideo || m.journeyPhoneVideo;
+  if (!own) {
+    return { wideSrc: BUILT_IN_JOURNEY.wide, tallSrc: BUILT_IN_JOURNEY.tall, widePoster: BUILT_IN_JOURNEY.widePoster, tallPoster: BUILT_IN_JOURNEY.tallPoster, custom: false };
+  }
+  return {
+    wideSrc: m.journeyVideo || m.journeyPhoneVideo,
+    tallSrc: m.journeyPhoneVideo || m.journeyVideo,
+    widePoster: m.journeyPoster || BUILT_IN_JOURNEY.widePoster,
+    tallPoster: m.journeyPoster || BUILT_IN_JOURNEY.tallPoster,
+    custom: true,
+  };
 }

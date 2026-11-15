@@ -49,6 +49,11 @@ export const ICON_KEYS = [
 ] as const;
 export type IconKey = (typeof ICON_KEYS)[number];
 
+/** The five steps on the home 'Pick-up to drop' film card. */
+export const JOURNEY_STEP_KEYS = ["pickup", "journey", "moments", "stay", "drop"] as const;
+export type JourneyStepKey = (typeof JOURNEY_STEP_KEYS)[number];
+export const JOURNEY_STEP_LABELS: Record<JourneyStepKey, string> = { pickup: "Pick-up", journey: "Journey", moments: "Moments", stay: "Stay", drop: "Drop" };
+
 export interface HomeCategory {
   id: string;
   name: string;
@@ -82,7 +87,8 @@ export interface HomePageContent {
   travellerCards: HomeCard[];
   departuresSection: SectionText;
   /** Coming soon: resorts, hotel rooms and pick-up-to-drop planning. */
-  beyondSection: SectionText & { tagline: string; buttonLabel: string };
+  /** watermark: stamp on the card's film, e.g. "Upcoming · Stay + Food" (empty = none). */
+  beyondSection: SectionText & { tagline: string; buttonLabel: string; watermark: string; upcomingSteps: JourneyStepKey[] };
   beyondCards: HomeCard[];
   compareSection: SectionText & { usLabel: string; themLabel: string };
   compareRows: { label: string; us: string; them: string }[];
@@ -148,6 +154,8 @@ export const DEFAULT_HOME_CONTENT: HomePageContent = {
     body: "We are going beyond our tours. We are connecting with resorts and hotel rooms, so your trip runs smoothly from pick-up to drop without you searching for stays. For batch trips, solo travellers and every group.",
     tagline: "Plan your unplanned experiences with Sanchari Trips.",
     buttonLabel: "Tell us your plan",
+    watermark: "Upcoming · Stay + Food",
+    upcomingSteps: ["moments", "stay"],
   },
   beyondCards: [
     { title: "Resort stays", body: "Resorts linked to your trip, so you never hunt for a stay on your own.", colour: "leaf", icon: "mountain", href: "" },

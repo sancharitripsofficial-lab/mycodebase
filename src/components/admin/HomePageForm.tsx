@@ -10,6 +10,8 @@ import { useState, type ReactNode } from "react";
 import { Notice } from "@/components/admin/kit";
 import { HomeIcon } from "@/components/home/icons";
 import {
+  JOURNEY_STEP_KEYS,
+  JOURNEY_STEP_LABELS,
   ICON_KEYS,
   THEME_KEYS,
   THEME_LABELS,
@@ -279,7 +281,43 @@ export function HomePageForm({ initial, trips, save, canEdit }: { initial: HomeP
         <div className="grid gap-3 md:grid-cols-2">
           <TextInput label="Highlighted line" value={f.beyondSection.tagline} isDisabled={!canEdit} onChange={(v) => set("beyondSection", { ...f.beyondSection, tagline: v })} />
           <TextInput label="Button (opens Plan my trip)" value={f.beyondSection.buttonLabel} isDisabled={!canEdit} onChange={(v) => set("beyondSection", { ...f.beyondSection, buttonLabel: v })} />
+          <TextInput
+            label="Watermark on the film (empty = none)"
+            value={f.beyondSection.watermark}
+            isDisabled={!canEdit}
+            onChange={(v) => set("beyondSection", { ...f.beyondSection, watermark: v.slice(0, 40) })}
+          />
         </div>
+        <fieldset className="rounded-xl border border-stone-200 bg-white p-3">
+          <legend className="px-1 text-sm font-semibold text-forest-900">Steps on the film: tick the ones that are “Upcoming”</legend>
+          <p className="mb-2 text-xs text-stone-600">Ticked steps get a small “Upcoming” tag; the others show as available now.</p>
+          <div className="flex flex-wrap gap-2">
+            {JOURNEY_STEP_KEYS.map((k) => {
+              const on = f.beyondSection.upcomingSteps.includes(k);
+              return (
+                <label
+                  key={k}
+                  className={`inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-full border px-3 text-sm ${on ? "border-copper-600 bg-peach-100 text-forest-900" : "border-stone-300 text-ink-900"}`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={on}
+                    disabled={!canEdit}
+                    onChange={(e) =>
+                      set("beyondSection", {
+                        ...f.beyondSection,
+                        upcomingSteps: e.target.checked
+                          ? JOURNEY_STEP_KEYS.filter((x) => x === k || f.beyondSection.upcomingSteps.includes(x))
+                          : f.beyondSection.upcomingSteps.filter((x) => x !== k),
+                      })
+                    }
+                  />
+                  {JOURNEY_STEP_LABELS[k]}
+                </label>
+              );
+            })}
+          </div>
+        </fieldset>
         <CardsEditor cards={f.beyondCards} onChange={(v) => set("beyondCards", v)} canEdit={canEdit} max={6} linkHint="Optional: #plan, /contact, /trips…" />
       </Group>
 

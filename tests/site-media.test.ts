@@ -71,3 +71,13 @@ describe("page banner with the owner's media", () => {
     expect(builtIn).not.toContain("<video");
   });
 });
+
+describe("pick-up to drop card film", () => {
+  it("built-in film until the owner sets one; one owner film covers both screens", async () => {
+    const { resolveJourney, BUILT_IN_JOURNEY } = await import("@/lib/site-media");
+    expect(resolveJourney(mergeSiteMedia(null))).toMatchObject({ wideSrc: BUILT_IN_JOURNEY.wide, tallSrc: BUILT_IN_JOURNEY.tall, custom: false });
+    const own = resolveJourney(mergeSiteMedia({ journeyVideo: "/media/own.mp4" }));
+    expect(own).toMatchObject({ wideSrc: "/media/own.mp4", tallSrc: "/media/own.mp4", custom: true });
+    expect(siteMediaSchema.safeParse({ ...EMPTY_SITE_MEDIA, journeyVideo: "/media/still.jpg" }).success).toBe(false);
+  });
+});

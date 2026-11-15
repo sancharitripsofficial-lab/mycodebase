@@ -9,6 +9,7 @@ import { uploadMedia } from "@/lib/admin/upload-media";
 import {
   BANNER_PAGE_INFO,
   BANNER_PAGES,
+  BUILT_IN_JOURNEY,
   BUILT_IN_MEDIA,
   builtInBannerStill,
   readyBannerPicture,
@@ -347,6 +348,44 @@ export function SiteMediaManager({ editor, canEdit }: { editor: Editor; canEdit:
                 </div>
               );
             })}
+          </div>
+        </Section>
+
+        <Section
+          title="Home: “Pick-up to drop” card film"
+          description="The film that fills the “Pick-up to drop, all in one plan” card on the home page (built-in: pick-up → journey → moments → stay → drop, made in Canva). Short silent loop, under 20 MB, MP4. Computers: landscape (about 5:4). Phones: portrait (about 2:3). The five steps on the card move evenly through your film."
+        >
+          <div className="grid gap-3 md:grid-cols-3">
+            <MediaSlot
+              {...slot}
+              label="Film for computers"
+              hint="Landscape, about 1000×800."
+              kind="video"
+              value={m.journeyVideo}
+              builtIn={BUILT_IN_JOURNEY.wide}
+              emptyNote=""
+              onChange={(v) => set({ journeyVideo: v })}
+            />
+            <MediaSlot
+              {...slot}
+              label="Film for phones (optional)"
+              hint="Portrait, about 640×960. Empty = the computer film."
+              kind="video"
+              value={m.journeyPhoneVideo}
+              builtIn={m.journeyVideo ? "" : BUILT_IN_JOURNEY.tall}
+              emptyNote="Phones play the computer film."
+              onChange={(v) => set({ journeyPhoneVideo: v })}
+            />
+            <MediaSlot
+              {...slot}
+              label="Still picture (optional)"
+              hint="Shown while the film loads."
+              kind="image"
+              value={m.journeyPoster}
+              builtIn={BUILT_IN_JOURNEY.widePoster}
+              emptyNote=""
+              onChange={(v) => set({ journeyPoster: v })}
+            />
           </div>
         </Section>
 

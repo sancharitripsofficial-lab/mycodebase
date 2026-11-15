@@ -1,6 +1,6 @@
 import { GUIDE_EMOTIONS, type GuideEmotion } from "@/lib/assistant/types";
 import { isSafeMediaLink } from "@/lib/blog";
-import { ICON_KEYS, THEME_KEYS, TILE_COLOURS } from "@/lib/home-content";
+import { ICON_KEYS, JOURNEY_STEP_KEYS, THEME_KEYS, TILE_COLOURS } from "@/lib/home-content";
 import { BANNER_PAGES, isSiteMediaLink, isVideoLink, type BannerPage } from "@/lib/site-media";
 import { z } from "zod";
 
@@ -257,7 +257,12 @@ export const homePageSchema = z.object({
     .refine((cats) => new Set(cats.map((c) => c.id)).size === cats.length, "Two categories have the same short name"),
   travellerCards: z.array(homeCard).max(8),
   departuresSection: sectionText,
-  beyondSection: sectionText.extend({ tagline: z.string().trim().max(160), buttonLabel: z.string().trim().max(40) }),
+  beyondSection: sectionText.extend({
+    tagline: z.string().trim().max(160),
+    buttonLabel: z.string().trim().max(40),
+    watermark: z.string().trim().max(40, "Watermark: at most 40 characters"),
+    upcomingSteps: z.array(z.enum(JOURNEY_STEP_KEYS)).max(5),
+  }),
   beyondCards: z.array(homeCard).max(6),
   compareSection: sectionText.extend({ usLabel: z.string().trim().min(1).max(40), themLabel: z.string().trim().min(1).max(40) }),
   compareRows: z
@@ -394,6 +399,9 @@ export const siteMediaSchema = z.object({
   banners: z.object(
     Object.fromEntries(BANNER_PAGES.map((p) => [p, bannerMediaSchema])) as Record<BannerPage, typeof bannerMediaSchema>
   ),
+  journeyVideo: siteVideo,
+  journeyPhoneVideo: siteVideo,
+  journeyPoster: sitePicture,
 });
 
 export const settingsSaveSchema = z.discriminatedUnion("key", [
