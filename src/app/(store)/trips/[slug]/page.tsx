@@ -182,7 +182,8 @@ export default async function TripDetailPage({
             <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
               <span className="th-chip rounded-full px-3 py-1 tracking-wider uppercase">{trip.region}</span>
               <span className="inline-flex items-center gap-1 rounded-full bg-white/90 px-3 py-1 text-forest-900 ring-1 ring-stone-200">
-                <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" /> {trip.durationDays} days · {trip.durationNights} nights
+                <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" /> {trip.durationDays} {trip.durationDays === 1 ? "day" : "days"} · {trip.durationNights}{" "}
+                {trip.durationNights === 1 ? "night" : "nights"}
               </span>
               <span className="inline-flex items-center gap-1 rounded-full bg-white/90 px-3 py-1 text-forest-900 ring-1 ring-stone-200">
                 <Mountain className="h-3.5 w-3.5" aria-hidden="true" /> {trip.difficulty}

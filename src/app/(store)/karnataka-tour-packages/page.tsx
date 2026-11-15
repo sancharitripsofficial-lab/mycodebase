@@ -135,7 +135,8 @@ export default async function KarnatakaTourPackagesPage() {
                         <li className="flex items-start gap-2">
                           <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-copper-700" aria-hidden="true" />
                           <span>
-                            {trip.durationDays} days, {trip.durationNights} nights
+                            {trip.durationDays} {trip.durationDays === 1 ? "day" : "days"}, {trip.durationNights}{" "}
+                            {trip.durationNights === 1 ? "night" : "nights"}
                           </span>
                         </li>
                         {facts && (
