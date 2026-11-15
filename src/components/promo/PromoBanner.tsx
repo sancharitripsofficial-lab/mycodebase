@@ -109,7 +109,7 @@ export function PromoBanner({ promotions, className = "", preview = false }: { p
     >
       <div key={current.id} className="promo-enter grid md:grid-cols-[1.1fr_1fr]">
         <div className="relative aspect-[16/9] w-full md:aspect-auto md:min-h-[300px]">
-          <PromoMedia promo={current} sizes="(min-width: 768px) 55vw, 100vw" />
+          <PromoMedia promo={current} sizes="(min-width: 768px) 55vw, 100vw" sound />
         </div>
         <div className="flex flex-col justify-center gap-3 p-5 text-white sm:p-7 md:p-9" aria-live={paused ? "off" : "polite"}>
           {current.badge && (

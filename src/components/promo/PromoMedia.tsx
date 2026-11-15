@@ -1,8 +1,9 @@
 "use client";
 
-import { Play } from "lucide-react";
+import { Play, Volume2, VolumeX } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef, useState, type ReactNode, type RefObject, type SyntheticEvent } from "react";
+import { useHasAudio } from "@/lib/use-has-audio";
 import type { Promotion } from "@/lib/data/promotions";
 import { classifyVideoLink, isOptimizableImage } from "@/lib/media";
 import { THEME_BG } from "./track";
@@ -60,13 +61,28 @@ function FitBox({
  * The picture, video or YouTube clip of an offer, filling its box (the parent sets the size).
  * Videos play muted and only while on screen; YouTube loads only after a tap.
  */
-export function PromoMedia({ promo, sizes, priority = false }: { promo: Promotion; sizes: string; priority?: boolean }) {
+export function PromoMedia({
+  promo,
+  sizes,
+  priority = false,
+  cover = false,
+  sound = false,
+}: {
+  promo: Promotion;
+  sizes: string;
+  priority?: boolean;
+  /** Always fill the box (the pop-up's full-card film). */
+  cover?: boolean;
+  /** Show a Sound on/off button on videos (they always start muted). */
+  sound?: boolean;
+}) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [dims, setDims] = useState<{ w: number; h: number } | null>(null);
   // Pictures are usually posters with words and a logo near the edges: never crop them (any
   // difference in shape shows the whole picture over its blurred copy). Videos may fill the box.
   const { boxRef, fit } = useSmartFit(dims, promo.mediaType === "image" ? 1.01 : 1.28);
-  const objectFit = fit === "contain" ? "object-contain" : "object-cover";
+  const objectFit = !cover && fit === "contain" ? "object-contain" : "object-cover";
+  const [soundOn, setSoundOn] = useState(false);
 
   // The clip is fetched only when it comes near the screen (not with the page), then plays while
   // at least a quarter of it is visible.
@@ -102,6 +118,25 @@ export function PromoMedia({ promo, sizes, priority = false }: { promo: Promotio
       io.disconnect();
     };
   }, [promo.mediaUrl]);
+  // Wide places (banners, tablets, computers) play the offer's wide copy of its film when it has
+  // one, so a tall phone video is not shrunk to a strip; the phone pop-up keeps the tall one.
+  const [boxWide, setBoxWide] = useState(false);
+  const wideUrl = promo.mediaType === "video" ? (promo.wideMediaUrl ?? "") : "";
+  useEffect(() => {
+    const box = boxRef.current;
+    if (!box || !wideUrl) return;
+    const decide = () => {
+      const r = box.getBoundingClientRect();
+      if (r.width && r.height) setBoxWide(r.width / r.height > 1.15);
+    };
+    decide();
+    const ro = new ResizeObserver(decide);
+    ro.observe(box);
+    return () => ro.disconnect();
+  }, [boxRef, wideUrl]);
+  const videoSrc = wideUrl && boxWide ? wideUrl : promo.mediaUrl;
+  // Only clips that really have sound get the button (our own films are silent).
+  const hasAudio = useHasAudio(videoRef, near ? videoSrc : null);
 
   if (promo.mediaType === "image" && promo.mediaUrl) {
     const onImg = (e: SyntheticEvent<HTMLImageElement>) =>
@@ -138,7 +173,7 @@ export function PromoMedia({ promo, sizes, priority = false }: { promo: Promotio
 
   if (promo.mediaType === "video" && promo.mediaUrl) {
     const backdrop =
-      fit === "contain" ? (
+      !cover && fit === "contain" ? (
         promo.posterUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -155,7 +190,7 @@ export function PromoMedia({ promo, sizes, priority = false }: { promo: Promotio
       <FitBox boxRef={boxRef} backdrop={backdrop}>
         <video
           ref={videoRef}
-          src={near ? promo.mediaUrl : undefined}
+          src={near ? videoSrc : undefined}
           poster={promo.posterUrl || undefined}
           muted
           loop
@@ -168,6 +203,26 @@ export function PromoMedia({ promo, sizes, priority = false }: { promo: Promotio
           }}
           className={`absolute inset-0 h-full w-full ${objectFit}`}
         />
+        {sound && hasAudio === true && (
+          <button
+            type="button"
+            onClick={() => {
+              const v = videoRef.current;
+              const next = !soundOn;
+              setSoundOn(next);
+              if (v) {
+                v.muted = !next;
+                if (next) v.volume = 1;
+                void v.play().catch(() => undefined);
+              }
+            }}
+            aria-label={soundOn ? "Turn sound off" : "Turn sound on"}
+            className="absolute top-3 left-3 z-10 inline-flex min-h-9 items-center gap-1.5 rounded-full bg-black/55 px-3 text-xs font-semibold text-white backdrop-blur-sm hover:bg-black/70"
+          >
+            {soundOn ? <Volume2 className="h-4 w-4" aria-hidden="true" /> : <VolumeX className="h-4 w-4" aria-hidden="true" />}
+            {soundOn ? "Sound on" : "Tap for sound"}
+          </button>
+        )}
       </FitBox>
     );
   }
@@ -281,7 +336,7 @@ function YouTubeLoop({ id, title, isShort }: { id: string; title: string; isShor
             command("playVideo");
             setSound(!sound);
           }}
-          className="absolute bottom-3 left-3 z-10 inline-flex min-h-9 items-center rounded-full bg-black/55 px-3 text-xs font-semibold text-white backdrop-blur-sm hover:bg-black/70"
+          className="absolute top-3 left-3 z-10 inline-flex min-h-9 items-center rounded-full bg-black/55 px-3 text-xs font-semibold text-white backdrop-blur-sm hover:bg-black/70"
           aria-label={sound ? "Turn sound off" : "Turn sound on"}
         >
           {sound ? "Sound on" : "Sound off"}

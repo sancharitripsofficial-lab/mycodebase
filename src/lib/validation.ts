@@ -312,6 +312,7 @@ export const promotionSchema = z
     mediaType: z.enum(["none", "image", "video", "youtube"]),
     mediaUrl: mediaLink,
     posterUrl: mediaLink,
+    wideMediaUrl: mediaLink.optional().default(""),
     ctaLabel: z.string().trim().max(30),
     ctaUrl: z
       .string()

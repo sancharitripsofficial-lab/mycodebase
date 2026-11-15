@@ -3,6 +3,7 @@
 import { Volume2, VolumeX } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { isSafeMediaLink } from "@/lib/blog";
+import { useHasAudio } from "@/lib/use-has-audio";
 
 /**
  * A story video that plays by itself, muted, on a loop, while it is on screen (phones allow muted
@@ -15,6 +16,8 @@ export function BlogVideo({ src, poster, title, className = "" }: { src: string;
   const [muted, setMuted] = useState(true);
   const [manual, setManual] = useState(false);
   const safe = isSafeMediaLink(src);
+  // Silent films (like our monsoon clips) get no sound button.
+  const hasAudio = useHasAudio(ref, src);
 
   useEffect(() => {
     const v = ref.current;
@@ -68,7 +71,7 @@ export function BlogVideo({ src, poster, title, className = "" }: { src: string;
       >
         <source src={src} type={type} />
       </video>
-      {!manual && (
+      {!manual && hasAudio === true && (
         <button
           type="button"
           onClick={() => {

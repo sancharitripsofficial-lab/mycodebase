@@ -55,10 +55,11 @@ async function usageIndex(): Promise<Map<string, string[]>> {
     for (const v of (Array.isArray(t.video_links) ? t.video_links : []) as { url: string }[]) add(v.url, `${title} (video)`);
   }
   // Offers & ads use library files too (table exists from migration 202611130003).
-  const { data: promos } = await admin.from("promotions").select("title, media_url, poster_url");
+  const { data: promos } = await admin.from("promotions").select("title, media_url, poster_url, wide_media_url");
   for (const p of promos ?? []) {
     if (p.media_url) add(String(p.media_url), `Offer “${String(p.title)}”`);
     if (p.poster_url) add(String(p.poster_url), `Offer “${String(p.title)}” (cover)`);
+    if (p.wide_media_url) add(String(p.wide_media_url), `Offer “${String(p.title)}” (wide video)`);
   }
   // The chat guide's character pictures / videos (Admin → Website text → Chat guide).
   const { data: assistant } = await admin.from("site_settings").select("value").eq("key", "assistant").maybeSingle();

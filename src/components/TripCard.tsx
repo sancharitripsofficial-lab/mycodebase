@@ -1,5 +1,7 @@
 import { Calendar, MapPin, Users } from "lucide-react";
 import { LivingPhoto } from "@/components/living/LivingPhoto";
+import { TripCardVideo } from "@/components/TripCardVideo";
+import { classifyVideoLink } from "@/lib/media";
 import type { LiveWeather } from "@/components/living/weather";
 import Link from "next/link";
 import { formatINR } from "@/lib/currency";
@@ -46,6 +48,9 @@ export function TripCard({ item, weather = null }: { item: TripWithDetails; weat
     ? getStatusBadge(upcoming.status, upcoming.seatsRemaining, upcoming.maxCapacity)
     : { label: "Dates coming soon", className: "bg-stone-200 text-stone-600 border-stone-300" };
 
+  // The trip's first uploaded film (Admin → Trips → Photos & videos) plays silently in the card.
+  const cardVideo = trip.videoLinks.find((v) => classifyVideoLink(v.url).kind === "file")?.url ?? null;
+
   const privateAvailable = departures.some(
     (d) => d.seatsTaken === 0 && d.status !== "cancelled" && d.status !== "completed"
   );
@@ -65,6 +70,7 @@ export function TripCard({ item, weather = null }: { item: TripWithDetails; weat
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           className="object-cover transition duration-500 group-hover:scale-[1.03]"
         />
+        {cardVideo && <TripCardVideo src={cardVideo} />}
         <div className="absolute inset-x-3 top-3 flex flex-wrap items-center justify-between gap-2">
           <span
             className={`rounded-full border px-2.5 py-1 text-xs font-semibold sm:backdrop-blur-xs ${badge.className}`}

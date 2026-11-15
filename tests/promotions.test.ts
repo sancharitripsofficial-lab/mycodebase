@@ -49,6 +49,23 @@ describe("offers & ads rules (real migrations)", () => {
     await insert({ media_type: "youtube", media_url: "https://youtu.be/dQw4w9WgXcQ", placements: ["popup", "top_bar"] });
   });
 
+  it("a video offer may carry a wide copy for banners; visitors can read it; nothing else may", async () => {
+    const id = await insert({
+      media_type: "video",
+      media_url: "https://abc.supabase.co/storage/v1/object/public/media/uploads/tall.mp4",
+      wide_media_url: "https://abc.supabase.co/storage/v1/object/public/media/uploads/wide.mp4",
+      is_active: true,
+    });
+    const rows = await asAnon<{ wide_media_url: string }>("SELECT wide_media_url FROM public.promotions WHERE id = $1", [id]);
+    expect(rows[0]?.wide_media_url).toMatch(/wide\.mp4$/);
+    for (const bad of [
+      { media_type: "image", media_url: "/media/dest-coorg.jpg", wide_media_url: "/media/wide.mp4" },
+      { media_type: "video", media_url: "/media/a.mp4", wide_media_url: "javascript:alert(1)" },
+    ]) {
+      await expect(insert(bad)).rejects.toThrow();
+    }
+  });
+
   it("refuses nonsense: bad links, unknown places, wrong dates, half a button, empty title", async () => {
     const bad: Record<string, unknown>[] = [
       { media_type: "image", media_url: "javascript:alert(1)" },

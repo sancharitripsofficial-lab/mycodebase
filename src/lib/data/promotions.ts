@@ -30,6 +30,8 @@ export interface Promotion {
   mediaType: PromoMediaType;
   mediaUrl: string;
   posterUrl: string;
+  /** Optional wide copy of the video for wide places (banners); empty = main video everywhere. */
+  wideMediaUrl?: string;
   ctaLabel: string;
   ctaUrl: string;
   placements: PromoPlacement[];
@@ -60,7 +62,7 @@ interface Actor {
 }
 
 const PUBLIC_COLUMNS =
-  "id, title, message, badge, media_type, media_url, poster_url, cta_label, cta_url, placements, trip_id, theme, starts_at, ends_at, is_active, sort_order";
+  "id, title, message, badge, media_type, media_url, poster_url, wide_media_url, cta_label, cta_url, placements, trip_id, theme, starts_at, ends_at, is_active, sort_order";
 
 function hasDatabase(): boolean {
   return isSupabaseConfigured() && isServiceRoleConfigured();
@@ -75,6 +77,7 @@ function mapPromotion(r: Record<string, unknown>): Promotion {
     mediaType: (r.media_type as PromoMediaType) ?? "none",
     mediaUrl: String(r.media_url ?? ""),
     posterUrl: String(r.poster_url ?? ""),
+    wideMediaUrl: String(r.wide_media_url ?? ""),
     ctaLabel: String(r.cta_label ?? ""),
     ctaUrl: String(r.cta_url ?? ""),
     placements: (Array.isArray(r.placements) ? r.placements : []) as PromoPlacement[],
@@ -134,17 +137,17 @@ export async function getLivePromotions(): Promise<Promotion[]> {
   }
   try {
     const supabase = createSupabasePublicClient();
-    const { data, error } = await supabase
-      .from("promotions")
-      .select(`${PUBLIC_COLUMNS}, trips(slug)`)
-      .order("sort_order", { ascending: true })
-      .limit(40);
+    const list = (columns: string) =>
+      supabase.from("promotions").select(`${columns}, trips(slug)`).order("sort_order", { ascending: true }).limit(40);
+    let { data, error } = await list(PUBLIC_COLUMNS);
+    // Until migration 202611150001 (wide video) is applied, read the offers without that column.
+    if (error && /wide_media_url/.test(error.message)) ({ data, error } = await list(PUBLIC_COLUMNS.replace(" wide_media_url,", "")));
     if (error) {
       console.error("[promotions] live list failed:", error.message);
       return [];
     }
     return (data ?? [])
-      .map((r) => mapPromotion(r as Record<string, unknown>))
+      .map((r) => mapPromotion(r as unknown as Record<string, unknown>))
       .filter((p) => isLiveNow({ ...p, isActive: true }))
       .sort(byOrder);
   } catch (err) {
@@ -198,6 +201,7 @@ export async function listPromotionsAdmin(): Promise<AdminPromotion[]> {
 
 function cleanDbError(message: string | undefined): string {
   if (!message) return "Could not save the offer.";
+  if (/wide_media_url/.test(message)) return "The wide video must be a video file from the media library (or an https:// link).";
   if (/media_url/.test(message)) return "The photo/video link must start with https:// or be a file from the media library.";
   if (/cta_url/.test(message)) return "The button link must start with / (a page on this site) or https://.";
   if (/promotions_button_pair/.test(message)) return "Give the button both a label and a link, or leave both empty.";
@@ -223,6 +227,7 @@ export async function savePromotion(input: PromotionInput, actor: Actor): Promis
     ends_at: input.endsAt,
     is_active: input.isActive,
     sort_order: input.sortOrder,
+    wide_media_url: input.mediaType === "video" ? (input.wideMediaUrl ?? "") : "",
   };
 
   if (!hasDatabase()) {
@@ -239,19 +244,26 @@ export async function savePromotion(input: PromotionInput, actor: Actor): Promis
   }
 
   const admin = createSupabaseAdminClient();
-  const query = input.id
-    ? admin
-        .from("promotions")
-        .update({ ...row, updated_by: actor.userId, updated_at: new Date().toISOString() })
-        .eq("id", input.id)
-        .select("*")
-        .single()
-    : admin
-        .from("promotions")
-        .insert({ ...row, created_by: actor.userId, updated_by: actor.userId })
-        .select("*")
-        .single();
-  const { data, error } = await query;
+  const write = (values: Record<string, unknown>) =>
+    input.id
+      ? admin
+          .from("promotions")
+          .update({ ...values, updated_by: actor.userId, updated_at: new Date().toISOString() })
+          .eq("id", input.id)
+          .select("*")
+          .single()
+      : admin
+          .from("promotions")
+          .insert({ ...values, created_by: actor.userId, updated_by: actor.userId })
+          .select("*")
+          .single();
+  let { data, error } = await write(row);
+  // Before migration 202611150001 (wide video) the column does not exist: save everything else.
+  if (error && /wide_media_url/.test(error.message) && !row.wide_media_url) {
+    const { wide_media_url: _skip, ...rest } = row;
+    void _skip;
+    ({ data, error } = await write(rest));
+  }
   if (error || !data) throw new Error(cleanDbError(error?.message));
   await admin.from("audit_logs").insert({
     actor_user_id: actor.userId,

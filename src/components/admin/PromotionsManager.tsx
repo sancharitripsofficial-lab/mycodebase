@@ -43,6 +43,7 @@ function blank(): Draft {
     mediaType: "image",
     mediaUrl: "",
     posterUrl: "",
+    wideMediaUrl: "",
     ctaLabel: "See dates",
     ctaUrl: "/trips",
     placements: ["home_banner", "popup"],
@@ -129,6 +130,7 @@ export function PromotionsManager({ role, trips, departures = [] }: { role: Staf
       mediaType: p.mediaType,
       mediaUrl: p.mediaType === "none" ? "" : p.mediaUrl,
       posterUrl: p.mediaType === "video" ? p.posterUrl : "",
+      wideMediaUrl: p.mediaType === "video" ? (p.wideMediaUrl ?? "") : "",
       ctaLabel: p.ctaLabel,
       ctaUrl: p.ctaUrl,
       placements: p.placements,
@@ -290,7 +292,7 @@ function Editor({
   busy: boolean;
   onSave: () => Promise<void>;
 }) {
-  const [uploading, setUploading] = useState<"media" | "poster" | null>(null);
+  const [uploading, setUploading] = useState<"media" | "poster" | "wide" | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setDraft({ ...draft, [k]: v });
 
@@ -331,7 +333,11 @@ function Editor({
   };
   const linkChoice = linkOptions.some((o) => o.value === draft.ctaUrl) ? draft.ctaUrl : "custom";
 
-  async function upload(file: File, target: "media" | "poster") {
+  async function upload(file: File, target: "media" | "poster" | "wide") {
+    if (target === "wide" && !file.type.startsWith("video/")) {
+      setUploadError("The wide version must be a video (MP4 or WebM).");
+      return;
+    }
     setUploading(target);
     setUploadError(null);
     try {
@@ -339,6 +345,8 @@ function Editor({
       const { url } = await uploadMedia(file);
       if (target === "media") {
         setDraft({ ...draft, mediaUrl: url, mediaType: file.type.startsWith("video/") ? "video" : "image" });
+      } else if (target === "wide") {
+        setDraft({ ...draft, wideMediaUrl: url });
       } else {
         setDraft({ ...draft, posterUrl: url });
       }
@@ -434,6 +442,31 @@ function Editor({
                     onChange={(e) => {
                       const f = e.target.files?.[0];
                       if (f) void upload(f, "poster");
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+              </div>
+            )}
+            {draft.mediaType === "video" && (
+              <div className="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end">
+                <TextInput
+                  label="Wide version of the video (optional)"
+                  description="Upload a landscape copy of the same film: banners, tablets and computers play it, the phone pop-up keeps the tall one. Leave empty to use the main video everywhere."
+                  value={draft.wideMediaUrl ?? ""}
+                  onChange={(v) => set("wideMediaUrl", v.trim())}
+                />
+                <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-forest-900 hover:bg-lagoon-100">
+                  <Upload className="h-4 w-4" aria-hidden="true" />
+                  {uploading === "wide" ? "Uploading…" : "Upload wide video"}
+                  <input
+                    type="file"
+                    accept="video/mp4,video/webm"
+                    className="sr-only"
+                    disabled={uploading !== null}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) void upload(f, "wide");
                       e.target.value = "";
                     }}
                   />

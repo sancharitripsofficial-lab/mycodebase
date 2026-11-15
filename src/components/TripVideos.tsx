@@ -1,4 +1,5 @@
 import { Instagram, PlayCircle } from "lucide-react";
+import { BlogVideo } from "@/components/blog/BlogVideo";
 import { classifyVideoLink } from "@/lib/media";
 import type { VideoLink } from "@/lib/types";
 
@@ -18,6 +19,10 @@ export function TripVideos({ videos, title }: { videos: VideoLink[]; title: stri
         <div className="grid gap-4 sm:grid-cols-2">
           {players.map((v, i) => (
             <figure key={`${v.url}-${i}`} className="card-soft overflow-hidden">
+              {v.kind.kind === "file" ? (
+                // Uploaded films play by themselves, silent, on a loop while on screen.
+                <BlogVideo src={v.url} title={`${title}: ${v.label}`} className="rounded-none shadow-none" />
+              ) : (
               <div className="relative aspect-video bg-gradient-to-br from-[#14523f] to-[#0d6b73]">
                 {v.kind.kind === "youtube" ? (
                   <iframe
@@ -29,10 +34,9 @@ export function TripVideos({ videos, title }: { videos: VideoLink[]; title: stri
                     referrerPolicy="strict-origin-when-cross-origin"
                     className="absolute inset-0 h-full w-full"
                   />
-                ) : (
-                  <video src={v.url} controls preload="metadata" playsInline className="absolute inset-0 h-full w-full object-contain" />
-                )}
+                ) : null}
               </div>
+              )}
               <figcaption className="px-4 py-2.5 text-sm font-medium text-ink-900">{v.label}</figcaption>
             </figure>
           ))}
