@@ -2,6 +2,16 @@ import { z } from "zod";
 
 import { AGE_RANGES } from "@/lib/age";
 
+
+/**
+ * A date-time sent by the admin forms: accepts "…Z" and "…+00:00" (what the database returns when an
+ * existing offer or coupon is edited) and always passes on the UTC "…Z" form.
+ */
+const isoDateTime = z
+  .string()
+  .datetime({ offset: true, message: "Pick a valid date and time" })
+  .transform((v) => new Date(v).toISOString());
+
 export { AGE_RANGES };
 
 export const travelerInputSchema = z.object({
@@ -314,8 +324,8 @@ export const promotionSchema = z
       .transform((a) => Array.from(new Set(a))),
     tripId: z.string().uuid().nullable(),
     theme: z.enum(["sunset", "ocean", "teal"]),
-    startsAt: z.string().datetime().nullable(),
-    endsAt: z.string().datetime().nullable(),
+    startsAt: isoDateTime.nullable(),
+    endsAt: isoDateTime.nullable(),
     isActive: z.boolean(),
     sortOrder: z.number().int().min(-1000).max(1000),
   })
@@ -411,8 +421,8 @@ export const creatorAdminActionSchema = z.discriminatedUnion("action", [
       minOrderPaise: z.number().int().min(0),
       maxRedemptions: z.number().int().positive().nullable(),
       perCustomerLimit: z.number().int().min(1).max(10),
-      validFrom: z.string().datetime().nullable(),
-      validUntil: z.string().datetime().nullable(),
+      validFrom: isoDateTime.nullable(),
+      validUntil: isoDateTime.nullable(),
       tripId: z.string().uuid().nullable(),
       isActive: z.boolean(),
       note: z.string().trim().max(300),

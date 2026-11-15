@@ -84,7 +84,7 @@ export default async function BlogPage() {
                       href={`/blog/${p.id}`}
                       className="group card-theme theme-brand block h-full overflow-hidden rounded-3xl shadow-[var(--shadow-soft)] transition duration-300 hover:-translate-y-1 hover:shadow-[var(--shadow-lift)]"
                     >
-                      <BlogCardImage posterUrl={p.posterUrl} hasVideo={Boolean(p.videoUrl)} title={p.title} />
+                      <BlogCardImage posterUrl={p.posterUrl} hasVideo={Boolean(p.videoUrl)} videoUrl={p.videoUrl} title={p.title} />
                       <div className="space-y-1.5 p-4">
                         <p className="text-xs font-semibold text-stone-600">
                           {postDate(p.publishedOn)}

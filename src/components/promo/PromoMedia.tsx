@@ -18,7 +18,7 @@ function youtubeId(url: string): string | null {
  * tall popup), the whole picture is shown ("contain") over a soft blurred copy of itself,
  * instead of cutting off heads, text or the product. Close shapes simply fill the box.
  */
-function useSmartFit(dims: { w: number; h: number } | null) {
+function useSmartFit(dims: { w: number; h: number } | null, tolerance = 1.28) {
   const boxRef = useRef<HTMLDivElement | null>(null);
   const [fit, setFit] = useState<"cover" | "contain">("cover");
   useEffect(() => {
@@ -29,13 +29,13 @@ function useSmartFit(dims: { w: number; h: number } | null) {
       if (!r.width || !r.height) return;
       const media = dims.w / dims.h;
       const frame = r.width / r.height;
-      setFit(Math.max(media / frame, frame / media) > 1.28 ? "contain" : "cover");
+      setFit(Math.max(media / frame, frame / media) > tolerance ? "contain" : "cover");
     };
     decide();
     const ro = new ResizeObserver(decide);
     ro.observe(box);
     return () => ro.disconnect();
-  }, [dims]);
+  }, [dims, tolerance]);
   return { boxRef, fit };
 }
 
@@ -64,7 +64,9 @@ export function PromoMedia({ promo, sizes, priority = false }: { promo: Promotio
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [ytOpen, setYtOpen] = useState(false);
   const [dims, setDims] = useState<{ w: number; h: number } | null>(null);
-  const { boxRef, fit } = useSmartFit(dims);
+  // Pictures are usually posters with words and a logo near the edges: never crop them (any
+  // difference in shape shows the whole picture over its blurred copy). Videos may fill the box.
+  const { boxRef, fit } = useSmartFit(dims, promo.mediaType === "image" ? 1.01 : 1.28);
   const objectFit = fit === "contain" ? "object-contain" : "object-cover";
 
   // The clip is fetched only when it comes near the screen (not with the page), then plays while

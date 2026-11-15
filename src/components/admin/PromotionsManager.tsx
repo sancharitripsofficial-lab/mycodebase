@@ -22,7 +22,7 @@ const PLACEMENTS: { key: PromoPlacement; label: string; hint: string }[] = [
   { key: "top_bar", label: "Top bar on every page", hint: "Thin rotating line above the menu" },
   { key: "trips_banner", label: "All trips page", hint: "Banner above the trip list" },
   { key: "trip_page", label: "Trip pages", hint: "On every trip page, or one trip you pick" },
-  { key: "popup", label: "Pop-up", hint: "Once per visitor, after a few seconds" },
+  { key: "popup", label: "Pop-up", hint: "Slides up from the bottom on phones (centre on computers), once per visitor, after 8 seconds" },
 ];
 
 const STATUS = {
@@ -45,7 +45,7 @@ function blank(): Draft {
     posterUrl: "",
     ctaLabel: "See dates",
     ctaUrl: "/trips",
-    placements: ["home_banner"],
+    placements: ["home_banner", "popup"],
     tripId: null,
     theme: "sunset",
     startsAt: null,
@@ -151,6 +151,29 @@ export function PromotionsManager({ role, trips, departures = [] }: { role: Staf
         actions={canEdit ? <Button variant="primary" label="New offer" icon={<Plus className="h-4 w-4" />} onClick={() => setDraft(blank())} /> : undefined}
       >
         {notice && <Notice kind={notice.kind}>{notice.text}</Notice>}
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-stone-200 bg-[#f7fbf9] px-3 py-2 text-xs text-stone-600">
+          <span>Each visitor sees each pop-up once. Already seen it on this phone or computer?</span>
+          <button
+            type="button"
+            onClick={() => {
+              let n = 0;
+              try {
+                for (const k of Object.keys(localStorage)) {
+                  if (k.startsWith("promo-popup:")) {
+                    localStorage.removeItem(k);
+                    n++;
+                  }
+                }
+              } catch {
+                /* storage blocked */
+              }
+              setNotice({ kind: "ok", text: n ? "Done: open the website on this device and the pop-up shows again after 8 seconds." : "This device has not hidden any pop-up yet: open the website and wait 8 seconds." });
+            }}
+            className="min-h-9 rounded-full border border-forest-800 px-3 font-semibold text-forest-900 hover:bg-lagoon-100"
+          >
+            Show pop-ups again on this device
+          </button>
+        </div>
         {rows === null ? (
           <p className="text-sm text-stone-600">Loading…</p>
         ) : rows.length === 0 ? (
@@ -458,6 +481,11 @@ function Editor({
               );
             })}
           </div>
+          {!draft.placements.includes("popup") && (
+            <p role="status" className="rounded-xl bg-[#fff4e0] px-3 py-2 text-xs font-semibold text-[#8a4b00]">
+              “Pop-up” is not ticked: this offer will not slide up on phones. Tick it to show the offer to visitors after a few seconds.
+            </p>
+          )}
           {draft.placements.includes("trip_page") && (
             <p className="text-xs text-stone-600">
               Trip pages: {offerTrip ? `only ${offerTrip.title}` : "every trip page"} (set by “Which trip is this offer for?” above).

@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { isSafeMediaLink } from "@/lib/blog";
 import { isOptimizableImage } from "@/lib/media";
+import { BlogCardVideo } from "./BlogCardVideo";
 import { BlogVideo } from "./BlogVideo";
 
 /**
@@ -47,8 +48,9 @@ export function BlogCover({
 }
 
 /** Small card picture for the story list: the cover photo at card size; a play badge on videos. */
-export function BlogCardImage({ posterUrl, hasVideo, title }: { posterUrl: string; hasVideo: boolean; title: string }) {
+export function BlogCardImage({ posterUrl, hasVideo, videoUrl = "", title }: { posterUrl: string; hasVideo: boolean; videoUrl?: string; title: string }) {
   const safe = posterUrl && isSafeMediaLink(posterUrl) ? posterUrl : "";
+  const video = hasVideo && videoUrl && isSafeMediaLink(videoUrl) && /\.(mp4|webm)(\?|#|$)/i.test(videoUrl) ? videoUrl : "";
   return (
     <div className="relative aspect-[16/10] w-full overflow-hidden bg-gradient-to-br from-forest-900 to-[#0b4f5a]">
       {safe &&
@@ -64,6 +66,8 @@ export function BlogCardImage({ posterUrl, hasVideo, title }: { posterUrl: strin
           // eslint-disable-next-line @next/next/no-img-element
           <img src={safe} alt={title} loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105" />
         ))}
+      {/* Video stories play a silent looping preview while the card is on screen. */}
+      {video && <BlogCardVideo src={video} poster={safe} />}
       <span aria-hidden="true" className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/45 via-black/5 to-transparent" />
       <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold tracking-wide text-forest-900 uppercase shadow">
         {hasVideo ? "▶ Video story" : "Photo story"}
