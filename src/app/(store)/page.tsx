@@ -215,17 +215,16 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Live numbers: four colour tiles, all from live data */}
-      <section className="relative z-10 mx-auto -mt-10 max-w-5xl px-4 sm:px-6">
-        <div className="card-soft grid grid-cols-2 gap-2.5 p-2.5 sm:grid-cols-4 sm:gap-3 sm:p-3">
+      {/* Live numbers: three colour tiles, all from live data (owner removed the UPI fees tile, 15 Nov) */}
+      <section className="relative z-10 mx-auto -mt-10 max-w-4xl px-4 sm:px-6">
+        <div className="card-soft grid grid-cols-3 gap-2 p-2.5 sm:gap-3 sm:p-3">
           {[
             { value: settings.bookingPolicy.maxGroupSize, label: "seats max per car", tile: "tile-sunset" },
             { value: trips.length, label: "Karnataka routes", tile: "tile-lagoon" },
             { value: openSeats, label: "seats open now", tile: "tile-leaf", live: true },
-            { value: 0, label: "fees on UPI payments", tile: "tile-amber", zero: true },
           ].map((stat) => (
             <div key={stat.label} className={`tile ${stat.tile} text-center`}>
-              <p className="tile-num font-display text-3xl font-semibold sm:text-4xl">{stat.zero ? "₹0" : <CountUp value={stat.value} />}</p>
+              <p className="tile-num font-display text-3xl font-semibold sm:text-4xl"><CountUp value={stat.value} /></p>
               <p className="mt-1 flex items-center justify-center gap-1.5 text-xs font-semibold text-ink-900/75">
                 {stat.live && (
                   <span className="relative flex h-2 w-2" aria-hidden="true">
