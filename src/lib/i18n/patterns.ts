@@ -91,6 +91,11 @@ const RULES: Rule[] = [
   [/^Live route map: (.+)$/, (m, t) => `ಲೈವ್ ಮಾರ್ಗ ನಕ್ಷೆ: ${m[1].split(" to ").map((p) => tr(t, p)).join(" → ")}`],
   [/^(.+) → (.+)$/, (m, t) => (t(m[1]) || t(m[2]) ? `${tr(t, m[1])} → ${tr(t, m[2])}` : "")],
   [/^Ask us about (.+)$/, (m, t) => `${tr(t, m[1])} ಬಗ್ಗೆ ನಮ್ಮನ್ನು ಕೇಳಿ`],
+  // Trips page search (place names stay as typed unless the dictionary has them)
+  [/^Trips that go to (.+) \(([^()]+)\)$/, (m, t) => `${tr(t, m[1])} (${tr(t, m[2])}) ಗೆ ಹೋಗುವ ಪ್ರವಾಸಗಳು`],
+  [/^No trip to (.+) yet$/, (m, t) => `${tr(t, m[1])} ಗೆ ಇನ್ನೂ ಪ್ರವಾಸ ಇಲ್ಲ`],
+  [/^Ask us to plan (.+)$/, (m, t) => `${tr(t, m[1])} ಪ್ರವಾಸ ಯೋಜಿಸಲು ನಮ್ಮನ್ನು ಕೇಳಿ`],
+  [/^(\d+) suggestions?$/, (m) => `${m[1]} ಸಲಹೆ${m[1] === "1" ? "" : "ಗಳು"}`],
   [/^Next: (.+)$/, (m) => `ಮುಂದಿನದು: ${dateIn(m[1])}`],
   [/^Book (.+)$/, (m) => (translateDate(m[1]) ? `ಬುಕ್ ಮಾಡಿ: ${dateIn(m[1])}` : "")],
   // Chat guide

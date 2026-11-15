@@ -1,7 +1,8 @@
 "use client";
 
 import { CalendarHeart, CheckCircle2, MessageCircleQuestion, Route, Users } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { cleanPlaceText, PLAN_PLACE_EVENT, planMessageFor } from "@/lib/places/plan-prefill";
 
 type Kind = "private_date" | "group" | "custom_trip" | "general";
 
@@ -38,6 +39,26 @@ export function EnquiryForm({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
+  const lastPrefill = useRef("");
+
+  // "Ask us to plan <place>" from the trips search (same page) or a ?place= link (e.g. /?place=Hampi#plan):
+  // switch to Custom trip and start the message with the place. Never overwrites what the visitor typed.
+  useEffect(() => {
+    if (tripId) return;
+    const apply = (raw: unknown) => {
+      const place = cleanPlaceText(raw);
+      if (!place) return;
+      const line = planMessageFor(place);
+      const previous = lastPrefill.current;
+      lastPrefill.current = line;
+      setKind("custom_trip");
+      setMessage((m) => (!m.trim() || m === previous ? line : m));
+    };
+    apply(new URLSearchParams(window.location.search).get("place"));
+    const onPlace = (e: Event) => apply((e as CustomEvent<{ place?: unknown }>).detail?.place);
+    window.addEventListener(PLAN_PLACE_EVENT, onPlace);
+    return () => window.removeEventListener(PLAN_PLACE_EVENT, onPlace);
+  }, [tripId]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();

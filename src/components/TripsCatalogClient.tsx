@@ -1,14 +1,16 @@
 "use client";
 
-import { Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { TripCard } from "@/components/TripCard";
+import { NoTripForPlace, PlaceFilterBanner, TripSearch, type TripSearchFilter } from "@/components/TripSearch";
 import type { HomeCategory } from "@/lib/home-content";
 import type { TripWithDetails } from "@/lib/types";
 import { isBookable } from "@/lib/departure-rules";
 
 export function TripsCatalogClient({ trips, categories = [] }: { trips: TripWithDetails[]; categories?: HomeCategory[] }) {
-  const [query, setQuery] = useState("");
+  // Smart search (places + free text). Changing the key clears the box.
+  const [search, setSearch] = useState<TripSearchFilter>({ kind: "none" });
+  const [searchKey, setSearchKey] = useState(0);
   const [category, setCategory] = useState("all");
   const [region, setRegion] = useState("all");
   const [difficulty, setDifficulty] = useState("all");
@@ -36,8 +38,14 @@ export function TripsCatalogClient({ trips, categories = [] }: { trips: TripWith
     [trips]
   );
 
+  const clearSearch = () => {
+    setSearchKey((k) => k + 1);
+    setSearch({ kind: "none" });
+  };
+
+  const searchIds = useMemo(() => (search.kind === "none" ? null : new Set(search.tripIds)), [search]);
+
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
     const cat = liveCategories.find((c) => c.id === category);
     return trips.filter((item) => {
       if (cat && !cat.tripSlugs.includes(item.trip.slug)) return false;
@@ -55,13 +63,11 @@ export function TripsCatalogClient({ trips, categories = [] }: { trips: TripWith
       ) {
         return false;
       }
-      if (q) {
-        const hay = `${item.trip.title} ${item.trip.destination} ${item.trip.vibe} ${item.trip.region}`.toLowerCase();
-        if (!hay.includes(q)) return false;
-      }
+      // Search: trips that go to the chosen place, or whose text (itinerary too) matches.
+      if (searchIds && !searchIds.has(item.trip.id)) return false;
       return true;
     });
-  }, [trips, query, region, difficulty, onlyPrivateEligible, onlyWomenBatch, category, liveCategories]);
+  }, [trips, searchIds, region, difficulty, onlyPrivateEligible, onlyWomenBatch, category, liveCategories]);
 
   return (
     <div id="all-trips" className="scroll-mt-24 space-y-6">
@@ -98,27 +104,14 @@ export function TripsCatalogClient({ trips, categories = [] }: { trips: TripWith
       )}
       <div className="sec-route rounded-2xl border border-stone-200 p-4 shadow-[var(--shadow-soft)] sm:p-5">
         <div className="grid gap-3 md:grid-cols-4">
-          <label className="relative md:col-span-2">
-            <span className="sr-only">Search destination or vibe</span>
-            <Search
-              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-600"
-              aria-hidden="true"
-            />
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search Chikmagalur, Coorg, Gokarna, Hampi..."
-              className="w-full rounded-lg border border-stone-300 bg-white py-2.5 pl-9 pr-3 text-sm text-ink-900"
-            />
-          </label>
+          <TripSearch key={searchKey} trips={trips} onFilterChange={setSearch} className="md:col-span-2" />
 
           <label className="block">
             <span className="sr-only">Filter by region</span>
             <select
               value={region}
               onChange={(e) => setRegion(e.target.value)}
-              className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-sm text-ink-900"
+              className="h-12 w-full rounded-xl border border-stone-300 bg-white px-3 text-sm text-ink-900"
             >
               {regions.map((r) => (
                 <option key={r} value={r}>
@@ -133,7 +126,7 @@ export function TripsCatalogClient({ trips, categories = [] }: { trips: TripWith
             <select
               value={difficulty}
               onChange={(e) => setDifficulty(e.target.value)}
-              className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-sm text-ink-900"
+              className="h-12 w-full rounded-xl border border-stone-300 bg-white px-3 text-sm text-ink-900"
             >
               <option value="all">Any Pace / Difficulty</option>
               <option value="Easy">Easy</option>
@@ -166,7 +159,13 @@ export function TripsCatalogClient({ trips, categories = [] }: { trips: TripWith
         </div>
       </div>
 
-      {filtered.length === 0 ? (
+      {search.kind === "place" && search.tripIds.length > 0 && (
+        <PlaceFilterBanner place={search.place} onClear={clearSearch} />
+      )}
+
+      {search.kind === "place" && search.tripIds.length === 0 ? (
+        <NoTripForPlace place={search.place} onClear={clearSearch} planHref="#ask" />
+      ) : filtered.length === 0 ? (
         <div className="sec-kolam rounded-2xl border border-dashed border-stone-300 p-10 text-center">
           <p className="font-display text-lg font-semibold text-forest-900">
             No matching departures found
@@ -177,7 +176,7 @@ export function TripsCatalogClient({ trips, categories = [] }: { trips: TripWith
           <button
             type="button"
             onClick={() => {
-              setQuery("");
+              clearSearch();
               setCategory("all");
               setRegion("all");
               setDifficulty("all");
