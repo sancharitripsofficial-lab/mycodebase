@@ -52,6 +52,8 @@ export class DomTranslator {
     this.translateTitle();
     this.observer = new MutationObserver((records) => {
       for (const r of records) {
+        // <head>: only the page title matters, and flush() always re-checks it.
+        if (!this.root.contains(r.target)) continue;
         if (r.type === "characterData") this.pending.add(r.target);
         else if (r.type === "attributes") this.pending.add(r.target);
         else r.addedNodes.forEach((n) => this.pending.add(n));
@@ -65,8 +67,9 @@ export class DomTranslator {
       attributes: true,
       attributeFilter: [...ATTRS],
     });
-    const title = document.querySelector("title");
-    if (title) this.observer.observe(title, { childList: true, characterData: true, subtree: true });
+    // The whole <head>, not just today's <title>: on a new page React can put in a new <title>
+    // element, and streamed metadata can arrive after the page itself.
+    this.observer.observe(document.head, { childList: true, characterData: true, subtree: true });
   }
 
   /** Stop and put every English text back. */

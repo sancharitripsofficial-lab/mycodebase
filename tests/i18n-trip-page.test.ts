@@ -16,6 +16,7 @@ describe("Kannada on a trip page: the words that were still English", () => {
     "night",
     "(exact time shared before the trip)",
     "(confirmed)",
+    "(draft)",
     "Taxes / GST",
     "No-refund",
     "row",
