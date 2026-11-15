@@ -83,15 +83,38 @@ export function PromoMedia({
   const { boxRef, fit } = useSmartFit(dims, promo.mediaType === "image" ? 1.01 : 1.28);
   const objectFit = !cover && fit === "contain" ? "object-contain" : "object-cover";
   const [soundOn, setSoundOn] = useState(false);
+  const soundRef = useRef(false);
+  // Autoplay refused (iPad / iPhone Low Power Mode, data saver): show a play button and start on the
+  // visitor's first tap anywhere instead of leaving a frozen picture.
+  const [blocked, setBlocked] = useState(false);
 
   // The clip is fetched only when it comes near the screen (not with the page), then plays while
-  // at least a quarter of it is visible.
+  // at least a quarter of it is visible, and picks up again when the visitor returns to the tab.
   const [near, setNear] = useState(false);
   const onScreen = useRef(false);
   const reduceMotion = useRef(false);
+  const tryPlay = (v: HTMLVideoElement | null) => {
+    if (!v || reduceMotion.current || !onScreen.current || document.visibilityState !== "visible") return;
+    if (!v.currentSrc && !v.getAttribute("src")) return; // not loaded yet: canplay will start it
+    if (!soundRef.current) {
+      v.muted = true;
+      v.defaultMuted = true;
+    }
+    void v.play().then(
+      () => setBlocked(false),
+      (err: unknown) => {
+        if ((err as { name?: string } | null)?.name === "NotAllowedError") setBlocked(true);
+      }
+    );
+  };
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
+    // React does not write the "muted" attribute into the page; Safari needs it for autoplay.
+    v.muted = true;
+    v.defaultMuted = true;
+    v.setAttribute("muted", "");
+    v.setAttribute("playsinline", "");
     reduceMotion.current = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const nearIo = new IntersectionObserver(
       ([e]) => {
@@ -107,17 +130,37 @@ export function PromoMedia({
       ([e]) => {
         onScreen.current = Boolean(e?.isIntersecting && e.intersectionRatio >= 0.25);
         if (reduceMotion.current) return;
-        if (onScreen.current) void v.play().catch(() => undefined);
+        if (onScreen.current) tryPlay(v);
         else v.pause();
       },
       { threshold: [0, 0.25] }
     );
     io.observe(v);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") tryPlay(v);
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("pageshow", onVisible);
     return () => {
       nearIo.disconnect();
       io.disconnect();
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("pageshow", onVisible);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [promo.mediaUrl]);
+  // Autoplay was refused: the first tap / key press anywhere on the page starts the film.
+  useEffect(() => {
+    if (!blocked) return;
+    const start = () => tryPlay(videoRef.current);
+    document.addEventListener("pointerdown", start, { once: true, passive: true });
+    document.addEventListener("keydown", start, { once: true });
+    return () => {
+      document.removeEventListener("pointerdown", start);
+      document.removeEventListener("keydown", start);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [blocked]);
   // Wide places (banners, tablets, computers) play the offer's wide copy of its film when it has
   // one, so a tall phone video is not shrunk to a strip; the phone pop-up keeps the tall one.
   const [boxWide, setBoxWide] = useState(false);
@@ -127,7 +170,9 @@ export function PromoMedia({
     if (!box || !wideUrl) return;
     const decide = () => {
       const r = box.getBoundingClientRect();
-      if (r.width && r.height) setBoxWide(r.width / r.height > 1.15);
+      // Square-ish boxes (tablets, where the banner splits into two columns) take the wide film:
+      // the two shapes meet at 1:1.
+      if (r.width && r.height) setBoxWide(r.width / r.height >= 1);
     };
     decide();
     const ro = new ResizeObserver(decide);
@@ -172,8 +217,12 @@ export function PromoMedia({
   }
 
   if (promo.mediaType === "video" && promo.mediaUrl) {
+    // An offer with both a tall and a wide film always fills its box with the closer shape (never a
+    // thin strip with bars); a single film keeps the smart fit.
+    const fill = cover || Boolean(wideUrl);
+    const videoFit = fill ? "object-cover" : objectFit;
     const backdrop =
-      !cover && fit === "contain" ? (
+      !fill && fit === "contain" ? (
         promo.posterUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -195,14 +244,24 @@ export function PromoMedia({
           muted
           loop
           playsInline
-          preload={near ? "metadata" : "none"}
+          preload={near ? "auto" : "none"}
           aria-hidden="true"
           onLoadedMetadata={(e) => setDims({ w: e.currentTarget.videoWidth, h: e.currentTarget.videoHeight })}
-          onCanPlay={(e) => {
-            if (onScreen.current && !reduceMotion.current) void e.currentTarget.play().catch(() => undefined);
-          }}
-          className={`absolute inset-0 h-full w-full ${objectFit}`}
+          onCanPlay={(e) => tryPlay(e.currentTarget)}
+          className={`absolute inset-0 h-full w-full ${videoFit}`}
         />
+        {blocked && (
+          <button
+            type="button"
+            onClick={() => tryPlay(videoRef.current)}
+            aria-label={`Play video: ${promo.title}`}
+            className="group absolute inset-0 z-[5] flex items-center justify-center"
+          >
+            <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white/95 text-copper-600 shadow-lg transition group-hover:scale-105">
+              <Play className="ml-0.5 h-6 w-6 fill-current" aria-hidden="true" />
+            </span>
+          </button>
+        )}
         {sound && hasAudio === true && (
           <button
             type="button"
@@ -210,6 +269,7 @@ export function PromoMedia({
               const v = videoRef.current;
               const next = !soundOn;
               setSoundOn(next);
+              soundRef.current = next;
               if (v) {
                 v.muted = !next;
                 if (next) v.volume = 1;

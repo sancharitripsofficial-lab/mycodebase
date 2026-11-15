@@ -75,14 +75,20 @@ export function PromoBanner({ promotions, className = "", preview = false }: { p
 
   const go = useCallback((d: number) => setIndex((i) => (i + d + count) % count), [count]);
 
+  // Pictures stay 6 s; a film stays 16 s so it can load and play through once (on slow Wi-Fi it
+  // used to be swapped away before it ever started, which looked like a frozen picture).
+  const dwell = current && (current.mediaType === "video" || current.mediaType === "youtube") ? 16000 : 6000;
   useEffect(() => {
     if (count < 2 || paused) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const t = window.setInterval(() => {
+    let t = 0;
+    const next = () => {
       if (document.visibilityState === "visible") go(1);
-    }, 6000);
-    return () => window.clearInterval(t);
-  }, [count, paused, go]);
+      else t = window.setTimeout(next, dwell);
+    };
+    t = window.setTimeout(next, dwell);
+    return () => window.clearTimeout(t);
+  }, [count, paused, go, index, dwell]);
 
   if (!current) return null;
 
