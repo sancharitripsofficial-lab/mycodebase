@@ -3,33 +3,39 @@ import { PageBanner3D } from "@/components/banners/PageBanner3D";
 import { getSiteSettings } from "@/lib/data/repository";
 
 export const metadata: Metadata = {
-  title: "Policies & Legal Drafts",
+  title: "Terms, Privacy & Refund Policy",
   description:
-    "Owner-review draft Terms, Privacy Notice, and Cancellation/Refund policy for Sanchari • Micro Trips.",
+    "Booking terms, privacy notice and cancellation & refund policy for Sanchari Micro Trips weekend trips from Bengaluru.",
   alternates: { canonical: "/policies" },
 };
 
 export default async function PoliciesPage() {
   const { settings } = await getSiteSettings();
+  // "Draft" labels only while the owner keeps Admin → Text & policies → "Still waiting for owner /
+  // lawyer review" switched on.
+  const draft = settings.legalDrafts.ownerReviewRequired;
+  const d = draft ? " (Draft)" : "";
 
   return (
     <>
       <PageBanner3D
         scene="policies"
         width="4xl"
-        eyebrow="Owner-Review Drafts"
-        title="Terms, Privacy & Refund Policy (Drafts)"
+        eyebrow={draft ? "Owner-Review Drafts" : "Clear rules, no surprises"}
+        title={draft ? "Terms, Privacy & Refund Policy (Drafts)" : "Terms, Privacy & Refund Policy"}
       />
       <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 sm:py-12 space-y-8">
-        <div className="rounded-xl border border-saffron-500/40 bg-saffron-500/10 p-4 text-xs text-ink-900">
-          <strong>Owner-Review Draft Notice:</strong> These policy documents are pre-launch drafts
-          and must be reviewed by the business owner and legal counsel prior to live commercial
-          launch or payment gateway onboarding.
-        </div>
+        {draft && (
+          <div className="rounded-xl border border-saffron-500/40 bg-saffron-500/10 p-4 text-xs text-ink-900">
+            <strong>Owner-Review Draft Notice:</strong> These policy documents are pre-launch drafts
+            and must be reviewed by the business owner and legal counsel prior to live commercial
+            launch or payment gateway onboarding.
+          </div>
+        )}
 
         <section id="terms" className="tile tile-lagoon p-6 space-y-2">
           <h2 className="font-display text-xl font-semibold text-forest-900">
-            1. Terms of Service (Draft)
+            1. Terms of Service{d}
           </h2>
           <p className="text-sm leading-relaxed text-stone-600">
             {settings.legalDrafts.termsSummary}
@@ -41,7 +47,7 @@ export default async function PoliciesPage() {
 
         <section id="privacy" className="tile tile-leaf p-6 space-y-2">
           <h2 className="font-display text-xl font-semibold text-forest-900">
-            2. Privacy Notice (Draft)
+            2. Privacy Notice{d}
           </h2>
           <p className="text-sm leading-relaxed text-stone-600">
             {settings.legalDrafts.privacySummary}
@@ -50,7 +56,7 @@ export default async function PoliciesPage() {
 
         <section id="refunds" className="tile tile-sunset p-6 space-y-3">
           <h2 className="font-display text-xl font-semibold text-forest-900">
-            3. Cancellation &amp; Refund Policy (Draft)
+            3. Cancellation &amp; Refund Policy{d}
           </h2>
           <p className="text-sm leading-relaxed text-stone-600">
             {settings.legalDrafts.refundSummary}

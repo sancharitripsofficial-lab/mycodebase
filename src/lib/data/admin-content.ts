@@ -1,5 +1,5 @@
 import { getDemoState, liveDepartureStatus } from "@/lib/data/demo-store";
-import { getSiteSettings } from "@/lib/data/repository";
+import { getRawSiteSettings } from "@/lib/data/repository";
 import { isServiceRoleConfigured, isSupabaseConfigured } from "@/lib/env";
 import { slugify, type ContentAction } from "@/lib/admin/content-schemas";
 import { paymentErrorMessage } from "@/lib/payments/upi";
@@ -99,7 +99,7 @@ function mapTrip(row: Record<string, unknown>): Trip {
 }
 
 export async function getAdminContent(): Promise<AdminContentSnapshot> {
-  const { settings } = await getSiteSettings();
+  const { settings } = await getRawSiteSettings();
 
   if (!canEdit()) {
     const state = getDemoState();

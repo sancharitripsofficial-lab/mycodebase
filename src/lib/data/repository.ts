@@ -30,6 +30,7 @@ import { createSupabaseAdminClient, createSupabasePublicClient } from "@/lib/sup
 import { assertWomenOnlyConfirmed, preferenceForDeparture } from "@/lib/women-only";
 import { withoutStartedDepartures } from "@/lib/departure-rules";
 import { mergeBlogPosts } from "@/lib/blog";
+import { cleanSettingsForVisitors, cleanTripForVisitors } from "@/lib/display-text";
 import type {
   BookingMode,
   AdminBookingRow,
@@ -73,7 +74,14 @@ function cleanTranslations(value: unknown): Record<string, string> {
   return out;
 }
 
+/** Site settings for visitors (pages, chat guide, booking): first-draft tags removed. */
 export async function getSiteSettings(): Promise<{ settings: SiteSettings; isDemoFallback: boolean }> {
+  const raw = await getRawSiteSettings();
+  return { ...raw, settings: cleanSettingsForVisitors(raw.settings) };
+}
+
+/** Site settings exactly as saved (the admin editor uses this, so saving never changes text silently). */
+export async function getRawSiteSettings(): Promise<{ settings: SiteSettings; isDemoFallback: boolean }> {
   if (!isSupabaseConfigured()) {
     return { settings: getDemoState().settings, isDemoFallback: true };
   }
@@ -117,7 +125,9 @@ export async function getPublishedTripsWithDetails(opts: { includeStarted?: bool
   trips: TripWithDetails[];
   isDemoFallback: boolean;
 }> {
-  const res = await loadPublishedTripsWithDetails();
+  const loaded = await loadPublishedTripsWithDetails();
+  // Visitors (pages, cards, chat guide) never see draft tags like "Sample:" or owner-only notes.
+  const res = { ...loaded, trips: loaded.trips.map(cleanTripForVisitors) };
   return opts.includeStarted ? res : { ...res, trips: withoutStartedDepartures(res.trips) };
 }
 

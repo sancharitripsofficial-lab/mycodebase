@@ -1172,7 +1172,8 @@ export function BookingWidget({
               >
                 {pickupPoints.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.name} — {p.pickupTimeLabel} ({p.isConfirmed ? "Confirmed" : "Draft"})
+                    {p.name} — {p.pickupTimeLabel}
+                    {p.isConfirmed ? " (confirmed)" : " (exact time shared before the trip)"}
                   </option>
                 ))}
               </select>
@@ -1508,7 +1509,7 @@ export function BookingWidget({
                 </div>
               )}
               <div className="flex justify-between text-xs text-stone-600">
-                <span>Taxes / GST ({bookingPolicy.gstIncludedOrNote})</span>
+                <span>Taxes / GST{bookingPolicy.gstIncludedOrNote ? ` (${bookingPolicy.gstIncludedOrNote})` : ""}</span>
                 <span>{formatINR(pricing.taxPaise)}</span>
               </div>
 
