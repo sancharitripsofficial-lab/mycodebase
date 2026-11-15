@@ -1,5 +1,7 @@
 import { mergeAssistantSettings } from "@/lib/assistant/settings";
 import { mergeHomeContent } from "@/lib/home-content";
+import { mergeSiteMedia, type SiteMedia } from "@/lib/site-media";
+import { cache } from "react";
 import crypto from "node:crypto";
 import { calculateBookingPricing } from "@/lib/currency";
 import {
@@ -110,12 +112,16 @@ export async function getRawSiteSettings(): Promise<{ settings: SiteSettings; is
         assistant: mergeAssistantSettings(map.get("assistant")),
         translationsKn: cleanTranslations(map.get("translations_kn")),
         blogPosts: mergeBlogPosts(map.get("blog_posts")),
+        siteMedia: mergeSiteMedia(map.get("site_media")),
       },
     };
   } catch {
     return { settings: getDemoState().settings, isDemoFallback: true };
   }
 }
+
+/** Owner's site pictures and videos (one read per page render, shared by every banner on it). */
+export const getSiteMedia = cache(async (): Promise<SiteMedia> => (await getRawSiteSettings()).settings.siteMedia);
 
 /**
  * Published trips with their dates, itinerary and pickups. Dates that have already left (IST)

@@ -158,8 +158,8 @@ export function HeroCinematic({
             onPlaying={() => setVideoReady(true)}
             onError={() => setVideoFailed(true)}
           >
-            {mobileVideoSrc && <source src={mobileVideoSrc} type="video/mp4" media="(max-width: 767px)" />}
-            <source src={videoSrc} type="video/mp4" onError={() => setVideoFailed(true)} />
+            {mobileVideoSrc && <source src={mobileVideoSrc} type={videoType(mobileVideoSrc)} media="(max-width: 767px)" />}
+            <source src={videoSrc} type={videoType(videoSrc!)} onError={() => setVideoFailed(true)} />
           </video>
         </>
       ) : (
@@ -187,6 +187,8 @@ export function HeroCinematic({
     </div>
   );
 }
+
+const videoType = (src: string) => (/\.webm(\?|#|$)/i.test(src) ? "video/webm" : "video/mp4");
 
 /** Poster still with art direction: the portrait frame on phones, the wide frame from 768px. */
 function HeroPoster({ src, mobileSrc }: { src: string; mobileSrc?: string }) {

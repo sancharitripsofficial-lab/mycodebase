@@ -22,6 +22,7 @@ import { businessJsonLd, jsonLdText } from "@/lib/seo";
 import type { Metadata } from "next";
 import { LiveWeatherBadge } from "@/components/living/LiveWeatherBadge";
 import { isBookable } from "@/lib/departure-rules";
+import { BUILT_IN_MEDIA, resolveHero } from "@/lib/site-media";
 
 // Served from the CDN; refreshed every 30 s and immediately after bookings / admin edits.
 export const revalidate = 30;
@@ -141,12 +142,8 @@ export default async function HomePage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdText(businessJsonLd(settings)) }} />
       {/* Hero: looping road-trip film (tea hills at sunrise) under a soft tea-green shade */}
       <section className="relative isolate overflow-hidden text-cream-50">
-        <HeroCinematic
-          videoSrc="/media/motion/hero-loop.mp4"
-          mobileVideoSrc="/media/motion/hero-loop-mobile.mp4"
-          posterSrc="/media/motion/hero-loop-poster.jpg"
-          mobilePosterSrc="/media/motion/hero-loop-mobile-poster.jpg"
-        />
+        {/* Video and still pictures: Admin → Site pictures & videos (built-in film when nothing is set). */}
+        <HeroCinematic {...resolveHero(settings.siteMedia)} />
         <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 pt-12 pb-20 sm:px-6 md:grid-cols-[1.15fr_0.85fr] md:pt-20 md:pb-28">
           <div className="max-w-xl space-y-5 [text-shadow:0_1px_3px_rgb(10_40_30/0.45)]">
             {/* Game-style minimap: floats beside the headline on phones, pinned top-right from md up */}
@@ -540,8 +537,8 @@ export default async function HomePage() {
               <LivingPhoto
                 variant="card"
                 region="Western Ghats"
-                src="/media/story-coffee-morning.jpg"
-                alt="Four friends sharing morning filter coffee on a Karnataka coffee-estate verandah"
+                src={settings.siteMedia.safetyPhoto || BUILT_IN_MEDIA.safetyPhoto}
+                alt={settings.siteMedia.safetyPhoto ? "Sanchari Trips travellers in Karnataka" : "Four friends sharing morning filter coffee on a Karnataka coffee-estate verandah"}
                 sizes="(max-width: 768px) 100vw, 50vw"
                 className="object-cover"
               />

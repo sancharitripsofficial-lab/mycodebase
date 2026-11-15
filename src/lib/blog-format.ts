@@ -187,14 +187,41 @@ export function parseBlogBody(source: string): Block[] {
     para.push(line);
   }
   flushAll();
-  return blocks.map((b, i) => {
+  return blocks.flatMap((b, i): Block[] => {
     const next = blocks[i + 1];
     if (b.type === "ol" && b.items.length === 1 && next && next.type !== "ol" && next.type !== "hr") {
       const n = b.start ?? 1;
-      return { type: "h3" as const, align: b.align, inline: [{ kind: "text" as const, text: `${n}. ` }, ...b.items[0]] };
+      const item = b.items[0];
+      // A pasted title that lost its line break: "Quick Hygiene Kit Stay fresh all day with a few small items:".
+      const split = item.length === 1 && item[0].kind === "text" ? splitRunOnTitle(item[0].text) : null;
+      if (split) {
+        return [
+          { type: "h3", align: b.align, inline: [{ kind: "text", text: `${n}. ${split[0]}` }] },
+          { type: "p", align: b.align, inline: [{ kind: "text", text: split[1] }] },
+        ];
+      }
+      return [{ type: "h3", align: b.align, inline: [{ kind: "text", text: `${n}. ` }, ...item] }];
     }
-    return b;
+    return [b];
   });
+}
+
+/**
+ * "Quick Hygiene Kit Stay fresh all day with a few small items:" → ["Quick Hygiene Kit", "Stay fresh…:"].
+ * Only for a section title line that ends with ":"; the sentence starts at the capitalised word just
+ * before the first lower-case word. Anything else (or anything unsure) stays as it was written.
+ */
+export function splitRunOnTitle(text: string): [string, string] | null {
+  const t = text.trim();
+  if (!/:$/.test(t)) return null;
+  const words = t.split(/\s+/);
+  const firstLower = words.findIndex((w) => /^\p{Ll}/u.test(w));
+  if (firstLower < 2) return null;
+  const start = firstLower - 1;
+  if (!/^\p{Lu}/u.test(words[start])) return null;
+  const title = words.slice(0, start).join(" ");
+  if (title.length > 60 || words.length - start < 3) return null;
+  return [title, words.slice(start).join(" ")];
 }
 
 /** Plain text of a story (for reading time and the search description). */

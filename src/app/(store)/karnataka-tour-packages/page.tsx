@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, CalendarDays, Car, IndianRupee, MapPin, Route, ShieldCheck, Users } from "lucide-react";
-import { PageBanner3D } from "@/components/banners/PageBanner3D";
+import { PageBanner } from "@/components/banners/PageBanner";
 import { TripCard } from "@/components/TripCard";
 import { formatINR } from "@/lib/currency";
 import { getPublishedTripsWithDetails, getSiteSettings } from "@/lib/data/repository";
@@ -69,7 +69,8 @@ export default async function KarnatakaTourPackagesPage() {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdText(list) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdText(breadcrumb) }} />
-      <PageBanner3D
+      <PageBanner
+        page="karnataka"
         scene="trips"
         width="6xl"
         eyebrow="Tours & trips across Karnataka"

@@ -10,6 +10,7 @@ import {
   ExternalLink,
   FileText,
   Images,
+  MonitorPlay,
   IndianRupee,
   Inbox,
   KeyRound,
@@ -43,6 +44,7 @@ import { PasswordField } from "@/components/admin/PasswordField";
 import { PromotionsManager } from "@/components/admin/PromotionsManager";
 import { ReviewsManager } from "@/components/admin/ReviewsManager";
 import { SiteContentManager } from "@/components/admin/SiteContentManager";
+import { SiteMediaManager } from "@/components/admin/SiteMediaManager";
 import { MyPasswordForm, StaffManager } from "@/components/admin/StaffManager";
 import { TripSheets } from "@/components/admin/TripSheets";
 import { TripsManager } from "@/components/admin/TripsManager";
@@ -101,6 +103,7 @@ type SectionKey =
   | "blog"
   | "reviews"
   | "media"
+  | "sitemedia"
   | "upi"
   | "staff"
   | "account"
@@ -131,6 +134,7 @@ const NAV: { group: string; items: { key: SectionKey; label: string; icon: typeo
       { key: "creators", label: "Creators & coupons", icon: Ticket },
       { key: "trips", label: "Trips", icon: Map },
       { key: "website", label: "Text & policies", icon: FileText },
+      { key: "sitemedia", label: "Pictures & videos", icon: MonitorPlay },
       { key: "blog", label: "Blog & videos", icon: Clapperboard },
       { key: "reviews", label: "Reviews", icon: Star },
       { key: "media", label: "Media library", icon: Images },
@@ -569,6 +573,7 @@ function Workspace({
           {section === "blog" && <BlogManager editor={editor} canEdit={canMutate && Boolean(editor.content?.editable)} />}
           {section === "reviews" && <ReviewsManager editor={editor} />}
           {section === "media" && <MediaLibrary canEdit={canMutate && Boolean(editor.content?.editable)} />}
+          {section === "sitemedia" && <SiteMediaManager editor={editor} canEdit={canMutate && Boolean(editor.content?.editable)} />}
           {section === "upi" && canMutate && (
             <AdminUpiSettings
               role={actor.staffRole}

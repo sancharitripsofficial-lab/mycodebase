@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { ShieldCheck, Lock, Users, BedDouble } from "lucide-react";
-import { PageBanner3D } from "@/components/banners/PageBanner3D";
+import { PageBanner } from "@/components/banners/PageBanner";
 import { getSiteSettings } from "@/lib/data/repository";
 
 export const metadata: Metadata = {
@@ -15,7 +15,8 @@ export default async function SafetyPage() {
 
   return (
     <>
-      <PageBanner3D
+      <PageBanner
+        page="safety"
         scene="safety"
         width="4xl"
         eyebrow="Safety, Privacy & Comfort"

@@ -1,6 +1,6 @@
 import { Mail, MapPin, MessageCircle } from "lucide-react";
 import type { Metadata } from "next";
-import { PageBanner3D } from "@/components/banners/PageBanner3D";
+import { PageBanner } from "@/components/banners/PageBanner";
 import { getSiteSettings } from "@/lib/data/repository";
 import { buildClickToWhatsAppUrl } from "@/lib/messaging/provider";
 
@@ -22,7 +22,8 @@ export default async function ContactPage() {
 
   return (
     <>
-      <PageBanner3D
+      <PageBanner
+        page="contact"
         scene="contact"
         width="3xl"
         eyebrow="Contact Operations"

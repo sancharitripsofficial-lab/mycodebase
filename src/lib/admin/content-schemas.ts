@@ -1,6 +1,7 @@
 import { GUIDE_EMOTIONS, type GuideEmotion } from "@/lib/assistant/types";
 import { isSafeMediaLink } from "@/lib/blog";
 import { ICON_KEYS, THEME_KEYS, TILE_COLOURS } from "@/lib/home-content";
+import { BANNER_PAGES, isSiteMediaLink, isVideoLink, type BannerPage } from "@/lib/site-media";
 import { z } from "zod";
 
 /** Local file (/media/x.jpg) or an https link. Never http, javascript:, data: or protocol-relative. */
@@ -373,6 +374,28 @@ export const blogPostsSchema = z
   .max(60, "At most 60 posts")
   .refine((list) => new Set(list.map((p) => p.id)).size === list.length, "Two posts have the same address. Change one title.");
 
+const siteLink = z
+  .string()
+  .trim()
+  .max(600, "Link is too long")
+  .refine((v) => v === "" || isSiteMediaLink(v), "Use a file uploaded to the Media library");
+const siteVideo = siteLink.refine((v) => v === "" || isVideoLink(v), "This needs a video (.mp4 or .webm)");
+const sitePicture = siteLink.refine((v) => v === "" || !isVideoLink(v), "This needs a picture, not a video");
+const bannerMediaSchema = z.object({ image: sitePicture, mobileImage: sitePicture, video: siteVideo });
+
+export const siteMediaSchema = z.object({
+  heroMode: z.enum(["video", "photo"]),
+  heroVideo: siteVideo,
+  heroMobileVideo: siteVideo,
+  heroPoster: sitePicture,
+  heroMobilePoster: sitePicture,
+  safetyPhoto: sitePicture,
+  aboutPhoto: sitePicture,
+  banners: z.object(
+    Object.fromEntries(BANNER_PAGES.map((p) => [p, bannerMediaSchema])) as Record<BannerPage, typeof bannerMediaSchema>
+  ),
+});
+
 export const settingsSaveSchema = z.discriminatedUnion("key", [
   z.object({ key: z.literal("brand_identity"), value: brandIdentitySchema }),
   z.object({ key: z.literal("booking_policy"), value: bookingPolicySchema }),
@@ -383,6 +406,7 @@ export const settingsSaveSchema = z.discriminatedUnion("key", [
   z.object({ key: z.literal("assistant"), value: assistantSettingsSchema }),
   z.object({ key: z.literal("translations_kn"), value: translationsKnSchema }),
   z.object({ key: z.literal("blog_posts"), value: blogPostsSchema }),
+  z.object({ key: z.literal("site_media"), value: siteMediaSchema }),
 ]);
 
 export const reviewSaveSchema = z

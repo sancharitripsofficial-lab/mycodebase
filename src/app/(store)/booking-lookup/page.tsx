@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { PageBanner3D } from "@/components/banners/PageBanner3D";
+import { PageBanner } from "@/components/banners/PageBanner";
 import { AstryxShell } from "@/components/AstryxShell";
 import { BookingLookupClient } from "@/components/BookingLookupClient";
 
@@ -17,7 +17,8 @@ export default async function BookingLookupPage({
 
   return (
     <>
-      <PageBanner3D
+      <PageBanner
+        page="booking"
         scene="booking"
         width="4xl"
         eyebrow="Customer Receipt & Self-Service"

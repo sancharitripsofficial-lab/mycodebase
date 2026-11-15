@@ -1,6 +1,7 @@
 import { DEFAULT_ASSISTANT_SETTINGS } from "@/lib/assistant/settings";
 import { DEFAULT_BLOG_POSTS } from "@/lib/blog";
 import { DEFAULT_HOME_CONTENT } from "@/lib/home-content";
+import { EMPTY_SITE_MEDIA } from "@/lib/site-media";
 import crypto from "node:crypto";
 import { calculateBookingPricing } from "@/lib/currency";
 import { getSafeComfortCustomerLabel } from "@/lib/privacy";
@@ -718,6 +719,7 @@ function createInitialDemoState(): DemoDatabaseState {
     assistant: DEFAULT_ASSISTANT_SETTINGS,
     translationsKn: {},
     blogPosts: DEFAULT_BLOG_POSTS,
+    siteMedia: EMPTY_SITE_MEDIA,
     legalDrafts: {
       ownerReviewRequired: true,
       termsSummary:

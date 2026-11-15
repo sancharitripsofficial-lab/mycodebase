@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { LivingPhoto } from "@/components/living/LivingPhoto";
 import { getSiteSettings } from "@/lib/data/repository";
+import { BUILT_IN_MEDIA } from "@/lib/site-media";
 
 export const metadata: Metadata = {
   title: "About us",
@@ -33,8 +34,8 @@ export default async function AboutPage() {
         <LivingPhoto
           variant="card"
           region="Western Ghats"
-          src="/media/story-coffee-morning.jpg"
-          alt="Friends enjoying coffee at a Karnataka coffee estate"
+          src={settings.siteMedia.aboutPhoto || BUILT_IN_MEDIA.aboutPhoto}
+          alt={settings.siteMedia.aboutPhoto ? "Sanchari Trips travellers in Karnataka" : "Friends enjoying coffee at a Karnataka coffee estate"}
           sizes="(max-width: 768px) 100vw, 800px"
           className="object-cover"
         />

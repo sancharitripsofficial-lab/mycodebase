@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { PageBanner3D } from "@/components/banners/PageBanner3D";
+import { PageBanner } from "@/components/banners/PageBanner";
 import { EnquiryForm } from "@/components/EnquiryForm";
 import { TripsCatalogClient } from "@/components/TripsCatalogClient";
 import { PromoBanner } from "@/components/promo/PromoBanner";
@@ -27,7 +27,8 @@ export default async function TripsPage() {
 
   return (
     <>
-      <PageBanner3D
+      <PageBanner
+        page="trips"
         scene="trips"
         width="6xl"
         eyebrow="Scheduled & Private Departures"

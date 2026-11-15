@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, CalendarDays, Clock } from "lucide-react";
-import { PageBanner3D } from "@/components/banners/PageBanner3D";
+import { PageBanner } from "@/components/banners/PageBanner";
 import { BlogCardImage, BlogCover } from "@/components/blog/BlogCover";
 import { visiblePosts } from "@/lib/blog";
 import { blogPlainText } from "@/lib/blog-format";
@@ -27,7 +27,8 @@ export default async function BlogPage() {
 
   return (
     <>
-      <PageBanner3D
+      <PageBanner
+        page="blog"
         scene="trips"
         width="4xl"
         eyebrow="Blog & trip videos"

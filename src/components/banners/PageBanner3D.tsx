@@ -3,6 +3,7 @@
 import { getImageProps } from "next/image";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import type { BannerMedia } from "@/lib/site-media";
 import type { BannerFocus } from "./engine";
 import type { BannerSceneName } from "./scenes";
 
@@ -18,6 +19,8 @@ export interface PageBanner3DProps {
   width?: "3xl" | "4xl" | "6xl";
   /** Extra content shown under the subtitle (links, notes). */
   children?: ReactNode;
+  /** The owner's own picture / video (Admin → Site pictures & videos); replaces the 3D scene. */
+  custom?: BannerMedia | null;
 }
 
 /** Still picture shown first, and kept when 3D is unavailable or motion is reduced. */
@@ -41,15 +44,17 @@ const WIDTHS = { "3xl": "max-w-3xl", "4xl": "max-w-4xl", "6xl": "max-w-6xl" } as
  * The text and a still background render on the server; the WebGL layer is fetched after first
  * paint, only once the banner is on screen, and fades in over the still.
  */
-export function PageBanner3D({ scene, title, eyebrow, subtitle, width = "4xl", children }: PageBanner3DProps) {
+export function PageBanner3D({ scene, title, eyebrow, subtitle, width = "4xl", children, custom = null }: PageBanner3DProps) {
   const section = useRef<HTMLElement>(null);
   const text = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
   const [ready, setReady] = useState(false);
+  const hasCustom = Boolean(custom);
 
   useEffect(() => {
     const element = section.current;
-    if (!element) return;
+    // The owner's own picture/video replaces the 3D scene, so nothing is loaded for it.
+    if (!element || hasCustom) return;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
     let idle = 0;
     let timer = 0;
@@ -87,7 +92,7 @@ export function PageBanner3D({ scene, title, eyebrow, subtitle, width = "4xl", c
       reduced.removeEventListener("change", start);
       stop();
     };
-  }, []);
+  }, [hasCustom]);
 
   /** Tells the scene where the free part of the banner is, so its subject never sits under the text. */
   const getFocus = useCallback((w: number, h: number): BannerFocus => {
@@ -110,17 +115,23 @@ export function PageBanner3D({ scene, title, eyebrow, subtitle, width = "4xl", c
     <section
       ref={section}
       data-banner={scene}
-      data-banner-live={ready ? "true" : "false"}
+      data-banner-live={custom ? "custom" : ready ? "true" : "false"}
       className="relative isolate w-full overflow-hidden bg-[#135a4b] text-white"
     >
-      <div aria-hidden="true" className="absolute inset-0" style={{ background: FALLBACK[scene] }} />
-      <BannerStill scene={scene} />
-      <div
-        aria-hidden="true"
-        className={`absolute inset-0 transition-opacity duration-[1400ms] ease-out ${ready ? "opacity-100" : "opacity-0"}`}
-      >
-        {mounted && <BannerCanvas scene={scene} getFocus={getFocus} onReady={onReady} onLost={onLost} />}
-      </div>
+      {custom ? (
+        <CustomBanner media={custom} />
+      ) : (
+        <>
+          <div aria-hidden="true" className="absolute inset-0" style={{ background: FALLBACK[scene] }} />
+          <BannerStill scene={scene} />
+          <div
+            aria-hidden="true"
+            className={`absolute inset-0 transition-opacity duration-[1400ms] ease-out ${ready ? "opacity-100" : "opacity-0"}`}
+          >
+            {mounted && <BannerCanvas scene={scene} getFocus={getFocus} onReady={onReady} onLost={onLost} />}
+          </div>
+        </>
+      )}
       {/* Tea-green veil (matches the home film) that keeps the heading readable over any frame of the scene. */}
       <div
         aria-hidden="true"
@@ -142,6 +153,49 @@ export function PageBanner3D({ scene, title, eyebrow, subtitle, width = "4xl", c
         </div>
       </div>
     </section>
+  );
+}
+
+/** The owner's banner: their picture (tall one on phones when given) with an optional silent looping video over it. */
+function CustomBanner({ media }: { media: BannerMedia }) {
+  const wide = media.image || media.mobileImage;
+  const tall = media.mobileImage || media.image;
+  const common = { alt: "", fill: true, priority: true, sizes: "100vw" } as const;
+  let picture: ReactNode = null;
+  if (wide) {
+    const {
+      props: { srcSet: wideSet },
+    } = getImageProps({ ...common, src: wide });
+    const {
+      props: { srcSet: tallSet, ...img },
+    } = getImageProps({ ...common, src: tall });
+    picture = (
+      <picture>
+        <source media="(min-width: 768px)" srcSet={wideSet} />
+        <source media="(max-width: 767px)" srcSet={tallSet} />
+        {/* eslint-disable-next-line jsx-a11y/alt-text, @next/next/no-img-element */}
+        <img {...img} className="object-cover" aria-hidden="true" />
+      </picture>
+    );
+  }
+  return (
+    <>
+      {picture}
+      {media.video && (
+        <video
+          aria-hidden="true"
+          src={media.video}
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          disablePictureInPicture
+          tabIndex={-1}
+          className="absolute inset-0 h-full w-full object-cover motion-reduce:hidden"
+        />
+      )}
+    </>
   );
 }
 

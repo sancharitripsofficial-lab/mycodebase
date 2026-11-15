@@ -1,6 +1,7 @@
 import type { AssistantSettings } from "@/lib/assistant/settings";
 import type { BlogPost } from "@/lib/blog";
 import type { HomePageContent } from "@/lib/home-content";
+import type { SiteMedia } from "@/lib/site-media";
 export type Difficulty = "Easy" | "Moderate" | "Active";
 
 export type DepartureType = "open_batch" | "women_only" | "private_charter";
@@ -280,6 +281,8 @@ export interface SiteSettings {
   translationsKn: Record<string, string>;
   /** Blog / trip stories with videos (Admin → Website → Blog & videos). */
   blogPosts: BlogPost[];
+  /** Home background video, page banners and section photos (Admin → Website → Site pictures & videos). */
+  siteMedia: SiteMedia;
   legalDrafts: {
     ownerReviewRequired: boolean;
     termsSummary: string;

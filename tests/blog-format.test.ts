@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { BlogBody } from "@/components/blog/BlogBody";
-import { blogPlainText, parseBlogBody, parseInline } from "@/lib/blog-format";
+import { blogPlainText, parseBlogBody, parseInline, splitRunOnTitle } from "@/lib/blog-format";
 
 describe("blog story formatting", () => {
   it("makes paragraphs, headings, points, numbered points, quotes and dividers", () => {
@@ -66,6 +66,19 @@ describe("blog story formatting", () => {
     expect(html).not.toContain("<script>");
     expect(html).not.toContain("<img src=x");
     expect(html).toContain("&lt;script&gt;");
+  });
+
+  it("splits a pasted section title that lost its line break", () => {
+    expect(splitRunOnTitle("Quick Hygiene Kit Stay fresh all day with a few small items:")).toEqual([
+      "Quick Hygiene Kit",
+      "Stay fresh all day with a few small items:",
+    ]);
+    expect(splitRunOnTitle("Snacks & Water Keep your energy up without carrying heavy food:")?.[0]).toBe("Snacks & Water");
+    expect(splitRunOnTitle("Extra Items by Destination")).toBeNull(); // no ":" → left alone
+    expect(splitRunOnTitle("Pack light:")).toBeNull();
+    const blocks = parseBlogBody("1. Daily Must-Haves Keep these items in an easy-to-reach pocket:\n📱 Phone\n🔑 Keys");
+    expect(blocks.map((b) => b.type)).toEqual(["h3", "p", "ul"]);
+    expect(blocks[0]).toMatchObject({ inline: [{ kind: "text", text: "1. Daily Must-Haves" }] });
   });
 
   it("old plain stories still read as paragraphs", () => {
