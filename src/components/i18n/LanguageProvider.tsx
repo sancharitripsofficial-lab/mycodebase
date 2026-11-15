@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { DomTranslator, type Dictionary } from "@/lib/i18n/dom-translator";
+import { addUntaggedKeys } from "@/lib/i18n/untagged";
 
 export type Lang = "en" | "kn";
 
@@ -40,7 +41,8 @@ function loadDictionary(): Promise<Dictionary> {
       const dict: Dictionary = new Map();
       for (const [en, kn] of Object.entries(builtIn)) if (typeof kn === "string" && kn.trim()) dict.set(en, kn);
       for (const [en, kn] of Object.entries(saved.kn ?? {})) if (typeof kn === "string" && kn.trim()) dict.set(en.replace(/\s+/g, " ").trim(), kn);
-      return dict;
+      // Trip text is shown without its "Sample:" / "Draft policy:" tags: give that text its Kannada too.
+      return addUntaggedKeys(dict);
     })
     .catch((err) => {
       dictPromise = null; // try again next time
