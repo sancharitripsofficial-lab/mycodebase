@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { TripCard } from "@/components/TripCard";
 import { NoTripForPlace, PlaceFilterBanner, TripSearch, type TripSearchFilter } from "@/components/TripSearch";
 import type { HomeCategory } from "@/lib/home-content";
@@ -38,10 +38,24 @@ export function TripsCatalogClient({ trips, categories = [] }: { trips: TripWith
     [trips]
   );
 
+  // The button that cleared the search (in the place banner, the no-trip card or the empty box)
+  // goes away, so focus moves on purpose: back to the search box on a mouse/keyboard device, or
+  // to the results on a phone (focusing the box there would pop up the keyboard).
+  const [focusSearchBox, setFocusSearchBox] = useState(false);
+  const [focusResultsTick, setFocusResultsTick] = useState(0);
+  const resultsRef = useRef<HTMLDivElement>(null);
+
   const clearSearch = () => {
+    const finePointer = Boolean(window.matchMedia?.("(pointer: fine)").matches);
+    setFocusSearchBox(finePointer);
+    if (!finePointer) setFocusResultsTick((n) => n + 1);
     setSearchKey((k) => k + 1);
     setSearch({ kind: "none" });
   };
+
+  useEffect(() => {
+    if (focusResultsTick > 0) resultsRef.current?.focus();
+  }, [focusResultsTick]);
 
   const searchIds = useMemo(() => (search.kind === "none" ? null : new Set(search.tripIds)), [search]);
 
@@ -68,6 +82,14 @@ export function TripsCatalogClient({ trips, categories = [] }: { trips: TripWith
       return true;
     });
   }, [trips, searchIds, region, difficulty, onlyPrivateEligible, onlyWomenBatch, category, liveCategories]);
+
+  // "2 trips go to Abbey Falls" / "No trip to Hampi yet" (Kannada in patterns.ts).
+  const placeResult =
+    search.kind !== "place"
+      ? ""
+      : search.tripIds.length === 0
+        ? `No trip to ${search.place.name} yet`
+        : `${filtered.length} ${filtered.length === 1 ? "trip goes" : "trips go"} to ${search.place.name}`;
 
   return (
     <div id="all-trips" className="scroll-mt-24 space-y-6">
@@ -104,7 +126,7 @@ export function TripsCatalogClient({ trips, categories = [] }: { trips: TripWith
       )}
       <div className="sec-route rounded-2xl border border-stone-200 p-4 shadow-[var(--shadow-soft)] sm:p-5">
         <div className="grid gap-3 md:grid-cols-4">
-          <TripSearch key={searchKey} trips={trips} onFilterChange={setSearch} className="md:col-span-2" />
+          <TripSearch key={searchKey} trips={trips} onFilterChange={setSearch} autoFocus={focusSearchBox} className="md:col-span-2" />
 
           <label className="block">
             <span className="sr-only">Filter by region</span>
@@ -159,10 +181,16 @@ export function TripsCatalogClient({ trips, categories = [] }: { trips: TripWith
         </div>
       </div>
 
+      {/* One live region that is always on the page, so the place result is announced reliably. */}
+      <p className="sr-only" aria-live="polite">
+        {placeResult}
+      </p>
+
       {search.kind === "place" && search.tripIds.length > 0 && (
         <PlaceFilterBanner place={search.place} onClear={clearSearch} />
       )}
 
+      <div ref={resultsRef} tabIndex={-1} role="region" aria-label="Trip results" className="scroll-mt-24 rounded-2xl outline-none">
       {search.kind === "place" && search.tripIds.length === 0 ? (
         <NoTripForPlace place={search.place} onClear={clearSearch} planHref="#ask" />
       ) : filtered.length === 0 ? (
@@ -195,6 +223,7 @@ export function TripsCatalogClient({ trips, categories = [] }: { trips: TripWith
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 }

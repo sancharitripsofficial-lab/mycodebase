@@ -4,6 +4,8 @@
  * Rules for this list:
  * - district = the district the place is in today (Hampi is in Vijayanagara since 2021; Ramanagara
  *   district was renamed Bengaluru South by notification in May 2025, old name kept as an alias).
+ * - Bengaluru Rural: cabinet approved the name Bengaluru North on 2 Jul 2025, not yet on the official
+ *   district site; switch name when notified.
  * - first category = main category; blurbs are short, factual, no prices, timings or rankings.
  * - places whose district we could not pin down with confidence are left out on purpose.
  */
@@ -21,8 +23,8 @@ const KK: PlaceRegion = "Hyderabad-Karnataka (Kalyana Karnataka)";
 export const KARNATAKA_DISTRICTS: KarnatakaDistrict[] = [
   { name: "Bagalkot", aliases: ["Bagalkote", "Badami"], region: NK },
   { name: "Ballari", aliases: ["Bellary", "Sandur"], region: KK },
-  { name: "Belagavi", aliases: ["Belgaum", "Belgavi", "Belagaum"], region: NK },
-  { name: "Bengaluru Rural", aliases: ["Bangalore Rural", "Devanahalli", "Doddaballapur"], region: BLR },
+  { name: "Belagavi", aliases: ["Belgaum", "Belgavi", "Belgaon"], region: NK },
+  { name: "Bengaluru Rural", aliases: ["Bangalore Rural", "Bengaluru North", "Bengaluru North district", "Devanahalli", "Doddaballapur", "Nelamangala", "Hoskote"], region: BLR },
   { name: "Bengaluru Urban", aliases: ["Bangalore", "Bangalore Urban", "Bengaluru", "Bangaluru"], region: BLR },
   { name: "Bengaluru South", aliases: ["Ramanagara", "Ramanagaram", "Ramnagar", "Kanakapura", "Channapatna", "Magadi"], region: BLR },
   { name: "Bidar", aliases: ["Bedar"], region: KK },
@@ -39,14 +41,14 @@ export const KARNATAKA_DISTRICTS: KarnatakaDistrict[] = [
   { name: "Kalaburagi", aliases: ["Gulbarga", "Kalburgi"], region: KK },
   { name: "Kodagu", aliases: ["Coorg", "Madikeri", "Mercara", "Kodagu district"], region: MAL },
   { name: "Kolar", aliases: ["Kolara", "KGF"], region: BLR },
-  { name: "Koppal", aliases: ["Koppala", "Gangavathi"], region: KK },
+  { name: "Koppal", aliases: ["Koppala", "Gangavathi", "Gangavati"], region: KK },
   { name: "Mandya", aliases: ["Srirangapatna", "Mandya district"], region: MYS },
   { name: "Mysuru", aliases: ["Mysore", "Mysuru district"], region: MYS },
   { name: "Raichur", aliases: ["Raichuru"], region: KK },
   { name: "Shivamogga", aliases: ["Shimoga", "Shivamoga", "Shimogga"], region: MAL },
   { name: "Tumakuru", aliases: ["Tumkur", "Tumakur"], region: BLR },
   { name: "Udupi", aliases: ["Udipi", "Manipal", "Kundapura"], region: CST },
-  { name: "Uttara Kannada", aliases: ["Karwar", "North Canara", "North Kanara", "UK", "Sirsi"], region: CST },
+  { name: "Uttara Kannada", aliases: ["Karwar", "North Canara", "North Kanara", "Uttar Kannada", "Sirsi"], region: CST },
   { name: "Vijayanagara", aliases: ["Hosapete", "Hospet", "Hampi", "Vijayanagar"], region: KK },
   { name: "Vijayapura", aliases: ["Bijapur", "Vijaypur"], region: NK },
   { name: "Yadgir", aliases: ["Yadagiri", "Yadgiri"], region: KK },
@@ -90,40 +92,44 @@ type Row = [string, string, string, PlaceCategory[], string, string[]?];
 const ROWS: Row[] = [
   // ---------------- Bagalkot ----------------
   ["badami-cave-temples", "Badami Cave Temples", "Bagalkot", ["heritage", "cave", "temple_pilgrimage"], "Four rock-cut Chalukyan cave temples in red sandstone cliffs above Agastya Lake", ["Badami", "Vatapi", "Badami caves"]],
-  ["agastya-lake-bhutanatha", "Agastya Lake & Bhutanatha Temples", "Bagalkot", ["heritage", "lake_river_dam"], "Early Chalukyan temples on the banks of the lake in Badami town", ["Bhutanatha temple", "Agastya Teertha"]],
+  ["agastya-lake-bhutanatha", "Agastya Lake & Bhutanatha Temples", "Bagalkot", ["heritage", "lake_river_dam"], "Chalukyan temples of the 7th-12th centuries on the east bank of Agastya Lake, Badami", ["Bhutanatha temple", "Agastya Teertha"]],
   ["badami-fort", "Badami North Fort", "Bagalkot", ["heritage", "trek_peak"], "Fortified hilltop above Badami with granaries, shrines and views of the town", ["Badami fort"]],
-  ["aihole", "Aihole", "Bagalkot", ["heritage", "temple_pilgrimage"], "Village with over a hundred early Chalukyan temples, including the Durga temple", ["Aihole temples", "Durga temple Aihole", "Ayyavole"]],
+  ["aihole", "Aihole", "Bagalkot", ["heritage", "temple_pilgrimage"], "Village with over 120 temples of the 6th-12th centuries, including the Durga temple", ["Aihole temples", "Durga temple Aihole", "Ayyavole"]],
   ["pattadakal", "Pattadakal", "Bagalkot", ["heritage", "temple_pilgrimage"], "UNESCO World Heritage group of 7th-8th century Chalukyan temples on the Malaprabha", ["Pattadakallu", "Virupaksha temple Pattadakal"]],
   ["mahakuta", "Mahakuta Temples", "Bagalkot", ["temple_pilgrimage", "heritage"], "Chalukyan Shiva temples around a spring-fed tank near Badami", ["Mahakuta", "Mahakuteshwara"]],
-  ["banashankari-badami", "Banashankari Temple, Badami", "Bagalkot", ["temple_pilgrimage"], "Temple of Goddess Banashankari at Cholachagudd near Badami, with a large tank", ["Banashankari", "Cholachagudd"]],
+  ["banashankari-badami", "Banashankari Temple, Badami", "Bagalkot", ["temple_pilgrimage"], "Temple of Goddess Banashankari at Cholachagudd near Badami, with a large tank", ["Banashankari", "Cholachagudd", "Cholachagudda"]],
   ["kudalasangama", "Kudalasangama", "Bagalkot", ["temple_pilgrimage", "lake_river_dam"], "Confluence of the Krishna and Malaprabha with the Aikya Mantapa of Basavanna", ["Kudala Sangama", "Kudalasangam", "Aikya Mantapa"]],
 
   // ---------------- Ballari ----------------
   ["ballari-fort", "Ballari Fort", "Ballari", ["heritage", "trek_peak"], "Hill fort on a granite outcrop in Ballari city with upper and lower forts", ["Bellary fort", "Ballari Gudda"]],
   ["kumaraswamy-temple-sandur", "Kumaraswamy Temple, Sandur", "Ballari", ["temple_pilgrimage", "heritage"], "Old Kartikeya and Parvati temples on the Sandur hills", ["Kumaraswamy temple", "Sandur temple", "Swamimalai Sandur"]],
-  ["sandur", "Sandur Hills", "Ballari", ["trek_peak", "city_town"], "Hill town ringed by forested ranges south-west of Ballari", ["Sandur", "Sanduru"]],
+  ["sandur", "Sandur", "Ballari", ["city_town", "trek_peak"], "Hill town ringed by forested ranges south-west of Ballari", ["Sandur Hills", "Sanduru"]],
   ["sanganakallu", "Sanganakallu", "Ballari", ["heritage"], "Prehistoric site near Ballari with Neolithic settlements and rock art", ["Sanganakal", "Sanganakallu prehistoric site"]],
   ["ballari-city", "Ballari", "Ballari", ["city_town"], "District headquarters known for its hill fort and mining history", ["Bellary", "Ballari city"]],
+  ["daroji-bear-sanctuary", "Daroji Bear Sanctuary", "Ballari", ["wildlife_forest"], "Scrub hills near Hampi protected for sloth bears, watched from a tower", ["Daroji", "Daroji sloth bear sanctuary", "Hampi bear sanctuary"]],
 
   // ---------------- Belagavi ----------------
   ["belagavi-fort", "Belagavi Fort", "Belagavi", ["heritage", "temple_pilgrimage"], "Moated fort in Belagavi city that holds the carved Kamal Basadi Jain temple", ["Belgaum fort", "Kamal Basadi"]],
   ["kapileshwar-temple", "Kapileshwar Temple", "Belagavi", ["temple_pilgrimage"], "Old Shiva temple in Belagavi city, a local pilgrimage stop", ["Kapileshwara Belagavi"]],
   ["gokak-falls", "Gokak Falls", "Belagavi", ["waterfall", "lake_river_dam"], "Ghataprabha river falls over a sandstone cliff, with a hanging bridge nearby", ["Gokak", "Gokak waterfalls"]],
-  ["godachinamalaki-falls", "Godachinamalaki Falls", "Belagavi", ["waterfall"], "Markandeya river falls in a rocky valley near Gokak", ["Godchinmalki falls", "Markandeya falls"]],
+  ["godachinamalaki-falls", "Godachinamalaki Falls", "Belagavi", ["waterfall"], "Markandeya river falls in a rocky valley near Gokak", ["Godchinmalki falls", "Markandeya falls", "Godachinmalki"]],
   ["kittur", "Kittur Fort", "Belagavi", ["heritage"], "Fort and museum of Rani Chennamma, who fought the British in 1824", ["Kittur", "Kitturu", "Rani Chennamma fort"]],
   ["saundatti-yellamma", "Saundatti Yellamma Temple", "Belagavi", ["temple_pilgrimage"], "Hilltop temple of Goddess Renuka Yellamma near Saundatti", ["Yellamma temple", "Renuka Yellamma", "Savadatti", "Yellamma gudda"]],
   ["hidkal-dam", "Hidkal Dam", "Belagavi", ["lake_river_dam"], "Raja Lakhamagouda dam on the Ghataprabha river with a garden", ["Hidkal", "Raja Lakhamagouda dam", "Ghataprabha dam"]],
-  ["navilutheertha-dam", "Navilutheertha Dam", "Belagavi", ["lake_river_dam"], "Malaprabha dam (Renuka Sagar) in a narrow gorge near Saundatti", ["Navilu Teertha", "Malaprabha dam", "Renuka Sagar"]],
+  ["navilutheertha-dam", "Navilutheertha Dam", "Belagavi", ["lake_river_dam"], "Malaprabha dam (Renuka Sagar) in a narrow gorge near Saundatti", ["Navilu Teertha", "Malaprabha dam", "Renuka Sagar", "Navilutirtha"]],
   ["bhimgad-wildlife-sanctuary", "Bhimgad Wildlife Sanctuary", "Belagavi", ["wildlife_forest", "trek_peak"], "Forested Western Ghats sanctuary near Khanapur with Bhimgad fort", ["Bhimgad", "Bhimgad fort"]],
   ["halasi", "Halasi", "Belagavi", ["heritage", "temple_pilgrimage"], "Early Kadamba capital near Khanapur with old temples", ["Halsi", "Halasi temples"]],
-  ["rakaskop-dam", "Rakaskop Dam", "Belagavi", ["lake_river_dam"], "Markandeya river reservoir in wooded hills west of Belagavi city", ["Rakaskop"]],
+  ["rakaskop-dam", "Rakaskop Dam", "Belagavi", ["lake_river_dam"], "Markandeya river reservoir in wooded hills west of Belagavi city", ["Rakaskop", "Rakkasakoppa"]],
+  ["sogal", "Sogal Someshwara Temple", "Belagavi", ["temple_pilgrimage", "waterfall"], "Someshwara temple beside a waterfall in the hills at Sogal", ["Sogal", "Sri Sogal Kshetra", "Sogal falls"]],
+  ["vajrapoha-falls", "Vajrapoha Falls", "Belagavi", ["waterfall", "wildlife_forest"], "Monsoon forest waterfall near Jamboti in Khanapur taluk", ["Vajrapoha", "Jamboti falls"]],
   ["belagavi-city", "Belagavi", "Belagavi", ["city_town"], "Border city with a cantonment, fort and the Suvarna Vidhana Soudha", ["Belgaum", "Belagavi city"]],
 
   // ---------------- Bengaluru Rural ----------------
   ["devanahalli-fort", "Devanahalli Fort", "Bengaluru Rural", ["heritage"], "Stone fort town near the airport, birthplace of Tipu Sultan", ["Devanahalli", "Tipu birthplace"]],
   ["ghati-subramanya", "Ghati Subramanya", "Bengaluru Rural", ["temple_pilgrimage"], "Temple of Subramanya and Narasimha near Doddaballapur", ["Ghati Subramanya temple", "Ghati"]],
-  ["makalidurga", "Makalidurga", "Bengaluru Rural", ["trek_peak", "heritage"], "Rocky hill with fort ruins above Gunjur lake, near Doddaballapur", ["Makali durga", "Makalidurga trek"]],
-  ["hulukudi-betta", "Hulukudi Betta", "Bengaluru Rural", ["trek_peak", "temple_pilgrimage"], "Granite hill near Doddaballapur with a small temple on top", ["Hulukudi", "Hulikudi"]],
+  ["makalidurga", "Makalidurga", "Bengaluru Rural", ["trek_peak", "heritage"], "Rocky hill with fort ruins above Gundamagere lake, near Doddaballapur", ["Makali durga", "Makalidurga trek", "Makalidurga sunrise trek"]],
+  ["hulukudi-betta", "Hulukudi Betta", "Bengaluru Rural", ["trek_peak", "temple_pilgrimage"], "Granite hill near Doddaballapur with a small temple on top", ["Hulukudi", "Hullukudi", "Hullukudi Betta", "Hulikudi"]],
+  ["shivagange", "Shivagange", "Bengaluru Rural", ["trek_peak", "temple_pilgrimage"], "Hill near Dobbaspet with the Gangadhareshwara cave temple and a Honnadevi shrine", ["Shivagange betta", "Shivaganga betta", "Shivaganga hills"]],
 
   // ---------------- Bengaluru Urban ----------------
   ["bengaluru-city", "Bengaluru", "Bengaluru Urban", ["city_town"], "State capital, known for its parks, lakes and café culture", ["Bangalore", "Bengaluru city", "Namma Bengaluru"]],
@@ -138,9 +144,14 @@ const ROWS: Row[] = [
   ["bannerghatta", "Bannerghatta National Park", "Bengaluru Urban", ["wildlife_forest"], "Forest park south of Bengaluru with a zoo, safari and butterfly park", ["Bannerghatta", "Bannerghatta zoo", "BNP"]],
   ["ulsoor-lake", "Ulsoor Lake", "Bengaluru Urban", ["lake_river_dam"], "Lake with small islands near MG Road, Bengaluru", ["Halasuru lake", "Halasuru", "Ulsoor"]],
   ["sankey-tank", "Sankey Tank", "Bengaluru Urban", ["lake_river_dam"], "Lake in Malleswaram with a walking path", ["Sankey lake", "Sankey"]],
+  ["iskcon-bengaluru", "ISKCON Temple, Bengaluru", "Bengaluru Urban", ["temple_pilgrimage"], "Hare Krishna temple on a hillock in Rajajinagar, Bengaluru", ["ISKCON", "ISKCON Bangalore", "Radha Krishna temple Rajajinagar", "Hare Krishna hill"]],
+  ["dodda-alada-mara", "Dodda Alada Mara", "Bengaluru Urban", ["heritage", "wildlife_forest"], "Banyan tree about 400 years old spreading over some three acres at Kethohalli", ["Big Banyan Tree", "Dodda Aalada Mara", "Kethohalli banyan"]],
+  ["hesaraghatta-lake", "Hesaraghatta Lake", "Bengaluru Urban", ["lake_river_dam"], "Reservoir and grassland north-west of Bengaluru, near the Nrityagram dance village", ["Hesaraghatta", "Hesarghatta"]],
+  ["visvesvaraya-museum", "Visvesvaraya Industrial & Technological Museum", "Bengaluru Urban", ["heritage", "city_town"], "Science and technology museum beside Cubbon Park", ["VITM", "Visvesvaraya museum"]],
+  ["muthyala-maduvu", "Muthyala Maduvu", "Bengaluru Urban", ["waterfall"], "Small seasonal falls in a valley near Anekal", ["Pearl Valley", "Muthyalamaduvu"]],
 
   // ---------------- Bengaluru South (Ramanagara) ----------------
-  ["ramanagara-hills", "Ramadevara Betta", "Bengaluru South", ["trek_peak", "wildlife_forest"], "Granite hills at Ramanagara with a Rama temple and a vulture sanctuary", ["Ramanagara hills", "Ramadevara betta", "Ramanagaram"]],
+  ["ramanagara-hills", "Ramadevara Betta", "Bengaluru South", ["trek_peak", "wildlife_forest"], "Granite hills at Ramanagara with a Rama temple and a vulture sanctuary", ["Ramanagara hills", "Ramadevara betta", "Ramadevarabetta", "Ramanagaram", "Sholay hills", "Ramadevara betta vulture sanctuary"]],
   ["savandurga", "Savandurga", "Bengaluru South", ["trek_peak", "temple_pilgrimage"], "Twin monolithic hills near Magadi with a temple at the base", ["Savanadurga", "Savandurga trek"]],
   ["revanasiddeshwara-betta", "Revanasiddeshwara Betta", "Bengaluru South", ["trek_peak", "temple_pilgrimage"], "Rocky hill near Ramanagara with temples and a hilltop shrine", ["Revana Siddeshwara hill", "RS Betta"]],
   ["kabbaladurga", "Kabbaladurga", "Bengaluru South", ["trek_peak", "heritage"], "Steep rock hill near Kanakapura with fort ruins and a shrine", ["Kabbal", "Kabbaladurga trek"]],
@@ -151,9 +162,10 @@ const ROWS: Row[] = [
   ["janapada-loka", "Janapada Loka", "Bengaluru South", ["heritage"], "Folk arts museum on the Bengaluru-Mysuru road near Ramanagara", ["Janapadaloka", "folk museum"]],
   ["manchanabele-dam", "Manchanabele Dam", "Bengaluru South", ["lake_river_dam"], "Arkavathi reservoir among hills near Magadi", ["Manchanabele", "Manchinbele"]],
   ["kanva-reservoir", "Kanva Reservoir", "Bengaluru South", ["lake_river_dam"], "Reservoir near Channapatna with hills around it", ["Kanva dam", "Kanva"]],
+  ["magadi-someshwara", "Someshwara Temple, Magadi", "Bengaluru South", ["temple_pilgrimage", "heritage"], "Old Shiva temple in Magadi town", ["Magadi Someshwara"]],
 
   // ---------------- Bidar ----------------
-  ["bidar-fort", "Bidar Fort", "Bidar", ["heritage"], "15th-century Bahmani fort with palaces, mosques and triple moats", ["Bidar", "Bidar kote"]],
+  ["bidar-fort", "Bidar Fort", "Bidar", ["heritage"], "15th-century Bahmani fort with palaces, mosques and triple moats", ["Bidar", "Bidar kote", "Rangin Mahal"]],
   ["mahmud-gawan-madrasa", "Mahmud Gawan Madrasa", "Bidar", ["heritage"], "1472 madrasa in Bidar with remains of glazed tile work", ["Gawan madrasa", "Madrasa of Mahmud Gawan"]],
   ["bahmani-tombs", "Bahmani Tombs, Ashtur", "Bidar", ["heritage"], "Domed tombs of the Bahmani sultans at Ashtur, near Bidar", ["Ashtur tombs", "Ashtur"]],
   ["barid-shahi-tombs", "Barid Shahi Tombs", "Bidar", ["heritage"], "Tombs of the Barid Shahi rulers set in gardens in Bidar", ["Barid Shahi gardens"]],
@@ -161,6 +173,8 @@ const ROWS: Row[] = [
   ["narasimha-jharni", "Narasimha Jharni", "Bidar", ["cave", "temple_pilgrimage"], "Cave temple reached by wading through waist-deep spring water", ["Jharani Narasimha", "Narasimha Zarna"]],
   ["papnash-temple", "Papnash Temple", "Bidar", ["temple_pilgrimage"], "Shiva temple in a valley at Bidar with a spring-fed tank", ["Papanash", "Papnash Shiva temple"]],
   ["basavakalyan", "Basavakalyan", "Bidar", ["temple_pilgrimage", "heritage"], "Town of Basavanna and the 12th-century Sharanas, with the Anubhava Mantapa", ["Basava Kalyana", "Kalyana", "Anubhava Mantapa"]],
+  ["karanja-dam", "Karanja Dam", "Bidar", ["lake_river_dam"], "Reservoir on the Karanja river in Bhalki taluk", ["Karanja", "Karanja reservoir"]],
+  ["mailar-mallanna", "Mailar Mallanna Temple", "Bidar", ["temple_pilgrimage"], "Temple of Mailar Mallanna (Khandoba) at Khanapur village near Bidar", ["Mailar", "Mailar Mallanna", "Khanapur Mailar"]],
 
   // ---------------- Chamarajanagar ----------------
   ["br-hills", "BR Hills", "Chamarajanagar", ["wildlife_forest", "hill_station"], "Biligiri Rangaswamy Temple Tiger Reserve linking the Western and Eastern Ghats", ["Biligiri Rangana Betta", "Biligiriranga Hills", "BRT", "K Gudi"]],
@@ -168,18 +182,19 @@ const ROWS: Row[] = [
   ["male-mahadeshwara-hills", "Male Mahadeshwara Hills", "Chamarajanagar", ["temple_pilgrimage", "wildlife_forest"], "Forest hill temple of Male Mahadeshwara, a major pilgrimage", ["MM Hills", "Male Mahadeshwara Betta", "Mahadeshwara temple"]],
   ["gopalaswamy-betta", "Himavad Gopalaswamy Betta", "Chamarajanagar", ["temple_pilgrimage", "hill_station", "wildlife_forest"], "Hilltop Krishna temple inside Bandipur, often wrapped in mist", ["Gopalaswamy Betta", "Gopalswamy hills", "HG Betta"]],
   ["bandipur", "Bandipur National Park", "Chamarajanagar", ["wildlife_forest"], "Tiger reserve on the Mysuru-Ooty road, part of the Nilgiri Biosphere", ["Bandipur", "Bandipura", "Bandipur tiger reserve"]],
-  ["bharachukki-falls", "Bharachukki Falls", "Chamarajanagar", ["waterfall"], "Wide Kaveri waterfall near Shivanasamudra, the twin of Gaganachukki", ["Bharachukki", "Barachukki"]],
-  ["gopinatham", "Gopinatham", "Chamarajanagar", ["wildlife_forest", "lake_river_dam"], "Forest village by the Kaveri in the MM Hills sanctuary", ["Gopinatham camp"]],
+  ["bharachukki-falls", "Bharachukki Falls", "Chamarajanagar", ["waterfall"], "Wide Kaveri waterfall near Shivanasamudra, the twin of Gaganachukki", ["Bharachukki", "Barachukki", "Shivanasamudra falls", "Shivanasamudra"]],
+  ["gopinatham", "Gopinatham", "Chamarajanagar", ["wildlife_forest", "lake_river_dam"], "Forest village near Hogenakkal in the Cauvery Wildlife Sanctuary, with a jungle camp", ["Gopinatham camp", "Gopinatham Mystery Trails"]],
   ["chamarajeshwara-temple", "Chamarajeshwara Temple", "Chamarajanagar", ["temple_pilgrimage", "heritage"], "Wadiyar-era Shiva temple in Chamarajanagar town", ["Chamarajanagar temple"]],
 
   // ---------------- Chikkaballapur ----------------
   ["nandi-hills", "Nandi Hills", "Chikkaballapur", ["hill_station", "heritage", "trek_peak"], "Hill fort north of Bengaluru, known for sunrise views over the clouds", ["Nandi Betta", "Nandidurga", "Nandi hill"]],
-  ["skandagiri", "Skandagiri", "Chikkaballapur", ["trek_peak"], "Night trek hill near Nandi Hills with fort ruins at the top", ["Kalavara Durga", "Kalavara betta", "Skandagiri trek"]],
+  ["skandagiri", "Skandagiri", "Chikkaballapur", ["trek_peak"], "Sunrise trek hill near Nandi Hills with fort ruins, booked through the forest department", ["Kalavara Durga", "Kalavara betta", "Skandagiri trek", "Skandagiri sunrise trek"]],
   ["bhoga-nandeeshwara", "Bhoga Nandeeshwara Temple", "Chikkaballapur", ["temple_pilgrimage", "heritage"], "Old temple complex at the foot of Nandi Hills with a stepped tank", ["Bhoganandishwara", "Nandi temple"]],
   ["muddenahalli", "Muddenahalli", "Chikkaballapur", ["heritage"], "Birthplace of Sir M. Visvesvaraya, with a memorial museum", ["Visvesvaraya birthplace", "Muddenahalli memorial"]],
   ["gudibande-fort", "Gudibande Fort", "Chikkaballapur", ["heritage", "trek_peak"], "Hill fort with water tanks cut into the rock", ["Gudibande"]],
   ["avalabetta", "Avalabetta", "Chikkaballapur", ["trek_peak", "temple_pilgrimage"], "Rocky hill with a Narasimha temple and cliff-edge viewpoints", ["Avala betta", "Avalabetta viewpoint"]],
   ["kaivara", "Kaivara", "Chikkaballapur", ["temple_pilgrimage", "trek_peak"], "Hill village of saint Yogi Narayana, with caves and temples", ["Kaiwara", "Kaivara hills"]],
+  ["adiyogi-chikkaballapur", "Adiyogi, Chikkaballapur", "Chikkaballapur", ["temple_pilgrimage"], "Isha centre near Nandi Hills with a 112-ft Adiyogi bust and an evening light show", ["Adiyogi", "Sadhguru Sannidhi", "Isha Chikkaballapur", "Adiyogi statue Bangalore"]],
 
   // ---------------- Chikkamagaluru ----------------
   ["chikkamagaluru-town", "Chikkamagaluru", "Chikkamagaluru", ["city_town", "coffee_tea", "hill_station"], "Town at the foot of the Baba Budangiri hills, surrounded by coffee estates", ["Chikmagalur", "Chikmagaluru", "Chikkamagalur town"]],
@@ -195,8 +210,8 @@ const ROWS: Row[] = [
   ["kudremukh-national-park", "Kudremukh National Park", "Chikkamagaluru", ["wildlife_forest", "trek_peak"], "Rolling shola grasslands and rainforest in the Western Ghats", ["Kudremukh NP", "Kudremukha"]],
   ["kudremukh-peak", "Kudremukh Peak", "Chikkamagaluru", ["trek_peak"], "Long grassland trek to the horse-face shaped peak from Mullodi", ["Kudremukh trek", "Kudremukha peak", "Kudremukh"]],
   ["netravati-peak", "Netravati Peak", "Chikkamagaluru", ["trek_peak"], "Trek from Samse through shola grassland in Kudremukh National Park", ["Netravathi peak", "Netravati trek", "Netravathi"]],
-  ["kurinjal-peak", "Kurinjal Peak", "Chikkamagaluru", ["trek_peak"], "Grassland trek in the Kudremukh range starting near Kerekatte", ["Kurinjal", "Kurinjal trek"]],
-  ["gangamoola", "Gangamoola", "Chikkamagaluru", ["trek_peak", "lake_river_dam"], "Source area of the Tunga, Bhadra and Netravati in Kudremukh park", ["Varaha Parvatha", "Gangamula"]],
+  ["kurinjal-peak", "Kurinjal Peak", "Chikkamagaluru", ["trek_peak"], "Grassland trek in the Kudremukh range from near the Bhagavathi forest camp", ["Kurinjal", "Kurinjal trek", "Kurinjal betta"]],
+  ["gangamoola", "Gangamoola", "Chikkamagaluru", ["lake_river_dam", "wildlife_forest"], "Source area of the Tunga, Bhadra and Netravati, inside Kudremukh park", ["Varaha Parvatha", "Gangamula"]],
   ["hanumanagundi-falls", "Hanumanagundi Falls", "Chikkamagaluru", ["waterfall"], "Falls inside Kudremukh National Park on the Kalasa-Karkala road", ["Sutanabbe falls", "Hanuman Gundi"]],
   ["bhadra-wildlife-sanctuary", "Bhadra Tiger Reserve", "Chikkamagaluru", ["wildlife_forest", "lake_river_dam"], "Forest tiger reserve with the Bhadra backwaters, entered via Muthodi", ["Bhadra wildlife sanctuary", "Muthodi", "Bhadra"]],
   ["sringeri", "Sringeri", "Chikkamagaluru", ["temple_pilgrimage", "heritage"], "Sharada Peetham on the Tunga, with the carved Vidyashankara temple", ["Sringeri Sharada Peetham", "Shringeri", "Vidyashankara temple"]],
@@ -208,6 +223,10 @@ const ROWS: Row[] = [
   ["amruthapura", "Amruteshwara Temple, Amruthapura", "Chikkamagaluru", ["heritage", "temple_pilgrimage"], "Hoysala temple of 1196 near Tarikere", ["Amruthapura", "Amrutheshwara temple"]],
   ["ballalarayana-durga", "Ballalarayana Durga", "Chikkamagaluru", ["trek_peak", "heritage"], "Hill fort ruins above the Charmadi ghats, reached through grassland", ["Ballalarayanadurga", "Ballalarayana durga fort"]],
   ["deviramma-betta", "Deviramma Betta", "Chikkamagaluru", ["trek_peak", "temple_pilgrimage"], "Steep hill shrine climbed by devotees at Deepavali", ["Deviramma hill", "Deviramma temple"]],
+  ["sirimane-falls", "Sirimane Falls", "Chikkamagaluru", ["waterfall"], "Forest waterfall near Kigga, a short drive from Sringeri", ["Sirimane", "Sirimane waterfalls", "Kigga falls"]],
+  ["kigga", "Kigga Rishyashringa Temple", "Chikkamagaluru", ["temple_pilgrimage"], "Rishyashringa temple in Kigga village near Sringeri", ["Kigga", "Rishyashringeshwara"]],
+  ["bhadra-dam", "Bhadra Dam", "Chikkamagaluru", ["lake_river_dam"], "Bhadra river dam at Lakkavalli near Tarikere", ["Lakkavalli dam", "BR Project"]],
+  ["charmadi-ghat", "Charmadi Ghat", "Chikkamagaluru", ["wildlife_forest", "waterfall"], "Forest ghat road to the coast with monsoon waterfalls", ["Charmadi"]],
 
   // ---------------- Chitradurga ----------------
   ["chitradurga-fort", "Chitradurga Fort", "Chitradurga", ["heritage", "trek_peak"], "Seven-walled rock fort of the Nayakas, linked to Onake Obavva", ["Elusuttina Kote", "Chitradurga kote", "Kallina Kote"]],
@@ -220,8 +239,8 @@ const ROWS: Row[] = [
   ["mangaluru-city", "Mangaluru", "Dakshina Kannada", ["city_town", "beach_coast"], "Port city on the Netravati and Gurupura rivers, known for its coastal food", ["Mangalore", "Kudla", "Mangaluru city"]],
   ["panambur-beach", "Panambur Beach", "Dakshina Kannada", ["beach_coast"], "Wide beach near the New Mangalore Port", ["Panambur"]],
   ["tannirbhavi-beach", "Tannirbhavi Beach", "Dakshina Kannada", ["beach_coast"], "Beach across the Gurupura river from Mangaluru, reached by ferry or road", ["Tannirbavi", "Thannirbhavi"]],
-  ["someshwara-beach", "Someshwara Beach", "Dakshina Kannada", ["beach_coast", "temple_pilgrimage"], "Rocky beach at Ullal with the Someshwara temple beside it", ["Someshwar beach", "Ullal beach", "Ullal"]],
-  ["sasihithlu-beach", "Sasihithlu Beach", "Dakshina Kannada", ["beach_coast"], "Beach where the Shambhavi and Nandini rivers meet the sea near Mulki", ["Sasihitlu", "Sasihithlu"]],
+  ["someshwara-beach", "Someshwara Beach", "Dakshina Kannada", ["beach_coast", "temple_pilgrimage"], "Rocky beach at Ullal with the Someshwara temple beside it", ["Someshwar beach", "Ullal beach"]],
+  ["sasihithlu-beach", "Sasihithlu Beach", "Dakshina Kannada", ["beach_coast"], "Beach where the Shambhavi and Nandini rivers meet the sea near Mulki", ["Sasihitlu", "Sashihithlu", "Sasihithlu Mulki"]],
   ["surathkal-beach", "Surathkal Beach", "Dakshina Kannada", ["beach_coast"], "Beach with a lighthouse near NITK, north of Mangaluru", ["Surathkal", "NITK beach"]],
   ["kadri-manjunatha", "Kadri Manjunatha Temple", "Dakshina Kannada", ["temple_pilgrimage", "heritage"], "Old Mangaluru temple with bronze images and spring-fed tanks", ["Kadri temple", "Kadri"]],
   ["mangaladevi-temple", "Mangaladevi Temple", "Dakshina Kannada", ["temple_pilgrimage"], "Temple of Goddess Mangaladevi, from whom Mangaluru takes its name", ["Mangala Devi", "Mangaladevi"]],
@@ -231,13 +250,14 @@ const ROWS: Row[] = [
   ["pilikula", "Pilikula Nisargadhama", "Dakshina Kannada", ["wildlife_forest", "lake_river_dam"], "Park near Mangaluru with a zoo, lake, heritage village and science centre", ["Pilikula", "Pilikula zoo"]],
   ["dharmasthala", "Dharmasthala", "Dakshina Kannada", ["temple_pilgrimage"], "Manjunatha temple town on the Netravati known for free meals for pilgrims", ["Dharmasthala Manjunatha", "Sri Kshetra Dharmasthala"]],
   ["kukke-subramanya", "Kukke Subramanya", "Dakshina Kannada", ["temple_pilgrimage"], "Subramanya temple at the foot of Kumara Parvatha", ["Kukke", "Subramanya", "Kukke temple"]],
-  ["kumara-parvatha", "Kumara Parvatha", "Dakshina Kannada", ["trek_peak"], "Two-day trek from Kukke Subramanya to the peak on the Kodagu border", ["KP trek", "Kumara Parvata", "Pushpagiri trek"]],
   ["kateel", "Kateel Durgaparameshwari Temple", "Dakshina Kannada", ["temple_pilgrimage"], "Temple on an islet in the Nandini river", ["Kateel", "Kateelu", "Durgaparameshwari"]],
   ["polali-rajarajeshwari", "Polali Rajarajeshwari Temple", "Dakshina Kannada", ["temple_pilgrimage"], "Old temple near Bantwal with a large clay image of the goddess", ["Polali", "Polali temple"]],
   ["moodbidri", "Moodbidri", "Dakshina Kannada", ["heritage", "temple_pilgrimage"], "Jain town with the Thousand Pillar Basadi and many old basadis", ["Moodabidri", "Mudbidri", "Saavira Kambada Basadi"]],
   ["venur", "Venur Gommateshwara", "Dakshina Kannada", ["heritage", "temple_pilgrimage"], "Monolithic Bahubali statue on the Phalguni river bank at Venur", ["Venur", "Venoor"]],
   ["jamalabad-fort", "Gadaikallu (Jamalabad Fort)", "Dakshina Kannada", ["trek_peak", "heritage"], "Rock fort near Belthangady, rebuilt by Tipu Sultan, reached by steps", ["Jamalabad", "Gadaikallu", "Narasimhagad"]],
   ["puttur-mahalingeshwara", "Puttur Mahalingeshwara Temple", "Dakshina Kannada", ["temple_pilgrimage"], "Main temple of Puttur town with a large tank", ["Puttur temple", "Mahalingeshwara Puttur"]],
+  ["ullal-dargah", "Ullal Dargah", "Dakshina Kannada", ["temple_pilgrimage", "heritage"], "Shrine of Sayyid Muhammad Shareeful Madani at Ullal", ["Ullal", "Sayyid Madani dargah"]],
+  ["sowthadka", "Sowthadka Mahaganapathi", "Dakshina Kannada", ["temple_pilgrimage"], "Open-air Ganapathi shrine near Kokkada in Belthangady taluk", ["Sowthadka"]],
 
   // ---------------- Davanagere ----------------
   ["shanti-sagar", "Shanti Sagar (Sulekere)", "Davanagere", ["lake_river_dam", "heritage"], "Large historic lake near Channagiri", ["Sulekere", "Sulekere lake", "Shantisagara"]],
@@ -252,8 +272,10 @@ const ROWS: Row[] = [
   ["unkal-lake", "Unkal Lake", "Dharwad", ["lake_river_dam"], "Lake in Hubballi with a garden and a Vivekananda statue", ["Unkal", "Unkal kere"]],
   ["chandramouleshwara-temple", "Chandramouleshwara Temple", "Dharwad", ["heritage", "temple_pilgrimage"], "Chalukyan temple at Unkal, Hubballi", ["Chandramouleshwara Unkal"]],
   ["nrupatunga-betta", "Nrupatunga Betta", "Dharwad", ["trek_peak"], "Hill park in Hubballi with views over the city", ["Nrupathunga betta"]],
-  ["sadhankeri-lake", "Sadhankeri Lake", "Dharwad", ["lake_river_dam"], "Lake park in Dharwad", ["Sadhankeri", "Sadhankeri park"]],
+  ["sadhankeri-lake", "Sadhankeri Lake", "Dharwad", ["lake_river_dam"], "Lake park in Dharwad made famous by poet D. R. Bendre", ["Sadhankeri", "Sadhankeri park", "Sadhanakeri"]],
   ["siddharoodha-math", "Siddharoodha Math", "Dharwad", ["temple_pilgrimage"], "Math of saint Siddharoodha in Old Hubballi", ["Siddharudha math", "Siddharoodha"]],
+  ["annigeri-amruteshwara", "Amruteshwara Temple, Annigeri", "Dharwad", ["heritage", "temple_pilgrimage"], "Kalyani Chalukya temple in Annigeri town", ["Annigeri", "Amruteshwara Annigeri"]],
+  ["kundgol-shambhulingeshwara", "Shambhulingeshwara Temple, Kundgol", "Dharwad", ["temple_pilgrimage", "heritage"], "Old Shiva temple in Kundgol town", ["Kundgol", "Kundagol", "Shambhulingeshwara Kundgol"]],
 
   // ---------------- Gadag ----------------
   ["lakkundi", "Lakkundi", "Gadag", ["heritage", "temple_pilgrimage"], "Village of Kalyani Chalukya temples and stepwells", ["Lakkundi temples", "Lokkigundi"]],
@@ -262,13 +284,16 @@ const ROWS: Row[] = [
   ["dambal", "Dambal", "Gadag", ["heritage", "temple_pilgrimage"], "Village with the star-plan Doddabasappa temple", ["Doddabasappa temple", "Dambal temple"]],
   ["kappatagudda", "Kappatagudda", "Gadag", ["wildlife_forest", "trek_peak"], "Hill range and wildlife sanctuary known for medicinal plants", ["Kappata gudda", "Kappat hills"]],
   ["magadi-bird-sanctuary", "Magadi Bird Sanctuary", "Gadag", ["wildlife_forest", "lake_river_dam"], "Wetland near Shirahatti visited by migratory birds in winter", ["Magadi kere", "Magadi lake"]],
+  ["lakshmeshwar", "Lakshmeshwar", "Gadag", ["heritage", "temple_pilgrimage"], "Old town with the Chalukyan Someshwara temple and Jain basadis", ["Lakshmeshwara", "Laxmeshwar", "Someshwara temple Lakshmeshwar"]],
+  ["binkadakatti-zoo", "Binkadakatti Zoo", "Gadag", ["wildlife_forest"], "Small zoo at Binkadakatti near Gadag town", ["Binkadakatti", "Gadag zoo"]],
+  ["gajendragad-fort", "Gajendragad Fort", "Gadag", ["heritage", "trek_peak"], "Hill fort above Gajendragad town", ["Gajendragad", "Gajendragada"]],
 
   // ---------------- Hassan ----------------
   ["belur", "Belur Chennakeshava Temple", "Hassan", ["heritage", "temple_pilgrimage"], "Hoysala temple of 1117, part of a UNESCO World Heritage listing", ["Belur", "Chennakeshava temple"]],
   ["halebidu", "Halebidu", "Hassan", ["heritage", "temple_pilgrimage"], "Old Hoysala capital with the carved Hoysaleswara temple", ["Halebeedu", "Halebid", "Hoysaleswara temple", "Dwarasamudra"]],
   ["shravanabelagola", "Shravanabelagola", "Hassan", ["temple_pilgrimage", "heritage", "trek_peak"], "Jain centre with the monolithic Gommateshwara statue on Vindhyagiri", ["Sravanabelagola", "Gommateshwara", "Bahubali statue", "Chandragiri"]],
   ["sakleshpur", "Sakleshpur", "Hassan", ["hill_station", "coffee_tea"], "Malnad hill town with coffee and cardamom estates", ["Sakleshpura", "Sakaleshpur"]],
-  ["bisle-viewpoint", "Bisle Ghat Viewpoint", "Hassan", ["hill_station", "wildlife_forest"], "Forest viewpoint over the Kumara Parvatha and Pushpagiri ranges", ["Bisle", "Bisle ghat"]],
+  ["bisle-viewpoint", "Bisle Ghat Viewpoint", "Hassan", ["wildlife_forest", "hill_station"], "Forest viewpoint facing Kumara Parvatha (Pushpagiri) and Dodda Betta", ["Bisle", "Bisle ghat"]],
   ["manjarabad-fort", "Manjarabad Fort", "Hassan", ["heritage"], "Star-shaped fort built by Tipu Sultan near Sakleshpur", ["Manjarabad"]],
   ["jenukal-gudda", "Jenukal Gudda", "Hassan", ["trek_peak"], "Hill near Sakleshpur with views towards the coast on clear days", ["Jenukallu gudda", "Jenukal"]],
   ["gorur-dam", "Gorur Dam", "Hassan", ["lake_river_dam"], "Hemavathi river dam near Hassan", ["Gorur", "Hemavathi dam"]],
@@ -276,6 +301,8 @@ const ROWS: Row[] = [
   ["doddagaddavalli", "Doddagaddavalli Lakshmi Devi Temple", "Hassan", ["heritage", "temple_pilgrimage"], "Early Hoysala temple of 1113 with four shrines", ["Doddagaddavalli", "Lakshmi Devi temple"]],
   ["mosale", "Mosale Twin Temples", "Hassan", ["heritage", "temple_pilgrimage"], "Pair of Hoysala temples, Nageshvara and Chennakeshava, near Hassan", ["Mosale", "Nageshvara Chennakeshava"]],
   ["hasanamba-temple", "Hasanamba Temple", "Hassan", ["temple_pilgrimage"], "Temple in Hassan town opened to devotees once a year around Deepavali", ["Hasanamba"]],
+  ["yagachi-dam", "Yagachi Dam", "Hassan", ["lake_river_dam"], "Reservoir near Belur with boating and water sports", ["Yagachi"]],
+  ["hassan-city", "Hassan", "Hassan", ["city_town"], "District town and base for Belur, Halebidu and Shravanabelagola", ["Hasana", "Hassan city"]],
 
   // ---------------- Haveri ----------------
   ["bankapura-peacock", "Bankapura Peacock Sanctuary", "Haveri", ["wildlife_forest", "heritage"], "Peacock sanctuary inside the old Bankapura fort near Shiggaon", ["Bankapura", "peacock sanctuary"]],
@@ -284,22 +311,26 @@ const ROWS: Row[] = [
   ["galaganatha", "Galaganatha", "Haveri", ["temple_pilgrimage", "heritage"], "Galageshwara temple on the Tungabhadra bank", ["Galageshwara temple"]],
   ["kaginele", "Kaginele", "Haveri", ["temple_pilgrimage", "heritage"], "Village linked to saint-poet Kanakadasa, with a memorial park", ["Kanakadasa", "Kaginele Kanaka"]],
   ["shishuvinahala", "Shishuvinahala", "Haveri", ["temple_pilgrimage"], "Village of the mystic poet Shishunala Sharif near Shiggaon", ["Shishunala", "Shishunala Sharif"]],
-  ["utsav-rock-garden", "Utsav Rock Garden", "Haveri", ["heritage"], "Sculpture garden of rural life at Gotagodi, Shiggaon", ["Rock garden Gotagodi", "Utsav rock garden"]],
+  // Modern art park (not a historic site); kept under heritage as the closest browse group.
+  ["utsav-rock-garden", "Utsav Rock Garden", "Haveri", ["heritage"], "Modern sculpture garden of rural life at Gotagodi, near Shiggaon", ["Rock garden Gotagodi", "Utsav rock garden"]],
+  ["tarakeshwara-hangal", "Tarakeshwara Temple, Hangal", "Haveri", ["heritage", "temple_pilgrimage"], "12th-century temple in Hangal with a carved domed ceiling in its hall", ["Tarakeshwara", "Hangal temple", "Hangal"]],
 
   // ---------------- Kalaburagi ----------------
   ["kalaburagi-fort", "Kalaburagi Fort", "Kalaburagi", ["heritage"], "Bahmani fort with a large mosque inside its walls", ["Gulbarga fort", "Kalaburagi kote", "Jama Masjid Gulbarga"]],
   ["bande-nawaz-dargah", "Khwaja Bande Nawaz Dargah", "Kalaburagi", ["temple_pilgrimage", "heritage"], "Shrine of the Sufi saint Khwaja Bande Nawaz in Kalaburagi", ["Bande Nawaz", "Gulbarga dargah"]],
   ["sharana-basaveshwara", "Sharana Basaveshwara Temple", "Kalaburagi", ["temple_pilgrimage"], "Temple of the 18th-century saint Sharana Basaveshwara", ["Sharanabasaveshwara", "Appa temple"]],
-  ["ganagapur", "Ganagapur", "Kalaburagi", ["temple_pilgrimage", "lake_river_dam"], "Dattatreya shrine near the Bhima and Amarja confluence", ["Gangapur", "Ganagapura Dattatreya"]],
-  ["sannati", "Sannati", "Kalaburagi", ["heritage"], "Buddhist site on the Bhima with an excavated stupa", ["Sannathi", "Kanaganahalli"]],
-  ["buddha-vihar-kalaburagi", "Buddha Vihar, Kalaburagi", "Kalaburagi", ["temple_pilgrimage"], "Buddhist vihar in white stone on the edge of Kalaburagi", ["Buddha Vihar Gulbarga"]],
+  ["ganagapur", "Ganagapur", "Kalaburagi", ["temple_pilgrimage", "lake_river_dam"], "Dattatreya shrine near the Bhima and Amarja confluence", ["Gangapur", "Ganagapura Dattatreya", "Deval Ganagapur", "Devala Ganagapura"]],
+  ["sannati", "Sannati", "Kalaburagi", ["heritage", "temple_pilgrimage"], "Buddhist site on the Bhima with an excavated stupa and the Chandralamba temple", ["Sannathi", "Kanaganahalli", "Chandralamba temple", "Chandrala Parameshwari"]],
+  ["buddha-vihar-kalaburagi", "Buddha Vihar, Kalaburagi", "Kalaburagi", ["temple_pilgrimage"], "White-domed Buddhist vihar on the Sedam road, about 6 km from Kalaburagi city", ["Buddha Vihar Gulbarga"]],
   ["kalaburagi-city", "Kalaburagi", "Kalaburagi", ["city_town"], "Old Bahmani capital, now a city of Kalyana Karnataka", ["Gulbarga", "Kalaburagi city"]],
+  ["haft-gumbaz", "Haft Gumbaz", "Kalaburagi", ["heritage"], "Group of seven Bahmani-era domed tombs in Kalaburagi city", ["Haft Gumbad", "Seven domes Gulbarga"]],
+  ["chincholi-sanctuary", "Chincholi Wildlife Sanctuary", "Kalaburagi", ["wildlife_forest", "lake_river_dam"], "Forest sanctuary in Chincholi taluk with the Chandrampalli reservoir", ["Chincholi", "Chandrampalli dam", "Chandrampalli"]],
 
   // ---------------- Kodagu ----------------
   ["madikeri", "Madikeri", "Kodagu", ["hill_station", "city_town", "coffee_tea"], "Hill town and headquarters of Kodagu", ["Mercara", "Madikeri town", "Coorg"]],
   ["kodagu-coffee-estates", "Kodagu Coffee Estates", "Kodagu", ["coffee_tea", "hill_station"], "Coffee and pepper estates with homestays across Coorg", ["Coorg coffee", "coffee estates coorg", "Coorg homestays"]],
   ["rajas-seat", "Raja's Seat", "Kodagu", ["hill_station"], "Garden viewpoint in Madikeri looking over hills and valleys", ["Rajas seat", "Raja seat Madikeri"]],
-  ["abbey-falls", "Abbey Falls", "Kodagu", ["waterfall"], "Falls among coffee estates near Madikeri", ["Abbi Falls", "Abbe falls", "Jessy falls"]],
+  ["abbey-falls", "Abbey Falls", "Kodagu", ["waterfall"], "Falls among coffee estates near Madikeri", ["Abbi Falls", "Abbe falls", "Jessie Falls", "Jessy falls"]],
   ["madikeri-fort", "Madikeri Fort", "Kodagu", ["heritage"], "Fort in Madikeri town with the old palace and a museum", ["Mercara fort"]],
   ["omkareshwara-temple", "Omkareshwara Temple", "Kodagu", ["temple_pilgrimage", "heritage"], "Shiva temple in Madikeri built in 1820 with a dome and tank", ["Omkareshwara Madikeri"]],
   ["gaddige", "Gaddige (Raja's Tombs)", "Kodagu", ["heritage"], "Tombs of Kodagu kings in Madikeri", ["Rajas tombs", "Gaddige"]],
@@ -316,14 +347,17 @@ const ROWS: Row[] = [
   ["brahmagiri-sanctuary", "Brahmagiri Wildlife Sanctuary", "Kodagu", ["wildlife_forest", "trek_peak"], "Sanctuary in south Kodagu along the Kerala border", ["Brahmagiri", "Brahmagiri trek"]],
   ["mandalpatti", "Mandalpatti", "Kodagu", ["hill_station", "trek_peak"], "Grassy viewpoint reached by jeep on the edge of Pushpagiri sanctuary", ["Mandalpatti peak", "Mandalapatti"]],
   ["mallalli-falls", "Mallalli Falls", "Kodagu", ["waterfall"], "Kumaradhara river falls at the foot of Pushpagiri, near Somwarpet", ["Mallalli", "Mallali falls"]],
-  ["pushpagiri", "Pushpagiri", "Kodagu", ["trek_peak", "wildlife_forest"], "Peak and wildlife sanctuary in north Kodagu", ["Pushpagiri peak", "Pushpagiri sanctuary"]],
-  ["kote-betta", "Kote Betta", "Kodagu", ["trek_peak", "temple_pilgrimage"], "Twin-topped hill with a small Shiva temple near Madapur", ["Kotebetta"]],
+  // Id kept as "pushpagiri" for stable links; the row is the sanctuary, the peak is kumara-parvatha.
+  ["pushpagiri", "Pushpagiri Wildlife Sanctuary", "Kodagu", ["wildlife_forest", "trek_peak"], "Forest sanctuary in north Kodagu around Kumara Parvatha (Pushpagiri) peak", ["Pushpagiri sanctuary", "Pushpagiri"]],
+  ["kumara-parvatha", "Kumara Parvatha", "Kodagu", ["trek_peak"], "Peak in north Kodagu, usually a two-day trek from Kukke Subramanya", ["KP trek", "Kumara Parvata", "Pushpagiri trek", "Pushpagiri peak", "Subramanya hill"]],
+  ["kote-betta", "Kote Betta", "Kodagu", ["trek_peak", "temple_pilgrimage"], "Hill near Madapur and Hattihole with a small Shiva temple at the top", ["Kotebetta"]],
   ["chelavara-falls", "Chelavara Falls", "Kodagu", ["waterfall"], "Waterfall near Cheyyandane in south Kodagu", ["Chelavara", "Chelavara waterfalls"]],
   ["honnamana-kere", "Honnamana Kere", "Kodagu", ["lake_river_dam", "temple_pilgrimage"], "Lake with a temple near Somwarpet", ["Honnamana lake"]],
   ["chiklihole", "Chiklihole Reservoir", "Kodagu", ["lake_river_dam"], "Small reservoir in forest near Kushalnagar", ["Chiklihole", "Chiklihole dam"]],
   ["barapole", "Barapole River", "Kodagu", ["lake_river_dam"], "Western Ghats river near Virajpet known for whitewater rafting", ["Barapole rafting", "Barapole"]],
   ["virajpet", "Virajpet", "Kodagu", ["city_town", "coffee_tea"], "Town in south Kodagu among coffee estates", ["Virajapet", "Virajpete"]],
   ["somwarpet", "Somwarpet", "Kodagu", ["city_town", "coffee_tea"], "Town in north Kodagu, base for Mallalli and Pushpagiri", ["Somavarapete", "Somwarpete"]],
+  ["nagarhole", "Nagarhole National Park", "Kodagu", ["wildlife_forest"], "Tiger reserve of teak and bamboo forest across Kodagu and Mysuru, beside Kabini", ["Nagarahole", "Rajiv Gandhi National Park", "Nagarhole tiger reserve", "Nagarhole safari"]],
 
   // ---------------- Kolar ----------------
   ["kolaramma-temple", "Kolaramma Temple", "Kolar", ["temple_pilgrimage", "heritage"], "Chola-era temple of Goddess Kolaramma in Kolar town", ["Kolaramma"]],
@@ -332,6 +366,8 @@ const ROWS: Row[] = [
   ["kurudumale", "Kurudumale Ganesha", "Kolar", ["temple_pilgrimage", "heritage"], "Tall monolithic Ganesha in a temple near Mulbagal", ["Kurudumale", "Kurudumale Ganapathi"]],
   ["avani", "Avani", "Kolar", ["temple_pilgrimage", "heritage", "trek_peak"], "Village with the Ramalingeshwara temple group, linked to Valmiki", ["Avani hill", "Ramalingeshwara Avani"]],
   ["kgf", "Kolar Gold Fields", "Kolar", ["heritage", "city_town"], "Old gold-mining town with colonial-era buildings", ["KGF", "Robertsonpet"]],
+  ["virupakshi-mulbagal", "Virupaksha Temple, Mulbagal", "Kolar", ["temple_pilgrimage", "heritage"], "Old Shiva temple at Virupakshapura near Mulbagal", ["Virupakshi", "Mulbagal temple"]],
+  ["someshwara-kolar", "Someshwara Temple, Kolar", "Kolar", ["heritage", "temple_pilgrimage"], "Vijayanagara-era temple with a carved kalyana mantapa in Kolar town", ["Kolar Someshwara"]],
 
   // ---------------- Koppal ----------------
   ["anjanadri", "Anjanadri Hill", "Koppal", ["temple_pilgrimage", "trek_peak"], "Hill near Hampi believed to be Hanuman's birthplace, climbed by steps", ["Anjanadri", "Anjaneya hill", "Hanuman temple Hampi"]],
@@ -341,7 +377,11 @@ const ROWS: Row[] = [
   ["itagi-mahadeva", "Itagi Mahadeva Temple", "Koppal", ["heritage", "temple_pilgrimage"], "Kalyani Chalukya temple of 1112, noted for its fine carving", ["Itagi", "Mahadeva temple Itagi"]],
   ["kanakagiri", "Kanakagiri", "Koppal", ["temple_pilgrimage", "heritage"], "Town with the Kanakachalapati temple and old wells", ["Kanakachalapati temple"]],
   ["koppal-fort", "Koppal Fort", "Koppal", ["heritage", "trek_peak"], "Hill fort above Koppal town, strengthened in Tipu Sultan's time", ["Koppal kote"]],
-  ["hulige", "Hulige", "Koppal", ["temple_pilgrimage"], "Huligemma temple near Munirabad on the Tungabhadra", ["Huligemma temple", "Hulgi"]],
+  ["hulige", "Hulige", "Koppal", ["temple_pilgrimage"], "Huligemma temple near Munirabad on the Tungabhadra", ["Huligemma temple", "Hulgi", "Hulagi"]],
+  ["nava-brindavana", "Nava Brindavana", "Koppal", ["temple_pilgrimage", "island"], "River island near Anegundi with the brindavanas of nine Madhva saints, reached by boat", ["Navabrindavana", "Nava Vrundavana", "Anegundi brindavana"]],
+  ["gavimath-koppal", "Gavisiddeshwara Math", "Koppal", ["temple_pilgrimage"], "Hillside math in Koppal town whose winter jatre draws huge crowds", ["Gavimath", "Gavi math", "Koppal jatre", "Gavisiddeshwara jatre"]],
+  ["hirebenakal", "Hirebenakal", "Koppal", ["heritage"], "Megalithic site of prehistoric stone dolmens on a hill near Gangavathi", ["Hirebenakal megaliths"]],
+  ["kukanur", "Kukanur", "Koppal", ["temple_pilgrimage", "heritage"], "Town with the Mahamaya temple and the old Navalinga temple group", ["Kukanur Mahamaya", "Navalinga temple", "Kuknur"]],
 
   // ---------------- Mandya ----------------
   ["srirangapatna", "Srirangapatna", "Mandya", ["heritage", "temple_pilgrimage", "island"], "Island town on the Kaveri, Tipu Sultan's capital, with the Ranganatha temple", ["Srirangapatnam", "Seringapatam", "Srirangapattana"]],
@@ -358,6 +398,8 @@ const ROWS: Row[] = [
   ["hosaholalu", "Hosaholalu Lakshminarayana Temple", "Mandya", ["heritage", "temple_pilgrimage"], "Hoysala trikuta temple near KR Pet", ["Hosaholalu"]],
   ["kokkare-bellur", "Kokkare Bellur", "Mandya", ["wildlife_forest"], "Village where painted storks and pelicans nest on the trees", ["Kokrebellur", "Kokkarebellur"]],
   ["tonnur-kere", "Tonnur Kere", "Mandya", ["lake_river_dam", "heritage"], "Old lake near Pandavapura linked to Ramanujacharya", ["Thonnur lake", "Tonnur lake", "Moti Talab"]],
+  ["bheemeshwari", "Bheemeshwari", "Mandya", ["wildlife_forest", "lake_river_dam"], "Riverside nature camp on the Kaveri in the Cauvery Wildlife Sanctuary", ["Bheemeshwari camp", "Bhimeshwari"]],
+  ["muthathi", "Muthathi", "Mandya", ["lake_river_dam", "temple_pilgrimage", "wildlife_forest"], "Kaveri riverbank village with an Anjaneya temple in the Cauvery Wildlife Sanctuary", ["Muttatti", "Muthathi Anjaneya"]],
 
   // ---------------- Mysuru ----------------
   ["mysuru-city", "Mysuru", "Mysuru", ["city_town", "heritage"], "Royal city of the Wadiyars, known for Dasara, silk and sandalwood", ["Mysore", "Mysuru city"]],
@@ -383,9 +425,12 @@ const ROWS: Row[] = [
   ["mudgal-fort", "Mudgal Fort", "Raichur", ["heritage"], "Large moated fort near Lingsugur", ["Mudgal"]],
   ["maski", "Maski", "Raichur", ["heritage"], "Site of an Ashokan rock edict that names the emperor", ["Maski edict", "Ashokan edict Maski"]],
   ["jaladurga", "Jaladurga", "Raichur", ["heritage", "lake_river_dam"], "Fort ruins on a rocky island of the Krishna river near Lingsugur", ["Jaldurg", "Jala durga"]],
+  ["kuruvapura", "Kuruvapura Dattatreya Temple", "Raichur", ["temple_pilgrimage", "island"], "Dattatreya shrine on a Krishna river island near Atkur, linked to Sripada Srivallabha", ["Kurvapura", "Kuravpur", "Kurugadda", "Sripada Srivallabha"]],
+  ["panchamukhi-gandhal", "Panchamukhi Anjaneya, Gandhal", "Raichur", ["temple_pilgrimage"], "Shrine of the five-faced Hanuman at Panchamukhi near Gandhal", ["Panchamukhi", "Gandhal", "Panchamukhi Hanuman"]],
+  ["amba-math", "Amba Math", "Raichur", ["temple_pilgrimage"], "Temple of Goddess Ambadevi at Amba Math in Sindhanur taluk", ["Ambamath", "Ambadevi temple"]],
 
   // ---------------- Shivamogga ----------------
-  ["jog-falls", "Jog Falls", "Shivamogga", ["waterfall"], "Sharavati river drops about 253 m in four streams near Sagara", ["Jog", "Jogada Gundi", "Gerusoppa falls"]],
+  ["jog-falls", "Jog Falls", "Shivamogga", ["waterfall"], "Sharavati river drops about 253 m in four streams near Sagara", ["Jog", "Jogada Gundi", "Gersoppa Falls", "Gerusoppa falls", "Joga"]],
   ["agumbe", "Agumbe", "Shivamogga", ["hill_station", "wildlife_forest"], "Rainforest village on the ghats, known for its sunset viewpoint", ["Agumbe ghat", "Agumbe sunset point"]],
   ["barkana-falls", "Barkana Falls", "Shivamogga", ["waterfall", "trek_peak"], "Tall falls of the Seetha river seen from a viewpoint near Agumbe", ["Barkana"]],
   ["jogigundi-falls", "Jogigundi Falls", "Shivamogga", ["waterfall"], "Small forest falls near Agumbe", ["Jogi gundi"]],
@@ -402,7 +447,7 @@ const ROWS: Row[] = [
   ["linganamakki-dam", "Linganamakki Dam", "Shivamogga", ["lake_river_dam"], "Sharavati reservoir upstream of Jog Falls", ["Linganamakki", "Sharavati dam"]],
   ["honnemaradu", "Honnemaradu", "Shivamogga", ["lake_river_dam", "island"], "Islands and coves in the Linganamakki backwaters", ["Honnemardu"]],
   ["sharavathi-valley", "Sharavathi Valley Wildlife Sanctuary", "Shivamogga", ["wildlife_forest"], "Evergreen forest around the Sharavati valley and reservoir", ["Sharavathi sanctuary", "lion-tailed macaque sanctuary"]],
-  ["shettihalli-sanctuary", "Shettihalli Wildlife Sanctuary", "Shivamogga", ["wildlife_forest"], "Forest sanctuary near Shivamogga that includes Sakrebailu", ["Shettihalli"]],
+  ["shettihalli-sanctuary", "Shettihalli Wildlife Sanctuary", "Shivamogga", ["wildlife_forest"], "Forest sanctuary near Shivamogga that includes Sakrebailu", ["Shettihalli sanctuary", "Shettihalli wildlife"]],
   ["mandagadde", "Mandagadde Bird Sanctuary", "Shivamogga", ["wildlife_forest", "island"], "Islet on the Tunga where egrets and cormorants nest in the monsoon", ["Mandagadde"]],
   ["kuppalli", "Kuppalli", "Shivamogga", ["heritage"], "Kuvempu's ancestral home, now a museum, and the Kavishaila memorial", ["Kavishaila", "Kuvempu house"]],
   ["thirthahalli", "Thirthahalli", "Shivamogga", ["city_town", "temple_pilgrimage"], "Malnad town on the Tunga with the Rameshwara temple", ["Tirthahalli", "Theerthahalli"]],
@@ -411,6 +456,10 @@ const ROWS: Row[] = [
   ["gudavi-bird-sanctuary", "Gudavi Bird Sanctuary", "Shivamogga", ["wildlife_forest", "lake_river_dam"], "Lake near Soraba where waterbirds nest in the monsoon", ["Gudavi"]],
   ["dabbe-falls", "Dabbe Falls", "Shivamogga", ["waterfall", "trek_peak"], "Forest falls near Hosagadde reached by a walk", ["Dabbe"]],
   ["shivamogga-city", "Shivamogga", "Shivamogga", ["city_town"], "District city on the Tunga, gateway to the Malnad", ["Shimoga", "Shivamogga city"]],
+  ["sigandur", "Sigandur Chowdeshwari Temple", "Shivamogga", ["temple_pilgrimage", "lake_river_dam"], "Chowdeshwari temple across the Sharavati backwaters in Sagara taluk", ["Sigandur", "Sigandur temple", "Sigandooru", "Chowdeshwari Sigandur"]],
+  ["humcha", "Humcha", "Shivamogga", ["temple_pilgrimage", "heritage"], "Jain pilgrimage village with the Padmavati temple and an old math", ["Hombuja", "Humcha Padmavati"]],
+  ["nagara-fort", "Nagara (Bidanur) Fort", "Shivamogga", ["heritage"], "Keladi Nayaka fort ruins at Nagara near Hosanagara", ["Bidanur fort", "Nagara kote", "Devaganga"]],
+  ["kunchikal-falls", "Kunchikal Falls", "Shivamogga", ["waterfall"], "Varahi river cascade near Masthikatte, inside a hydel project area", ["Kunchikal"]],
 
   // ---------------- Tumakuru ----------------
   ["madhugiri", "Madhugiri Fort", "Tumakuru", ["trek_peak", "heritage"], "Monolithic hill with fort walls and a steep rock-face climb", ["Madhugiri", "Madhugiri betta"]],
@@ -421,6 +470,10 @@ const ROWS: Row[] = [
   ["yediyur", "Yediyur", "Tumakuru", ["temple_pilgrimage"], "Shrine of saint Siddalingeshwara near Kunigal", ["Yediyur Siddalingeshwara"]],
   ["goravanahalli", "Goravanahalli Mahalakshmi Temple", "Tumakuru", ["temple_pilgrimage"], "Lakshmi temple near Koratagere visited by many devotees", ["Goravanahalli", "Gorawanahalli"]],
   ["mydala-lake", "Mydala Lake", "Tumakuru", ["lake_river_dam"], "Lake near Tumakuru city set below Devarayanadurga hills", ["Mydala kere", "Maidala lake"]],
+  ["siddara-betta", "Siddara Betta", "Tumakuru", ["trek_peak", "cave", "temple_pilgrimage"], "Hill near Koratagere with caves, a Siddeshwara shrine and rocky trails", ["Siddarabetta", "Siddara hill", "Siddarabetta trek"]],
+  ["huthridurga", "Huthridurga", "Tumakuru", ["trek_peak", "heritage"], "Hill fort trek with old walls near Kunigal", ["Hutridurga", "Huthri durga"]],
+  ["aralaguppe", "Aralaguppe Chennakeshava Temple", "Tumakuru", ["heritage", "temple_pilgrimage"], "Hoysala temple at Aralaguppe in Tiptur taluk", ["Araluguppe", "Aralaguppe Chennakeshava"]],
+  ["kaggaladu", "Kaggaladu Heronry", "Tumakuru", ["wildlife_forest"], "Village in Sira taluk where painted storks and herons nest on the trees", ["Kaggaladu heronry", "Kaggaladu bird sanctuary", "Kaggaladu"]],
 
   // ---------------- Udupi ----------------
   ["udupi-krishna-matha", "Udupi Sri Krishna Matha", "Udupi", ["temple_pilgrimage"], "Krishna temple founded by Madhvacharya, seen through the Kanakana Kindi window", ["Udupi Krishna temple", "Krishna Mutt", "Udupi temple"]],
@@ -430,7 +483,7 @@ const ROWS: Row[] = [
   ["kaup-beach", "Kaup Beach", "Udupi", ["beach_coast", "heritage"], "Beach with a lighthouse on the rocks at Kapu", ["Kapu beach", "Kaup lighthouse", "Kapu"]],
   ["padubidri-beach", "Padubidri Beach", "Udupi", ["beach_coast"], "Blue Flag certified beach near Padubidri", ["Padubidri", "Padubidri blue flag"]],
   ["delta-beach", "Delta Beach", "Udupi", ["beach_coast"], "Beach at Kodi Bengre where the river meets the sea", ["Kodi Bengre", "Delta point"]],
-  ["maravanthe-beach", "Maravanthe Beach", "Udupi", ["beach_coast", "lake_river_dam"], "Beach with the highway between the sea and the Souparnika river", ["Maravanthe"]],
+  ["maravanthe-beach", "Maravanthe Beach", "Udupi", ["beach_coast", "lake_river_dam"], "Beach with the highway between the sea and the Souparnika river", ["Maravanthe", "Trasi beach", "Trasi Maravanthe"]],
   ["ottinene", "Ottinene", "Udupi", ["beach_coast", "hill_station"], "Hill viewpoint over the sea and river mouth near Byndoor", ["Ottinene viewpoint", "Byndoor"]],
   ["kollur-mookambika", "Kollur Mookambika", "Udupi", ["temple_pilgrimage"], "Temple of Goddess Mookambika at the foot of Kodachadri", ["Kollur", "Mookambika temple", "Mookambika"]],
   ["anegudde", "Anegudde Vinayaka Temple", "Udupi", ["temple_pilgrimage"], "Hill temple of Vinayaka at Kumbashi near Kundapura", ["Anegudde", "Kumbashi"]],
@@ -441,6 +494,8 @@ const ROWS: Row[] = [
   ["karkala-gommateshwara", "Karkala Gommateshwara", "Udupi", ["heritage", "temple_pilgrimage"], "Monolithic Bahubali statue of 1432 on a rock hill in Karkala", ["Karkala Bahubali", "Karkala"]],
   ["chaturmukha-basadi", "Chaturmukha Basadi", "Udupi", ["heritage", "temple_pilgrimage"], "Granite Jain temple in Karkala with doorways on all four sides", ["Chaturmukha basadi Karkala"]],
   ["varanga", "Varanga Kere Basadi", "Udupi", ["temple_pilgrimage", "lake_river_dam", "heritage"], "Jain temple in the middle of a lake, reached by boat", ["Varanga", "Varanga lake temple"]],
+  ["kudlu-falls", "Kudlu Theertha Falls", "Udupi", ["waterfall", "trek_peak"], "Forest waterfall near Hebri inside the Someshwara sanctuary", ["Kudlu falls", "Koodlu Theertha"]],
+  ["attur-basilica", "Attur St Lawrence Basilica", "Udupi", ["temple_pilgrimage", "heritage"], "Church at Attur near Karkala, known for its yearly feast", ["Attur church", "St Lawrence Karkala"]],
 
   // ---------------- Uttara Kannada ----------------
   ["gokarna", "Gokarna", "Uttara Kannada", ["beach_coast", "temple_pilgrimage", "city_town"], "Temple town with the Mahabaleshwar temple and a chain of beaches", ["Gokarn", "Gokarna town"]],
@@ -451,7 +506,7 @@ const ROWS: Row[] = [
   ["half-moon-beach", "Half Moon Beach", "Uttara Kannada", ["beach_coast", "trek_peak"], "Small cove past Om Beach reached by a cliff path or boat", ["Half moon"]],
   ["paradise-beach", "Paradise Beach", "Uttara Kannada", ["beach_coast", "trek_peak"], "Rocky cove south of Half Moon Beach, reached on foot or by boat", ["Full Moon beach", "Paradise beach Gokarna"]],
   ["murudeshwar", "Murudeshwar", "Uttara Kannada", ["temple_pilgrimage", "beach_coast"], "Temple on a headland with a tall gopuram and a large Shiva statue", ["Murudeshwara", "Murdeshwar", "Murudeshwar Shiva statue"]],
-  ["netrani-island", "Netrani Island", "Uttara Kannada", ["island", "beach_coast"], "Rocky island off Murudeshwar visited for scuba diving", ["Netrani", "Pigeon Island", "Nethrani"]],
+  ["netrani-island", "Netrani Island", "Uttara Kannada", ["island"], "Rocky island off Murudeshwar visited for scuba diving", ["Netrani", "Pigeon Island", "Nethrani"]],
   ["yana-caves", "Yana Caves", "Uttara Kannada", ["cave", "trek_peak", "temple_pilgrimage"], "Black karst rock pinnacles in forest with a cave shrine", ["Yana", "Yana rocks", "Bhairaveshwara shikhara"]],
   ["vibhuti-falls", "Vibhuti Falls", "Uttara Kannada", ["waterfall"], "Falls over limestone rock in forest near Yana", ["Vibhooti falls"]],
   ["mirjan-fort", "Mirjan Fort", "Uttara Kannada", ["heritage"], "Laterite fort near Kumta with moats and wells", ["Mirjan", "Mirjan kote"]],
@@ -466,7 +521,7 @@ const ROWS: Row[] = [
   ["sadashivgad", "Sadashivgad Fort", "Uttara Kannada", ["heritage"], "Hill fort at the Kali river mouth near Karwar", ["Sadashivgad", "Sadashivagad"]],
   ["dandeli", "Dandeli", "Uttara Kannada", ["wildlife_forest", "lake_river_dam"], "Forest town on the Kali river known for rafting and birdwatching", ["Dandeli wildlife", "Kali river rafting", "Dandeli rafting"]],
   ["kali-tiger-reserve", "Kali Tiger Reserve", "Uttara Kannada", ["wildlife_forest"], "Tiger reserve joining Dandeli sanctuary and Anshi National Park", ["Anshi", "Anshi National Park", "Dandeli Anshi"]],
-  ["syntheri-rocks", "Syntheri Rocks", "Uttara Kannada", ["lake_river_dam", "wildlife_forest"], "Tall granite rock cut by the Kaneri stream near Dandeli", ["Syntheri", "Sintheri rocks"]],
+  ["syntheri-rocks", "Syntheri Rocks", "Uttara Kannada", ["wildlife_forest", "lake_river_dam"], "Tall monolithic rock beside the Kaneri stream in the Dandeli forest", ["Syntheri", "Sintheri rocks"]],
   ["kavala-caves", "Kavala Caves", "Uttara Kannada", ["cave", "trek_peak"], "Limestone caves with a natural linga, reached by steps near Dandeli", ["Kavala", "Kavla caves"]],
   ["supa-dam", "Supa Dam", "Uttara Kannada", ["lake_river_dam"], "Kali river dam near Ganeshgudi", ["Supa", "Supa reservoir", "Ganeshgudi"]],
   ["ulavi", "Ulavi", "Uttara Kannada", ["temple_pilgrimage"], "Channabasaveshwara temple in the Joida forest", ["Ulavi Channabasaveshwara"]],
@@ -478,6 +533,9 @@ const ROWS: Row[] = [
   ["banavasi", "Banavasi", "Uttara Kannada", ["heritage", "temple_pilgrimage"], "Old Kadamba capital with the Madhukeshwara temple on the Varada", ["Madhukeshwara temple", "Banavase"]],
   ["sahasralinga", "Sahasralinga", "Uttara Kannada", ["temple_pilgrimage", "lake_river_dam"], "Many lingas carved on rocks in the Shalmala river near Sirsi", ["Sahasra linga", "Shalmala"]],
   ["sonda", "Sonda", "Uttara Kannada", ["temple_pilgrimage", "heritage"], "Village of the Swarnavalli and Vadiraja mathas near Sirsi", ["Swarnavalli", "Sode", "Sonda Vadiraja"]],
+  ["kasarkod-beach", "Kasarkod Beach", "Uttara Kannada", ["beach_coast"], "Blue Flag certified beach near Honnavar", ["Kasarkod", "Honnavar eco beach", "Kasarkod eco beach"]],
+  ["mundgod", "Mundgod Tibetan Settlement", "Uttara Kannada", ["temple_pilgrimage", "heritage"], "Tibetan settlement with the Drepung and Ganden monasteries", ["Mundgod", "Mundgod monastery"]],
+  ["gersoppa-basadi", "Gerusoppa Chaturmukha Basadi", "Uttara Kannada", ["heritage", "temple_pilgrimage"], "Jain temple at Gerusoppa on the Sharavati near Honnavar", ["Gersoppa", "Gerusoppe"]],
 
   // ---------------- Vijayanagara ----------------
   ["hampi", "Hampi", "Vijayanagara", ["heritage", "temple_pilgrimage"], "UNESCO-listed ruins of the Vijayanagara capital among boulders on the Tungabhadra", ["Hampe", "Vijayanagara ruins", "Group of Monuments at Hampi"]],
@@ -494,8 +552,10 @@ const ROWS: Row[] = [
   ["ugra-narasimha", "Lakshmi Narasimha Statue", "Vijayanagara", ["heritage", "temple_pilgrimage"], "Monolithic seated Narasimha statue at Hampi", ["Ugra Narasimha", "Narasimha Hampi"]],
   ["sasivekalu-ganesha", "Sasivekalu & Kadalekalu Ganesha", "Vijayanagara", ["heritage", "temple_pilgrimage"], "Two monolithic Ganesha statues on Hemakuta Hill's slopes", ["Sasivekalu", "Kadalekalu", "Hampi Ganesha"]],
   ["malyavanta-raghunatha", "Malyavanta Raghunatha Temple", "Vijayanagara", ["temple_pilgrimage", "heritage"], "Rama temple on Malyavanta Hill near Hampi", ["Malyavanta hill", "Malyavanta"]],
-  ["tungabhadra-dam", "Tungabhadra Dam", "Vijayanagara", ["lake_river_dam"], "Dam on the Tungabhadra at Hosapete with gardens", ["TB dam", "Tungabhadra reservoir", "Pampa Sagar"]],
-  ["hosapete", "Hosapete", "Vijayanagara", ["city_town"], "Town nearest to Hampi and headquarters of Vijayanagara district", ["Hospet", "Hosapete city"]],
+  ["tungabhadra-dam", "Tungabhadra Dam", "Vijayanagara", ["lake_river_dam"], "Dam on the Tungabhadra at Hosapete with gardens", ["TB dam", "Tungabhadra reservoir", "Pampa Sagar", "Munirabad", "Munirabad dam"]],
+  ["hosapete", "Hosapete", "Vijayanagara", ["city_town"], "City about 13 km from Hampi, its railhead and the Vijayanagara district headquarters", ["Hospet", "Hosapete city"]],
+  ["hampi-museum", "Hampi Archaeological Museum", "Vijayanagara", ["heritage"], "ASI museum at Kamalapura with sculptures and finds from the Hampi ruins", ["Kamalapura museum", "Hampi museum"]],
+  ["mylara", "Mylara Lingeshwara Temple", "Vijayanagara", ["temple_pilgrimage"], "Temple at Mylara near Huvina Hadagali, known for its yearly Karnikotsava", ["Mylara", "Mailara Lingeshwara", "Mylara Karnikotsava"]],
 
   // ---------------- Vijayapura ----------------
   ["gol-gumbaz", "Gol Gumbaz", "Vijayapura", ["heritage"], "Mausoleum of Mohammed Adil Shah, known for its whispering gallery", ["Gol Gumbad", "Golgumbaz", "Gol Gumbaz Bijapur"]],
@@ -507,16 +567,22 @@ const ROWS: Row[] = [
   ["taj-bawdi", "Taj Bawdi", "Vijayapura", ["heritage", "lake_river_dam"], "Large Adil Shahi stepwell entered through a tall arch", ["Taj Baoli", "Taj Bavadi"]],
   ["gagan-mahal", "Gagan Mahal", "Vijayapura", ["heritage"], "Royal palace ruin with a wide central arch", ["Gagan Mahal Bijapur"]],
   ["asar-mahal", "Asar Mahal", "Vijayapura", ["heritage"], "Hall of justice built by Mohammed Adil Shah facing a tank", ["Asar Mahal Bijapur"]],
-  ["almatti-dam", "Almatti Dam", "Vijayapura", ["lake_river_dam"], "Krishna river dam of the Upper Krishna Project with gardens", ["Almatti", "Alamatti", "Lal Bahadur Shastri dam"]],
-  ["basavana-bagewadi", "Basavana Bagewadi", "Vijayapura", ["temple_pilgrimage", "heritage"], "Birthplace of Basavanna, with the Basaveshwara temple", ["Basavana Bagevadi", "Bagewadi"]],
+  ["almatti-dam", "Almatti Dam", "Vijayapura", ["lake_river_dam"], "Krishna river dam of the Upper Krishna Project on the Vijayapura-Bagalkot border", ["Almatti", "Alamatti", "Lal Bahadur Shastri dam", "Lal Bahadur Shastri Sagar"]],
+  ["basavana-bagewadi", "Basavana Bagewadi", "Vijayapura", ["temple_pilgrimage", "heritage"], "Traditional birthplace of Basavanna, with the Basaveshwara temple", ["Basavana Bagevadi", "Bagewadi"]],
   ["vijayapura-city", "Vijayapura", "Vijayapura", ["city_town", "heritage"], "Adil Shahi capital with domes, tombs and stepwells", ["Bijapur", "Vijayapura city"]],
+  ["shivagiri-vijayapura", "Shivagiri", "Vijayapura", ["temple_pilgrimage"], "Temple park on the edge of Vijayapura city with a giant seated Shiva statue", ["Shivagiri Shiva statue", "Bijapur Shiva statue"]],
+  ["jod-gumbaz", "Jod Gumbaz", "Vijayapura", ["heritage"], "Pair of domed Adil Shahi-era tombs in Vijayapura", ["Jod Gumbad", "Twin domes Bijapur"]],
+  ["mehtar-mahal", "Mehtar Mahal", "Vijayapura", ["heritage"], "Ornate gateway with carved stone balconies in Vijayapura", ["Mehtar Mahal Bijapur"]],
 
   // ---------------- Yadgir ----------------
   ["yadgir-fort", "Yadgir Fort", "Yadgir", ["heritage", "trek_peak"], "Hill fort above Yadgir town", ["Yadgir kote", "Yadagiri fort"]],
-  ["sleeping-buddha-shahapur", "Sleeping Buddha, Shahapur", "Yadgir", ["heritage", "trek_peak"], "Hill range at Shahapur whose outline looks like a reclining Buddha", ["Shahapur", "sleeping Buddha hills"]],
-  ["bonhal-bird-sanctuary", "Bonhal Bird Sanctuary", "Yadgir", ["wildlife_forest", "lake_river_dam"], "Lake sanctuary near Shorapur visited by migratory birds", ["Bonal", "Bonhal"]],
+  ["sleeping-buddha-shahapur", "Sleeping Buddha, Shahapur", "Yadgir", ["trek_peak"], "Natural hill range at Shahapur whose outline looks like a reclining Buddha", ["Shahapur", "sleeping Buddha hills", "Sleeping Buddha hill"]],
+  ["bonhal-bird-sanctuary", "Bonal Bird Sanctuary", "Yadgir", ["wildlife_forest", "lake_river_dam"], "Lake sanctuary near Shorapur visited by migratory birds", ["Bonal", "Bonhal", "Bonhal bird sanctuary"]],
   ["mailapur", "Mailapur", "Yadgir", ["temple_pilgrimage"], "Village temple of Mallayya (Mailara) near Yadgir", ["Mylapur Mallayya", "Mailara"]],
-  ["shorapur", "Shorapur", "Yadgir", ["heritage", "city_town"], "Town of the Surapura Nayakas with an old palace", ["Surapura", "Surpur"]],
+  ["shorapur", "Shorapur", "Yadgir", ["heritage", "city_town"], "Town of the Surapura Nayakas with an old palace", ["Surapura", "Surpur", "Taylor Manzil"]],
+  ["basava-sagar-dam", "Basava Sagar Dam", "Yadgir", ["lake_river_dam"], "Krishna river dam at Narayanpur, also called Basava Sagar, with a large reservoir", ["Narayanpur dam", "Narayanapura dam", "Basavasagar"]],
+  ["wagangera-fort", "Wagangera Fort", "Yadgir", ["trek_peak", "heritage"], "Hill fort of the Surapura Nayakas near Shorapur", ["Wagangera", "Vagingera"]],
+  ["gogi", "Gogi", "Yadgir", ["temple_pilgrimage", "heritage"], "Village in Shahapur taluk with the dargah of Pir Chanda Husaini and Adil Shahi tombs", ["Gogi dargah", "Gogi Chanda Husaini"]],
 ];
 
 const REGION_BY_DISTRICT = new Map(KARNATAKA_DISTRICTS.map((d) => [d.name, d.region]));

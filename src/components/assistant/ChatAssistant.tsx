@@ -267,6 +267,7 @@ export function ChatAssistant({ config }: { config: ChatAssistantConfig }) {
   return (
     <>
       <div
+        data-float-button=""
         className={`fixed right-4 z-[60] flex flex-col items-end sm:right-6 ${
           stacked
             ? "bottom-[calc(5.25rem+env(safe-area-inset-bottom))] sm:bottom-[5.5rem]"

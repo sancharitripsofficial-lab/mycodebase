@@ -537,6 +537,14 @@ html[data-promo-open] .site-header {
   z-index: 95;
 }
 
+/* While the trips search list is open (TripSearch sets the flag), the floating chat and WhatsApp
+   buttons step aside so they never cover its "Trip available" badges. */
+html[data-search-open] [data-float-button] {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
 /* ---------- Kannada ↔ English ---------- */
 /* A returning Kannada visitor: hold the page (max 1.2 s) until the Kannada words are on it. */
 html[data-lang="kn"]:not([data-i18n-ready]) body {

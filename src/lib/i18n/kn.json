@@ -912,7 +912,7 @@
  "Scuba Diving 🤿 — Murudrshwar,Karnataka": "ಸ್ಕೂಬಾ ಡೈವಿಂಗ್ 🤿 — ಮುರುಡೇಶ್ವರ, ಕರ್ನಾಟಕ",
  "Scuba Diving 🤿 | Sanchari • Micro Trips": "ಸ್ಕೂಬಾ ಡೈವಿಂಗ್ 🤿 | ಸಂಚಾರಿ • ಮೈಕ್ರೋ ಟ್ರಿಪ್ಸ್",
  "sea breeze": "ಕಡಲ ತಂಗಾಳಿ",
- "Search Chikmagalur, Coorg, Gokarna, Hampi...": "ಚಿಕ್ಕಮಗಳೂರು, ಕೊಡಗು, ಗೋಕರ್ಣ, ಹಂಪಿ... ಹುಡುಕಿ",
+ "Search Chikmagalur, Coorg, Gokarna, Hampi...": "ಹುಡುಕಿ: ಚಿಕ್ಕಮಗಳೂರು, ಕೊಡಗು, ಗೋಕರ್ಣ, ಹಂಪಿ…",
  "Search destination or vibe": "ತಾಣ ಅಥವಾ ಪ್ರವಾಸದ ಮೂಡ್ ಹುಡುಕಿ",
  "seat": "ಸೀಟು",
  "Seat": "ಸೀಟು",
@@ -1278,5 +1278,7 @@
   "Temples & pilgrimage": "ದೇವಾಲಯಗಳು ಮತ್ತು ತೀರ್ಥಕ್ಷೇತ್ರಗಳು",
   "Lakes, rivers & dams": "ಕೆರೆಗಳು, ನದಿಗಳು ಮತ್ತು ಅಣೆಕಟ್ಟುಗಳು",
   "Caves": "ಗುಹೆಗಳು",
-  "Cities & towns": "ನಗರಗಳು ಮತ್ತು ಪಟ್ಟಣಗಳು"
+  "Cities & towns": "ನಗರಗಳು ಮತ್ತು ಪಟ್ಟಣಗಳು",
+  "Couldn't load places. Check your connection and try again.": "ಸ್ಥಳಗಳನ್ನು ತರಲಾಗಲಿಲ್ಲ. ನಿಮ್ಮ ಇಂಟರ್ನೆಟ್ ಸಂಪರ್ಕ ಪರಿಶೀಲಿಸಿ ಮತ್ತು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+  "Trip results": "ಪ್ರವಾಸ ಫಲಿತಾಂಶಗಳು"
 }

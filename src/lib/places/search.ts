@@ -212,6 +212,141 @@ function typoCount(q: Prepared, c: Prepared): number | null {
 }
 
 // ---------------------------------------------------------------------------
+// Kannada names (typed in Kannada script)
+// ---------------------------------------------------------------------------
+
+/**
+ * Kannada spellings of every district and the best-known places, keyed by the English name in
+ * karnataka-places.ts (a district and a place with the same name share one entry). Searched as
+ * aliases, and turned back into the English name to search trip texts.
+ */
+export const KANNADA_NAMES: Readonly<Record<string, readonly string[]>> = {
+  // Districts
+  Bagalkot: ["ಬಾಗಲಕೋಟೆ", "ಬಾಗಲಕೋಟ"],
+  Ballari: ["ಬಳ್ಳಾರಿ"],
+  Belagavi: ["ಬೆಳಗಾವಿ"],
+  "Bengaluru Rural": ["ಬೆಂಗಳೂರು ಗ್ರಾಮಾಂತರ"],
+  "Bengaluru Urban": ["ಬೆಂಗಳೂರು ನಗರ", "ಬೆಂಗಳೂರು"],
+  "Bengaluru South": ["ಬೆಂಗಳೂರು ದಕ್ಷಿಣ", "ರಾಮನಗರ"],
+  Bidar: ["ಬೀದರ್", "ಬೀದರ"],
+  Chamarajanagar: ["ಚಾಮರಾಜನಗರ"],
+  Chikkaballapur: ["ಚಿಕ್ಕಬಳ್ಳಾಪುರ"],
+  Chikkamagaluru: ["ಚಿಕ್ಕಮಗಳೂರು"],
+  Chitradurga: ["ಚಿತ್ರದುರ್ಗ"],
+  "Dakshina Kannada": ["ದಕ್ಷಿಣ ಕನ್ನಡ", "ಮಂಗಳೂರು"],
+  Davanagere: ["ದಾವಣಗೆರೆ"],
+  Dharwad: ["ಧಾರವಾಡ", "ಹುಬ್ಬಳ್ಳಿ"],
+  Gadag: ["ಗದಗ"],
+  Hassan: ["ಹಾಸನ"],
+  Haveri: ["ಹಾವೇರಿ"],
+  Kalaburagi: ["ಕಲಬುರಗಿ"],
+  Kodagu: ["ಕೊಡಗು", "ಕೂರ್ಗ್"],
+  Kolar: ["ಕೋಲಾರ"],
+  Koppal: ["ಕೊಪ್ಪಳ"],
+  Mandya: ["ಮಂಡ್ಯ"],
+  Mysuru: ["ಮೈಸೂರು"],
+  Raichur: ["ರಾಯಚೂರು"],
+  Shivamogga: ["ಶಿವಮೊಗ್ಗ"],
+  Tumakuru: ["ತುಮಕೂರು"],
+  Udupi: ["ಉಡುಪಿ"],
+  "Uttara Kannada": ["ಉತ್ತರ ಕನ್ನಡ", "ಕಾರವಾರ"],
+  Vijayanagara: ["ವಿಜಯನಗರ", "ಹೊಸಪೇಟೆ"],
+  Vijayapura: ["ವಿಜಯಪುರ", "ಬಿಜಾಪುರ"],
+  Yadgir: ["ಯಾದಗಿರಿ"],
+  // Places
+  Bengaluru: ["ಬೆಂಗಳೂರು"],
+  "Mysore Palace": ["ಮೈಸೂರು ಅರಮನೆ"],
+  "Chamundi Hills": ["ಚಾಮುಂಡಿ ಬೆಟ್ಟ"],
+  Hampi: ["ಹಂಪಿ"],
+  "Virupaksha Temple": ["ವಿರೂಪಾಕ್ಷ ದೇವಾಲಯ"],
+  "Tungabhadra Dam": ["ತುಂಗಭದ್ರಾ ಅಣೆಕಟ್ಟು"],
+  Hosapete: ["ಹೊಸಪೇಟೆ"],
+  Anegundi: ["ಆನೆಗೊಂದಿ"],
+  Gokarna: ["ಗೋಕರ್ಣ"],
+  "Om Beach": ["ಓಂ ಬೀಚ್"],
+  "Kudle Beach": ["ಕುಡ್ಲೆ ಬೀಚ್"],
+  Murudeshwar: ["ಮುರುಡೇಶ್ವರ"],
+  Karwar: ["ಕಾರವಾರ"],
+  Dandeli: ["ದಾಂಡೇಲಿ"],
+  "Yana Caves": ["ಯಾಣ"],
+  "Jog Falls": ["ಜೋಗ ಜಲಪಾತ", "ಜೋಗ್ ಜಲಪಾತ"],
+  Agumbe: ["ಆಗುಂಬೆ"],
+  Madikeri: ["ಮಡಿಕೇರಿ"],
+  "Raja's Seat": ["ರಾಜಾ ಸೀಟ್"],
+  "Abbey Falls": ["ಅಬ್ಬೆ ಜಲಪಾತ", "ಅಬ್ಬಿ ಜಲಪಾತ"],
+  Talakaveri: ["ತಲಕಾವೇರಿ"],
+  Bhagamandala: ["ಭಾಗಮಂಡಲ"],
+  "Dubare Elephant Camp": ["ದುಬಾರೆ"],
+  Kushalnagar: ["ಕುಶಾಲನಗರ"],
+  "Bylakuppe Golden Temple": ["ಬೈಲಕುಪ್ಪೆ"],
+  Mullayanagiri: ["ಮುಳ್ಳಯ್ಯನಗಿರಿ"],
+  "Baba Budangiri": ["ಬಾಬಾ ಬುಡನ್ ಗಿರಿ"],
+  Kemmangundi: ["ಕೆಮ್ಮಣ್ಣುಗುಂಡಿ"],
+  "Kudremukh Peak": ["ಕುದುರೆಮುಖ"],
+  Sringeri: ["ಶೃಂಗೇರಿ"],
+  Horanadu: ["ಹೊರನಾಡು"],
+  Sakleshpur: ["ಸಕಲೇಶಪುರ"],
+  "Belur Chennakeshava Temple": ["ಬೇಲೂರು"],
+  Halebidu: ["ಹಳೇಬೀಡು"],
+  Shravanabelagola: ["ಶ್ರವಣಬೆಳಗೊಳ"],
+  "Badami Cave Temples": ["ಬಾದಾಮಿ"],
+  Aihole: ["ಐಹೊಳೆ"],
+  Pattadakal: ["ಪಟ್ಟದಕಲ್ಲು"],
+  "Gol Gumbaz": ["ಗೋಳಗುಮ್ಮಟ", "ಗೋಲ ಗುಮ್ಮಟ"],
+  "Malpe Beach": ["ಮಲ್ಪೆ ಬೀಚ್"],
+  "Kollur Mookambika": ["ಕೊಲ್ಲೂರು"],
+  Dharmasthala: ["ಧರ್ಮಸ್ಥಳ"],
+  "Kukke Subramanya": ["ಕುಕ್ಕೆ ಸುಬ್ರಹ್ಮಣ್ಯ"],
+  Mangaluru: ["ಮಂಗಳೂರು"],
+  "Nandi Hills": ["ನಂದಿ ಬೆಟ್ಟ"],
+  Srirangapatna: ["ಶ್ರೀರಂಗಪಟ್ಟಣ"],
+  Melukote: ["ಮೇಲುಕೋಟೆ"],
+  "Bandipur National Park": ["ಬಂಡೀಪುರ"],
+  Kabini: ["ಕಬಿನಿ"],
+  Hubballi: ["ಹುಬ್ಬಳ್ಳಿ"],
+};
+
+let kannadaToEnglish: Map<string, string> | null = null;
+
+/** Normalised Kannada name → normalised English name (a place's own name beats a district alias: "ಕಾರವಾರ" → "karwar"). */
+function kannadaMap(): Map<string, string> {
+  if (!kannadaToEnglish) {
+    kannadaToEnglish = new Map();
+    for (const [en, kns] of Object.entries(KANNADA_NAMES)) {
+      for (const kn of kns) {
+        const k = normalize(kn);
+        if (k) kannadaToEnglish.set(k, normalize(en)); // places come after districts, so they win
+      }
+    }
+  }
+  return kannadaToEnglish;
+}
+
+const KANNADA_LETTER = /[ಀ-೿]/;
+
+/** A normalised query with known Kannada names turned into English ("ಕೊಡಗು ಕಾಫಿ" → "kodagu ಕಾಫಿ"). */
+export function latinQuery(query: string): string {
+  const norm = normalize(query);
+  if (!KANNADA_LETTER.test(norm)) return norm;
+  const map = kannadaMap();
+  const tokens = norm.split(" ");
+  const out: string[] = [];
+  for (let i = 0; i < tokens.length; ) {
+    let len = Math.min(4, tokens.length - i);
+    for (; len >= 1; len--) {
+      const en = map.get(tokens.slice(i, i + len).join(" "));
+      if (en) {
+        out.push(en);
+        break;
+      }
+    }
+    if (len >= 1) i += len;
+    else out.push(tokens[i++]);
+  }
+  return out.join(" ");
+}
+
+// ---------------------------------------------------------------------------
 // Place index (built once per place list)
 // ---------------------------------------------------------------------------
 
@@ -260,6 +395,7 @@ function districtIndex(districts: readonly KarnatakaDistrict[]): Map<string, Dis
       const candidates = candidateList([
         { field: "district", text: d.name },
         ...(d.aliases ?? []).map((text) => ({ field: "districtAlias" as const, text })),
+        ...(KANNADA_NAMES[d.name] ?? []).map((text) => ({ field: "districtAlias" as const, text })),
       ]);
       const needles = candidates
         .map((c) => c.norm)
@@ -286,6 +422,7 @@ function placeIndex(places: readonly KarnatakaPlace[], districts: readonly Karna
       const candidates = candidateList([
         { field: "name", text: place.name },
         ...(place.aliases ?? []).map((text) => ({ field: "alias" as const, text })),
+        ...(KANNADA_NAMES[place.name] ?? []).map((text) => ({ field: "alias" as const, text })),
       ]);
       let districtCandidates = dIdx.get(place.district)?.candidates;
       if (!districtCandidates) {
@@ -359,6 +496,22 @@ export function searchPlaces(
 /** True when the hit is a strong one (exact, start or word start of the place's own name or alias). */
 export function isStrongHit(hit: PlaceHit): boolean {
   return (hit.field === "name" || hit.field === "alias") && hit.score >= (MATCH_SCORES.wordPrefix - 20) * FIELD_WEIGHT.alias;
+}
+
+/**
+ * The place the typed text clearly means, or null: the place's own name or alias starts with the
+ * text (or is it, or is a typo of it), and it scores above the next hit. A word later in a name
+ * does not count, and nor do ties, so generic words ("river" in "Barapole River", "peak") never
+ * pick a place by list order.
+ */
+export function unambiguousPlaceHit(hits: readonly PlaceHit[]): PlaceHit | null {
+  const top = hits[0];
+  if (!top || (top.field !== "name" && top.field !== "alias")) return null;
+  const startsName = top.score >= MATCH_SCORES.prefix * FIELD_WEIGHT.alias - 20;
+  const typo = top.score <= MATCH_SCORES.typo;
+  if (!startsName && !typo) return null;
+  if (hits[1] && hits[1].score >= top.score) return null;
+  return top;
 }
 
 // ---------------------------------------------------------------------------
@@ -437,10 +590,14 @@ interface TripText {
   body: string;
   /** Body + tagline, for free-text search. */
   all: string;
+  /** Words of the title and destination, and of the whole text (3+ letters), for typo matching. */
+  headWords: string[];
   words: string[];
 }
 
 const tripTextCache = new WeakMap<TripWithDetails, TripText>();
+
+const wordsOf = (text: string) => [...new Set(text.split(" ").filter((w) => w.length >= 3 && w !== "|"))];
 
 function tripText(item: TripWithDetails): TripText {
   let t = tripTextCache.get(item);
@@ -450,11 +607,13 @@ function tripText(item: TripWithDetails): TripText {
     const rest = [trip.region, trip.vibe, ...(item.itinerary ?? []).flatMap((d) => [d.title, d.description])].map(normalize);
     const join = (parts: string[]) => pad(parts.filter(Boolean).join(" | "));
     const all = join([...head, ...rest, normalize(trip.tagline)]);
+    const headText = join(head);
     t = {
-      head: join(head),
+      head: headText,
       body: join([...head, ...rest]),
       all,
-      words: [...new Set(all.split(" ").filter((w) => w.length >= 3 && w !== "|"))],
+      headWords: wordsOf(headText),
+      words: wordsOf(all),
     };
     tripTextCache.set(item, t);
   }
@@ -472,68 +631,156 @@ function placeNeedles(place: KarnatakaPlace): string[] {
   return n;
 }
 
-/** Does this trip's text name the place (whole words)? `headOnly` looks at the title and destination only. */
+/** Words that mark a place the car only drives through ("via Mysuru", "Mysuru bypass"). */
+const TRANSIT_BEFORE = new Set(["via"]);
+const TRANSIT_AFTER = new Set(["bypass", "corridor", "highway", "ring"]);
+
+/** Is `needle` in `hay` (both padded/normalised) as whole words, at least once not as a drive-through? */
+function mentionedNotInTransit(hay: string, needle: string): boolean {
+  const p = pad(needle);
+  for (let at = hay.indexOf(p); at !== -1; at = hay.indexOf(p, at + 1)) {
+    const before = hay.slice(0, at);
+    const prevWord = before.slice(before.lastIndexOf(" ") + 1);
+    const after = hay.slice(at + p.length);
+    const space = after.indexOf(" ");
+    const nextWord = space === -1 ? after : after.slice(0, space);
+    if (!TRANSIT_BEFORE.has(prevWord) && !TRANSIT_AFTER.has(nextWord)) return true;
+  }
+  return false;
+}
+
+/**
+ * Does this trip's text name the place (whole words, not as a drive-through: "via Mysuru bypass"
+ * does not count)? `headOnly` looks at the title and destination only.
+ */
 export function tripMentionsPlace(item: TripWithDetails, place: KarnatakaPlace, headOnly = false): boolean {
   const t = tripText(item);
   const hay = headOnly ? t.head : t.body;
-  return placeNeedles(place).some((n) => hay.includes(pad(n)));
+  return placeNeedles(place).some((n) => mentionedNotInTransit(hay, n));
 }
 
 /**
  * Published trips that go to the place: the trip's title, destination, region, vibe or any
  * itinerary day names the place (or an alias), or the trip's destination is in the same district.
- * Places in the pickup city's district (Bengaluru) only count when the title or destination
- * names them, so "leave Bengaluru at 6 AM" in an itinerary does not make every trip a Bengaluru trip.
+ *
+ * Two kinds of place only count when the title or destination names them (or by district):
+ * places in the pickup city's district (Bengaluru), so "leave Bengaluru at 6 AM" does not make
+ * every trip a Bengaluru trip, and cities and towns, which itineraries mostly name as stops on
+ * the road ("via Chitradurga", "Hubballi or Shimoga corridor").
+ *
+ * Pass the place list too, so a destination that names a place rather than a district
+ * ("Gokarna, Coastal Karnataka") still finds its district (Uttara Kannada).
  */
 export function placeTripMatches(
   place: KarnatakaPlace,
   trips: readonly TripWithDetails[],
   districts: readonly KarnatakaDistrict[],
+  places?: readonly KarnatakaPlace[],
 ): TripWithDetails[] {
   return trips.filter((item) => {
     if (!item.trip.isPublished) return false;
-    const { pickup, destination } = tripDistricts(item, districts);
-    if (tripMentionsPlace(item, place, pickup === place.district)) return true;
+    const { pickup, destination } = tripDistricts(item, districts, places);
+    const headOnly = pickup === place.district || place.categories[0] === "city_town";
+    if (tripMentionsPlace(item, place, headOnly)) return true;
     return destination !== null && destination === place.district;
   });
 }
 
-const tripDistrictCache = new WeakMap<TripWithDetails, WeakMap<readonly KarnatakaDistrict[], { pickup: string | null; destination: string | null }>>();
+interface TripDistricts {
+  pickup: string | null;
+  destination: string | null;
+}
 
-/** District names of the trip's pickup city and destination (worked out once per trip). */
-function tripDistricts(item: TripWithDetails, districts: readonly KarnatakaDistrict[]) {
+const tripDistrictCache = new WeakMap<TripWithDetails, WeakMap<readonly KarnatakaDistrict[], Map<readonly KarnatakaPlace[] | null, TripDistricts>>>();
+
+/** District of the first place the text names (earliest mention, longest name), or null. */
+function districtOfNamedPlace(text: string, places: readonly KarnatakaPlace[]): string | null {
+  const hay = pad(normalize(text));
+  if (hay.length <= 2) return null;
+  let best: { district: string; at: number; len: number } | null = null;
+  for (const p of places) {
+    for (const n of placeNeedles(p)) {
+      const at = hay.indexOf(pad(n));
+      if (at === -1) continue;
+      if (!best || at < best.at || (at === best.at && n.length > best.len)) best = { district: p.district, at, len: n.length };
+    }
+  }
+  return best?.district ?? null;
+}
+
+/** District names of the trip's pickup city and destination (worked out once per trip and list). */
+function tripDistricts(
+  item: TripWithDetails,
+  districts: readonly KarnatakaDistrict[],
+  places: readonly KarnatakaPlace[] | undefined,
+): TripDistricts {
   let byList = tripDistrictCache.get(item);
   if (!byList) {
     byList = new WeakMap();
     tripDistrictCache.set(item, byList);
   }
-  let v = byList.get(districts);
+  let byPlaces = byList.get(districts);
+  if (!byPlaces) {
+    byPlaces = new Map();
+    byList.set(districts, byPlaces);
+  }
+  const key = places ?? null;
+  let v = byPlaces.get(key);
   if (!v) {
+    const destination = item.trip.destination ?? "";
     v = {
       pickup: item.trip.pickupCity ? resolveDistrict(item.trip.pickupCity, districts)?.name ?? null : null,
-      destination: resolveDistrict(item.trip.destination, districts)?.name ?? null,
+      destination: resolveDistrict(destination, districts)?.name ?? (places ? districtOfNamedPlace(destination, places) : null),
     };
-    byList.set(districts, v);
+    byPlaces.set(key, v);
   }
   return v;
 }
 
+/** True when b is a with two neighbouring letters swapped ("hmapi" / "hampi"). */
+function isSwap(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let i = 0;
+  while (i < a.length && a[i] === b[i]) i++;
+  return i < a.length - 1 && a[i] === b[i + 1] && a[i + 1] === b[i] && a.slice(i + 2) === b.slice(i + 2);
+}
+
+/**
+ * A typo of a whole word in a trip text. Strict, because trip texts are ordinary English prose
+ * ("for", "late", "coves" must not answer "fort", "lake", "caves"): same first letter, the text's
+ * word is not shorter than the typed one, and a word under 7 letters needs a swap or a missing
+ * letter, not a changed one.
+ */
+function wordTypo(qt: string, w: string, lim: number): boolean {
+  if (w.charCodeAt(0) !== qt.charCodeAt(0) || w.length < qt.length || w.length - qt.length > lim) return false;
+  const d = typoDistance(qt, w, lim);
+  if (d > lim) return false;
+  if (qt.length < 7 && w.length === qt.length && !isSwap(qt, w)) return false;
+  return true;
+}
+
 /**
  * Free-text match for a trip card: every typed word starts a word somewhere in the trip's title,
- * destination, region, vibe, tagline or itinerary (a typo or two allowed in longer words).
+ * destination, region, vibe, tagline or itinerary. Typos are allowed only in longer words (5+
+ * letters against the title and destination, 6+ against the rest), see wordTypo. Kannada place
+ * names are searched by their English name.
  */
 export function tripMatchesQuery(item: TripWithDetails, query: string): boolean {
-  const q = prepare(query);
+  const q = prepare(latinQuery(query));
   if (!q.norm) return true;
   const t = tripText(item);
   if (t.all.includes(pad(q.norm).trimEnd())) return true;
   return q.tokens.every((qt, i) => {
     if (t.all.includes(` ${qt}`)) return true;
+    if (qt.length < 5) return false;
     const lim = typoLimit(qt.length);
-    if (lim === 0) return false;
+    const words = qt.length >= 6 ? t.words : t.headWords;
     const isLast = i === q.tokens.length - 1;
-    return t.words.some(
-      (w) => typoDistance(qt, w, lim) <= lim || (isLast && w.length > qt.length && typoDistance(qt, w, lim, qt.length) <= lim),
+    return words.some(
+      (w) =>
+        wordTypo(qt, w, lim) ||
+        // Still typing a long word: a typo in its start ("mulayanag" ~ "mullayanagiri").
+        (isLast && qt.length >= 7 && w.length > qt.length && w.charCodeAt(0) === qt.charCodeAt(0) && typoDistance(qt, w, lim, qt.length) <= lim),
     );
   });
 }

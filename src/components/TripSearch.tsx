@@ -3,16 +3,17 @@
 import { ArrowLeft, Car, MapPin, Route, Search, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
-import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from "react";
+import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent, ReactNode } from "react";
 import { requestPlanFor } from "@/lib/places/plan-prefill";
 import {
   categoryOrderByRank,
   groupByCategory,
   highlightParts,
-  isStrongHit,
+  normalize,
   placeTripMatches,
   searchPlaces,
   tripMatchesQuery,
+  unambiguousPlaceHit,
   type PlaceHit,
 } from "@/lib/places/search";
 import type { KarnatakaDistrict, KarnatakaPlace, PlaceCategory } from "@/lib/places/types";
@@ -69,6 +70,9 @@ type Option =
   | { kind: "trip"; key: string; item: TripWithDetails }
   | { kind: "back"; key: string };
 
+/** How an option was chosen: Enter, a mouse (or screen reader) click, or a finger. */
+type ChooseHow = "key" | "pointer" | "touch";
+
 interface Section {
   key: string;
   /** Small overline above the section ("Places"). */
@@ -81,15 +85,21 @@ interface Section {
 const MAX_TRIPS = 4;
 const MAX_PLACES = 24;
 const POPULAR_COUNT = 6;
+/** Popup height limits (px): 28rem at most, never so short it is useless. */
+const POPUP_MAX = 448;
+const POPUP_MIN = 160;
 
 export function TripSearch({
   trips,
   onFilterChange,
   className = "",
+  autoFocus = false,
 }: {
   trips: TripWithDetails[];
   onFilterChange: (filter: TripSearchFilter) => void;
   className?: string;
+  /** Focus the box when it mounts (after "Clear place" etc., so keyboard users stay here). */
+  autoFocus?: boolean;
 }) {
   const router = useRouter();
   const baseId = useId();
@@ -99,28 +109,40 @@ export function TripSearch({
   const inputRef = useRef<HTMLInputElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const popupRef = useRef<HTMLDivElement>(null);
+  /** Pointer type of the last press on an option ("" for a click with no press: screen readers, keyboards). */
+  const pointerTypeRef = useRef("");
 
   const [text, setText] = useState("");
   const [query, setQuery] = useState(""); // `text` after the 80 ms pause
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
   const [browse, setBrowse] = useState<PlaceCategory | null>(null);
+  /** What a screen reader hears after a category chip or "All categories" swaps the list. */
+  const [browseMessage, setBrowseMessage] = useState("");
   const [selected, setSelected] = useState<KarnatakaPlace | null>(null);
   const [data, setData] = useState<PlaceData | null>(() => placeDataLoaded);
   const [loadFailed, setLoadFailed] = useState(false);
+  /** Popup height that fits above the on-screen keyboard (null: the CSS limit). */
+  const [popupMaxH, setPopupMaxH] = useState<number | null>(null);
 
   const published = useMemo(() => trips.filter((t) => t.trip.isPublished), [trips]);
 
-  const ensureData = useCallback(() => {
-    if (data) return;
-    loadPlaceData().then(
-      (d) => {
-        setData(d);
-        setLoadFailed(false);
-      },
-      () => setLoadFailed(true),
-    );
-  }, [data]);
+  /** Load the place list. After a failure only `retry` (a new focus) tries again. */
+  const ensureData = useCallback(
+    (retry: boolean) => {
+      if (data) return;
+      if (loadFailed && !retry) return;
+      setLoadFailed(false);
+      loadPlaceData().then(
+        (d) => {
+          setData(d);
+          setLoadFailed(false);
+        },
+        () => setLoadFailed(true),
+      );
+    },
+    [data, loadFailed],
+  );
 
   // Debounce typing.
   useEffect(() => {
@@ -135,7 +157,7 @@ export function TripSearch({
     return (p: KarnatakaPlace): TripWithDetails[] => {
       let v = cache.get(p.id);
       if (!v) {
-        v = data ? placeTripMatches(p, published, data.districts) : [];
+        v = data ? placeTripMatches(p, published, data.districts, data.places) : [];
         cache.set(p.id, v);
       }
       return v;
@@ -145,11 +167,11 @@ export function TripSearch({
   const q = query.trim();
   const hits = useMemo(() => (data && q ? searchPlaces(q, data.places, data.districts, MAX_PLACES) : []), [data, q]);
 
-  /** Trips for the typed text: their own words (itinerary too) or the best-matching place. */
+  /** Trips for the typed text: their own words (itinerary too) or the place the text clearly means. */
   const textTrips = useMemo(() => {
     if (!q) return [];
-    const top = hits[0] && isStrongHit(hits[0]) ? tripsForPlace(hits[0].place) : [];
-    const viaPlace = new Set(top.map((t) => t.trip.id));
+    const top = unambiguousPlaceHit(hits);
+    const viaPlace = new Set((top ? tripsForPlace(top.place) : []).map((t) => t.trip.id));
     return published.filter((t) => viaPlace.has(t.trip.id) || tripMatchesQuery(t, q));
   }, [q, hits, published, tripsForPlace]);
 
@@ -167,6 +189,12 @@ export function TripSearch({
       onFilterRef.current({ kind: "none" });
     }
   }, [selected, q, textTrips, tripsForPlace]);
+
+  // Back after "Clear place" / "Show all trips": keep keyboard focus here, not on <body>.
+  // The page remounts the box to clear it, so this runs once per clear.
+  useEffect(() => {
+    if (autoFocus) inputRef.current?.focus();
+  }, [autoFocus]);
 
   const typing = text.trim() !== "";
 
@@ -229,19 +257,67 @@ export function TripSearch({
   const flat = useMemo(() => sections.flatMap((s) => s.options), [sections]);
   const activeIndex = active >= 0 && active < flat.length ? active : -1;
 
+  const showLoading = !data && !loadFailed;
+  const loadError = !data && loadFailed;
+  const noMatches = typing && q !== "" && flat.length === 0 && data !== null;
+  const emptyCategory = !typing && browse !== null && flat.length <= 1;
+  const popupHasContent = flat.length > 0 || showLoading || noMatches || loadError;
+  const popupOpen = open && popupHasContent;
+  const announce = !popupOpen
+    ? ""
+    : loadError && flat.length === 0
+      ? LOAD_FAILED_TEXT
+      : typing
+        ? flat.length > 0
+          ? `${flat.length} ${flat.length === 1 ? "suggestion" : "suggestions"}`
+          : noMatches
+            ? NO_MATCH_TEXT
+            : ""
+        : browseMessage;
+
   // Keep the highlighted option in view.
   useEffect(() => {
     if (!open || activeIndex < 0) return;
     document.getElementById(`${baseId}-opt-${activeIndex}`)?.scrollIntoView({ block: "nearest" });
   }, [open, activeIndex, baseId]);
 
-  const openPopup = () => {
-    ensureData();
+  // Phones: fit the popup above the on-screen keyboard (dvh does not shrink for it).
+  useEffect(() => {
+    if (!popupOpen) return;
+    const vv = typeof window !== "undefined" ? window.visualViewport : null;
+    if (!vv) return;
+    const fit = () => {
+      const el = popupRef.current;
+      if (!el) return;
+      const room = vv.height + vv.offsetTop - el.getBoundingClientRect().top - 8;
+      setPopupMaxH(Math.round(Math.max(POPUP_MIN, Math.min(POPUP_MAX, room))));
+    };
+    fit();
+    vv.addEventListener("resize", fit);
+    vv.addEventListener("scroll", fit);
+    window.addEventListener("scroll", fit, { passive: true });
+    return () => {
+      vv.removeEventListener("resize", fit);
+      vv.removeEventListener("scroll", fit);
+      window.removeEventListener("scroll", fit);
+    };
+  }, [popupOpen]);
+
+  // While the list is open, the floating chat and WhatsApp buttons step aside (see globals.css).
+  useEffect(() => {
+    if (!popupOpen) return;
+    const root = document.documentElement;
+    root.setAttribute("data-search-open", "");
+    return () => root.removeAttribute("data-search-open");
+  }, [popupOpen]);
+
+  const openPopup = (retry = false) => {
+    ensureData(retry);
     setOpen(true);
   };
 
   const onFocus = () => {
-    openPopup();
+    openPopup(true);
     // Phones: lift the box to the top so the suggestions fit above the keyboard.
     if (typeof window !== "undefined" && window.matchMedia?.("(max-width: 639px)").matches) {
       const smooth = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -251,9 +327,13 @@ export function TripSearch({
 
   const onInput = (value: string) => {
     setText(value);
+    // The first letter in an empty box searches at once, so the popup never blinks shut while
+    // the pause runs; later letters wait for the pause.
     if (!value.trim()) setQuery("");
+    else if (!query.trim()) setQuery(value);
     setSelected(null);
     setBrowse(null);
+    setBrowseMessage("");
     setActive(-1);
     openPopup();
   };
@@ -263,6 +343,7 @@ export function TripSearch({
     setQuery("");
     setSelected(null);
     setBrowse(null);
+    setBrowseMessage("");
     setActive(-1);
     if (refocus) {
       inputRef.current?.focus();
@@ -272,26 +353,32 @@ export function TripSearch({
     }
   };
 
-  const choosePlace = (place: KarnatakaPlace, viaPointer: boolean) => {
+  const choosePlace = (place: KarnatakaPlace, dropKeyboard: boolean) => {
     setSelected(place);
     setText(place.name);
     setQuery(place.name);
     setBrowse(null);
+    setBrowseMessage("");
     setActive(-1);
     setOpen(false);
-    if (viaPointer) inputRef.current?.blur(); // phones: drop the keyboard so the trips show
+    if (dropKeyboard) inputRef.current?.blur(); // phones: drop the keyboard so the trips show
   };
 
-  const choose = (opt: Option, viaPointer: boolean) => {
+  const choose = (opt: Option, how: ChooseHow) => {
     switch (opt.kind) {
-      case "category":
+      case "category": {
+        const count = data ? data.places.filter((p) => p.categories.includes(opt.category)).length : 0;
         setBrowse(opt.category);
-        setActive(-1);
+        setBrowseMessage(`${opt.label}: ${count} ${count === 1 ? "place" : "places"}`);
+        // Keyboard: go straight to the first place (index 0 is "All categories").
+        setActive(how === "key" && count > 0 ? 1 : -1);
         popupRef.current?.scrollTo({ top: 0 });
         return;
+      }
       case "back":
         setBrowse(null);
-        setActive(-1);
+        setBrowseMessage("All categories");
+        setActive(how === "key" ? 0 : -1);
         popupRef.current?.scrollTo({ top: 0 });
         return;
       case "trip":
@@ -299,10 +386,12 @@ export function TripSearch({
         router.push(`/trips/${opt.item.trip.slug}`);
         return;
       case "place":
-        choosePlace(opt.place, viaPointer);
+        choosePlace(opt.place, how === "touch");
         return;
     }
   };
+
+  const isCoarsePointer = () => typeof window !== "undefined" && Boolean(window.matchMedia?.("(pointer: coarse)").matches);
 
   const onKeyDown = (e: ReactKeyboardEvent<HTMLInputElement>) => {
     const n = flat.length;
@@ -318,33 +407,31 @@ export function TripSearch({
         if (n) setActive(activeIndex <= 0 ? n - 1 : activeIndex - 1);
         return;
       case "Home":
-        if (open && n) {
-          e.preventDefault();
-          setActive(0);
-        }
-        return;
       case "End":
-        if (open && n) {
-          e.preventDefault();
-          setActive(n - 1);
-        }
+        // Editable combobox: Home/End move the caret; they only leave the highlighted option.
+        if (activeIndex >= 0) setActive(-1);
         return;
       case "Enter": {
         if (open && activeIndex >= 0) {
           e.preventDefault();
-          choose(flat[activeIndex], false);
+          choose(flat[activeIndex], "key");
           return;
         }
         if (!typing) return;
         e.preventDefault();
-        const top = hits[0];
+        // Act on what is in the box now, not on hits from before the typing pause ended.
+        let top: PlaceHit | undefined = hits[0];
+        if (normalize(text) !== normalize(query)) {
+          setQuery(text);
+          top = data ? searchPlaces(text.trim(), data.places, data.districts, MAX_PLACES)[0] : undefined;
+        }
         // The exact name of a place: choose it. Otherwise keep the typed words as the filter.
         if (top && (top.field === "name" || top.field === "alias") && top.score >= 900) {
-          choosePlace(top.place, false);
+          choosePlace(top.place, isCoarsePointer());
           return;
         }
         setOpen(false);
-        if (window.matchMedia?.("(pointer: coarse)").matches) inputRef.current?.blur();
+        if (isCoarsePointer()) inputRef.current?.blur();
         return;
       }
       case "Escape":
@@ -363,13 +450,6 @@ export function TripSearch({
     }
   };
 
-  const showLoading = !data && !loadFailed;
-  const noMatches = typing && q !== "" && flat.length === 0 && (data !== null || loadFailed);
-  const emptyCategory = !typing && browse !== null && flat.length <= 1;
-  const popupHasContent = flat.length > 0 || showLoading || noMatches;
-  const popupOpen = open && popupHasContent;
-  const announce = !popupOpen || !typing ? "" : flat.length > 0 ? `${flat.length} ${flat.length === 1 ? "suggestion" : "suggestions"}` : noMatches ? NO_MATCH_TEXT : "";
-
   let index = -1;
   const renderOption = (opt: Option): ReactNode => {
     index += 1;
@@ -379,7 +459,15 @@ export function TripSearch({
       id: optionId(i),
       role: "option" as const,
       "aria-selected": isActive,
-      onClick: () => choose(opt, true),
+      onPointerDown: (e: ReactPointerEvent) => {
+        pointerTypeRef.current = e.pointerType;
+      },
+      onClick: () => {
+        const type = pointerTypeRef.current;
+        pointerTypeRef.current = "";
+        // Only a finger (or pen) drops the keyboard; mouse and screen-reader clicks keep focus here.
+        choose(opt, type === "touch" || type === "pen" ? "touch" : "pointer");
+      },
       onMouseMove: () => {
         if (!isActive) setActive(i);
       },
@@ -390,14 +478,19 @@ export function TripSearch({
           key={opt.key}
           {...common}
           className={`inline-flex min-h-11 cursor-pointer select-none items-center rounded-full border px-4 text-sm font-semibold transition ${
-            isActive ? "border-forest-900 bg-forest-900 text-white" : "border-stone-300 bg-white text-forest-900 hover:border-forest-700"
+            isActive
+              ? "border-forest-900 bg-forest-900 text-white ring-2 ring-forest-900 ring-offset-2 ring-offset-cream-50"
+              : "border-stone-300 bg-white text-forest-900 hover:border-forest-700"
           }`}
         >
           {opt.label}
         </div>
       );
     }
-    const row = `flex min-h-[52px] cursor-pointer select-none items-center gap-3 px-4 py-2 transition ${isActive ? "bg-lagoon-100" : "hover:bg-lagoon-100/60"}`;
+    // Active: tint plus a dark bar on the left (the tint alone is too faint); hover: lighter, no bar.
+    const row = `flex min-h-[52px] cursor-pointer select-none items-center gap-3 px-4 py-2 transition ${
+      isActive ? "bg-lagoon-100 shadow-[inset_3px_0_0_#0d5f6b]" : "hover:bg-cream-100"
+    }`;
     if (opt.kind === "back") {
       return (
         <div key={opt.key} {...common} className={`${row} text-sm font-semibold text-forest-900`}>
@@ -414,8 +507,8 @@ export function TripSearch({
             <Route className="h-4 w-4" aria-hidden="true" />
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-[15px] font-medium text-ink-900 sm:text-sm">
-              <Highlighted text={t.title} query={q} />
+            <span className="line-clamp-2 break-words text-[15px] font-medium text-ink-900 sm:text-sm">
+              <Highlighted text={t.title} query={q} active={isActive} />
             </span>
             <span className="block truncate text-xs text-stone-600">{t.destination}</span>
           </span>
@@ -425,37 +518,43 @@ export function TripSearch({
     const p = opt.place;
     const hasTrip = tripsForPlace(p).length > 0;
     const alias = opt.hit && opt.hit.field === "alias" && !highlightParts(p.name, q).some((x) => x.match) ? opt.hit.matched : null;
+    const aliasIsLatin = alias !== null && !/[ಀ-೿]/.test(alias);
     return (
       <div key={opt.key} {...common} className={row}>
         <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-lagoon-100 text-forest-700">
           <MapPin className="h-4 w-4" aria-hidden="true" />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-[15px] font-medium text-ink-900 sm:text-sm">
-            <Highlighted text={p.name} query={q} />
+          {/* Place names have no Kannada yet: marked English so screen readers use an English voice. */}
+          <span lang="en" translate="no" className="line-clamp-2 break-words text-[15px] font-medium text-ink-900 sm:text-sm">
+            <Highlighted text={p.name} query={q} active={isActive} />
           </span>
-          <span className="block truncate text-xs text-stone-600">
-            <span>{p.district}</span>
-            {alias && (
-              <>
-                {" · "}
-                <Highlighted text={alias} query={q} />
-              </>
-            )}
+          <span className="flex min-w-0 items-center gap-2 text-xs text-stone-600">
+            <span className="min-w-0 truncate">
+              <span lang="en" translate="no">
+                {p.district}
+              </span>
+              {alias && (
+                <>
+                  {" · "}
+                  <span lang={aliasIsLatin ? "en" : "kn"} translate="no">
+                    <Highlighted text={alias} query={q} active={isActive} />
+                  </span>
+                </>
+              )}
+            </span>
+            {/* Phones: the badge sits on this line so the name keeps the full width. */}
+            {hasTrip && <TripBadge className="inline-flex sm:hidden" />}
           </span>
         </span>
-        {hasTrip && (
-          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-forest-900/10 px-2 py-0.5 text-[11px] font-semibold text-forest-900">
-            <Car className="h-3 w-3" aria-hidden="true" />
-            <span>Trip available</span>
-          </span>
-        )}
+        {hasTrip && <TripBadge className="hidden sm:inline-flex" />}
       </div>
     );
   };
 
   return (
-    <div ref={wrapRef} className={`relative scroll-mt-24 ${className}`}>
+    // z-30: under the sticky header (z-40) when the page scrolls with the list open.
+    <div ref={wrapRef} className={`relative z-30 scroll-mt-24 ${className}`}>
       <label htmlFor={inputId} className="sr-only">
         Search trips and places
       </label>
@@ -477,14 +576,14 @@ export function TripSearch({
         value={text}
         onChange={(e) => onInput(e.target.value)}
         onFocus={onFocus}
-        onClick={openPopup}
+        onClick={() => openPopup()}
         onBlur={() => {
           setOpen(false);
           setActive(-1);
         }}
         onKeyDown={onKeyDown}
         placeholder="Search Chikmagalur, Coorg, Gokarna, Hampi..."
-        className="h-12 w-full rounded-xl border border-stone-300 bg-white pl-11 pr-12 text-base text-ink-900 placeholder:text-stone-600/80 focus:border-forest-700 focus:outline-none focus:ring-2 focus:ring-lagoon-500/30 sm:text-sm"
+        className="h-12 w-full rounded-xl border border-stone-300 bg-white pl-11 pr-12 text-base text-ink-900 placeholder:text-stone-600 focus:border-forest-700 focus:outline-none focus:ring-2 focus:ring-lagoon-500/30 sm:text-sm"
       />
       {text && (
         <button
@@ -502,9 +601,10 @@ export function TripSearch({
         ref={popupRef}
         // Keep focus in the box while tapping or scrolling the suggestions.
         onMouseDown={(e) => e.preventDefault()}
+        style={popupOpen && popupMaxH !== null ? { maxHeight: popupMaxH } : undefined}
         className={
           popupOpen
-            ? "absolute inset-x-0 top-full z-40 mt-2 max-h-[min(28rem,60dvh)] overflow-y-auto overscroll-contain rounded-2xl border border-stone-200 bg-cream-50 py-1 shadow-[var(--shadow-lift)]"
+            ? "absolute inset-x-0 top-full z-40 mt-2 max-h-[28rem] overflow-y-auto overscroll-contain rounded-2xl border border-stone-200 bg-cream-50 py-1 shadow-[var(--shadow-lift)] supports-[height:100dvh]:max-h-[min(28rem,60dvh)]"
             : "hidden"
         }
       >
@@ -533,6 +633,7 @@ export function TripSearch({
           ))}
         </div>
         {showLoading && (typing || flat.length === 0) && <p className="px-4 py-3 text-sm text-stone-600">Loading places…</p>}
+        {loadError && <p className="px-4 py-3 text-sm text-stone-600">{LOAD_FAILED_TEXT}</p>}
         {noMatches && <p className="px-4 py-5 text-sm text-stone-600">{NO_MATCH_TEXT}</p>}
         {emptyCategory && <p className="px-4 py-3 text-sm text-stone-600">No places in this category yet.</p>}
       </div>
@@ -544,6 +645,18 @@ export function TripSearch({
 }
 
 const NO_MATCH_TEXT = "No place or trip matches that yet. Check the spelling or try a nearby town.";
+const LOAD_FAILED_TEXT = "Couldn't load places. Check your connection and try again.";
+
+function TripBadge({ className }: { className: string }) {
+  return (
+    <span
+      className={`${className} shrink-0 items-center gap-1 rounded-full bg-forest-900/10 px-2 py-0.5 text-[11px] font-semibold text-forest-900`}
+    >
+      <Car className="h-3 w-3" aria-hidden="true" />
+      <span>Trip available</span>
+    </span>
+  );
+}
 
 /** Places for the empty box: one per district among places a trip goes to, then the rest of the list. */
 function popularPlaces(places: readonly KarnatakaPlace[], tripsFor: (p: KarnatakaPlace) => TripWithDetails[]): KarnatakaPlace[] {
@@ -563,12 +676,14 @@ function popularPlaces(places: readonly KarnatakaPlace[], tripsFor: (p: Karnatak
   return out;
 }
 
-function Highlighted({ text, query }: { text: string; query: string }) {
+function Highlighted({ text, query, active = false }: { text: string; query: string; active?: boolean }) {
+  // On the active row's tint the usual copper is under 4.5:1, so it gets a darker shade there.
+  const matchClass = active ? "font-bold text-[#a33c08]" : "font-bold text-copper-700";
   return (
     <>
       {highlightParts(text, query).map((part, i) =>
         part.match ? (
-          <b key={i} className="font-bold text-copper-700">
+          <b key={i} className={matchClass}>
             {part.text}
           </b>
         ) : (
@@ -581,8 +696,9 @@ function Highlighted({ text, query }: { text: string; query: string }) {
 
 /** "Trips that go to Abbey Falls (Kodagu)" with a clear button, above the trip grid. */
 export function PlaceFilterBanner({ place, onClear }: { place: KarnatakaPlace; onClear: () => void }) {
+  // Not a live region: the page announces the result in its own always-present one.
   return (
-    <div role="status" className="flex items-center gap-3 rounded-2xl border border-forest-700/20 bg-lagoon-100/70 py-1 pl-4 pr-1">
+    <div className="flex items-center gap-3 rounded-2xl border border-forest-700/20 bg-lagoon-100/70 py-1 pl-4 pr-1">
       <MapPin className="h-4 w-4 shrink-0 text-forest-700" aria-hidden="true" />
       <p className="min-w-0 flex-1 py-2 text-sm font-semibold text-forest-900">{`Trips that go to ${place.name} (${place.district})`}</p>
       <button
@@ -609,12 +725,17 @@ export function NoTripForPlace({
   planHref?: string;
 }) {
   return (
-    <div role="status" className="card-soft px-5 py-8 text-center sm:px-8">
+    <div className="card-soft px-5 py-8 text-center sm:px-8">
       <span className="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-full bg-peach-100 text-copper-700">
         <MapPin className="h-6 w-6" aria-hidden="true" />
       </span>
       <p className="mt-3 font-display text-xl font-semibold text-forest-900">{`No trip to ${place.name} yet`}</p>
-      {place.blurb && <p className="mx-auto mt-1 max-w-md text-sm text-stone-600">{place.blurb}</p>}
+      {/* The blurb is English only: marked so, and hidden on the Kannada site. */}
+      {place.blurb && (
+        <p lang="en" translate="no" className="mx-auto mt-1 max-w-md text-sm text-stone-600 [html[data-lang=kn]_&]:hidden">
+          {place.blurb}
+        </p>
+      )}
       <p className="mx-auto mt-2 max-w-md text-sm text-stone-600">{"Tell us your dates and group size, and we'll plan a car trip there."}</p>
       <div className="mt-5 flex flex-col items-stretch justify-center gap-2 sm:flex-row sm:items-center">
         <a

@@ -6,6 +6,7 @@ import {
   groupByCategory,
   highlightParts,
   isStrongHit,
+  latinQuery,
   normalize,
   placeTripMatches,
   resolveDistrict,
@@ -13,6 +14,7 @@ import {
   searchPlaces,
   tripMatchesQuery,
   typoDistance,
+  unambiguousPlaceHit,
   MATCH_SCORES,
 } from "@/lib/places/search";
 import type { KarnatakaDistrict, KarnatakaPlace, PlaceCategory } from "@/lib/places/types";
@@ -33,6 +35,7 @@ const DISTRICTS: KarnatakaDistrict[] = [
   { name: "Bengaluru Urban", aliases: ["Bangalore", "Bengaluru"], region: "Bengaluru & surroundings" },
   { name: "Uttara Kannada", aliases: ["Karwar"], region: "Coastal Karnataka" },
   { name: "Hassan", aliases: [], region: "Malnad & Western Ghats" },
+  { name: "Mysuru", aliases: ["Mysore"], region: "Mysuru & South Karnataka" },
 ];
 
 const place = (p: Partial<KarnatakaPlace> & Pick<KarnatakaPlace, "id" | "name" | "district" | "categories">): KarnatakaPlace => ({
@@ -53,6 +56,8 @@ const PLACES: KarnatakaPlace[] = [
   place({ id: "bengaluru", name: "Bengaluru", aliases: ["Bangalore"], district: "Bengaluru Urban", categories: ["city_town"] }),
   place({ id: "lalbagh", name: "Lalbagh Botanical Garden", aliases: ["Lalbagh"], district: "Bengaluru Urban", categories: ["city_town"] }),
   place({ id: "om-beach", name: "Om Beach", district: "Uttara Kannada", categories: ["beach_coast"] }),
+  place({ id: "gokarna", name: "Gokarna", district: "Uttara Kannada", categories: ["beach_coast", "temple_pilgrimage", "city_town"] }),
+  place({ id: "mysuru", name: "Mysuru", aliases: ["Mysore"], district: "Mysuru", categories: ["city_town", "heritage"] }),
   place({ id: "sakleshpur", name: "Sakleshpur", district: "Hassan", categories: ["hill_station", "coffee_tea"] }),
 ];
 
@@ -80,13 +85,17 @@ function trip(t: Partial<Trip>, days: Partial<ItineraryDay>[] = []): TripWithDet
 
 const KODAGU = trip(
   { title: "Kodagu Rainforest & Spice Drive", destination: "Kodagu (Coorg)", region: "Malnad", vibe: "Coffee estates, mist" },
-  [{ title: "Bengaluru to Madikeri", description: "Leave Bengaluru at 6 AM. Sunset at Raja's Seat." }],
+  [{ title: "Bengaluru to Madikeri", description: "Leave Bengaluru at 6 AM. Morning departure via Mysuru bypass. Sunset at Raja's Seat." }],
 );
 const MALNAD = trip(
   { title: "Sakleshpur Green Route", destination: "Sakleshpur", region: "Malnad", vibe: "Railway trek" },
   [{ title: "Hills", description: "Sunrise drive up Mullayanagiri before breakfast. Leave Bengaluru at 5 AM." }],
 );
-const COAST = trip({ title: "Gokarna Beach Hop", destination: "Gokarna, Uttara Kannada", region: "Coastal Karnataka", vibe: "Beaches" });
+// Like the seeded trip: the destination names a town, not the district.
+const COAST = trip(
+  { title: "Gokarna Beach Hop", destination: "Gokarna, Coastal Karnataka", region: "Coastal Karnataka", vibe: "Beaches" },
+  [{ title: "Quiet coves", description: "Walk for an hour along laterite cliffs to the coves, late lunch in the sea breeze, north shore sunset." }],
+);
 const HIDDEN_HAMPI = trip({ title: "Hampi Ruins Weekend", destination: "Hampi", region: "North Karnataka", isPublished: false });
 const TRIPS = [KODAGU, MALNAD, COAST, HIDDEN_HAMPI];
 
@@ -266,6 +275,90 @@ describe("districts and trips", () => {
     expect(tripMatchesQuery(COAST, "coorg")).toBe(false);
     expect(tripMatchesQuery(KODAGU, "hampi")).toBe(false);
   });
+
+  it("placeTripMatches: a destination that names a town finds its district through the place list", () => {
+    const omBeach = PLACES.find((p) => p.id === "om-beach")!;
+    expect(resolveDistrict(COAST.trip.destination, DISTRICTS)).toBeNull();
+    expect(placeTripMatches(omBeach, TRIPS, DISTRICTS, PLACES)).toEqual([COAST]);
+    // Without the list only the place named in the title counts.
+    expect(placeTripMatches(omBeach, TRIPS, DISTRICTS)).toEqual([]);
+    const gokarna = PLACES.find((p) => p.id === "gokarna")!;
+    expect(placeTripMatches(gokarna, TRIPS, DISTRICTS, PLACES)).toEqual([COAST]);
+  });
+
+  it("placeTripMatches: towns the car only drives through do not count", () => {
+    const mysuru = PLACES.find((p) => p.id === "mysuru")!;
+    // "Morning departure via Mysuru bypass" in the Kodagu itinerary.
+    expect(placeTripMatches(mysuru, TRIPS, DISTRICTS, PLACES)).toEqual([]);
+    const city = trip({ title: "Mysuru Palace Weekend", destination: "Mysuru" });
+    expect(placeTripMatches(mysuru, [city], DISTRICTS, PLACES)).toEqual([city]);
+    // A town named in the itinerary only (not "via") still does not make it a destination...
+    const stop = trip({ title: "Coffee Hills", destination: "Kodagu" }, [{ title: "Day 1", description: "Breakfast stop in Mysuru." }]);
+    expect(placeTripMatches(mysuru, [stop], DISTRICTS, PLACES)).toEqual([]);
+    // ...and "via" skips any place, not only towns.
+    const sakleshpur = PLACES.find((p) => p.id === "sakleshpur")!;
+    const via = trip({ title: "Coast Run", destination: "Gokarna" }, [{ title: "Day 1", description: "Drive via Sakleshpur to the coast." }]);
+    expect(placeTripMatches(sakleshpur, [via], DISTRICTS, PLACES)).toEqual([]);
+    const visit = trip({ title: "Ghats Loop", destination: "Gokarna" }, [{ title: "Day 1", description: "Lunch at Sakleshpur, then the coast." }]);
+    expect(placeTripMatches(sakleshpur, [visit], DISTRICTS, PLACES)).toEqual([visit]);
+  });
+
+  it("tripMatchesQuery does not let common English words in the prose answer place words", () => {
+    // COAST prose: "for", "laterite", "coves", "late", "breeze", "north"; Hampi trip: "hampi".
+    for (const q of ["fort", "lake", "camp", "caves", "tree"]) {
+      for (const t of TRIPS) expect(tripMatchesQuery(t, q), `${q} / ${t.trip.title}`).toBe(false);
+    }
+    expect(tripMatchesQuery(COAST, "coves")).toBe(true);
+    expect(tripMatchesQuery(COAST, "later")).toBe(true); // word start
+    expect(tripMatchesQuery(COAST, "gokrana")).toBe(true); // swap, title
+    expect(tripMatchesQuery(KODAGU, "kodgu")).toBe(true); // missing letter, title
+    expect(tripMatchesQuery(KODAGU, "kodogu")).toBe(false); // changed letter in a short word
+  });
+
+  it("tripMatchesQuery finds a trip by a Kannada place name", () => {
+    expect(latinQuery("ಕೊಡಗು")).toBe("kodagu");
+    expect(latinQuery("ಕೊಡಗು ಕಾಫಿ")).toBe("kodagu ಕಾಫಿ");
+    expect(latinQuery("Hampi")).toBe("hampi");
+    expect(tripMatchesQuery(KODAGU, "ಕೊಡಗು")).toBe(true);
+    expect(tripMatchesQuery(COAST, "ಗೋಕರ್ಣ")).toBe(true);
+    expect(tripMatchesQuery(COAST, "ಕೊಡಗು")).toBe(false);
+  });
+});
+
+describe("unambiguousPlaceHit", () => {
+  it("picks the place the text clearly means", () => {
+    expect(unambiguousPlaceHit(search("hampi"))?.place.id).toBe("hampi");
+    expect(unambiguousPlaceHit(search("hampy"))?.place.id).toBe("hampi"); // a typo of one name
+    expect(unambiguousPlaceHit(search("coorg"))).toBeNull(); // district only
+    expect(unambiguousPlaceHit([])).toBeNull();
+  });
+
+  it("does not pick a place by list order when a generic word ties", () => {
+    const peaks = [
+      place({ id: "kudremukh", name: "Kudremukh Peak", district: "Chikkamagaluru", categories: ["trek_peak"] }),
+      place({ id: "netravati", name: "Netravati Peak", district: "Chikkamagaluru", categories: ["trek_peak"] }),
+    ];
+    const hits = searchPlaces("peak", peaks, DISTRICTS);
+    expect(hits).toHaveLength(2);
+    expect(isStrongHit(hits[0])).toBe(true);
+    expect(unambiguousPlaceHit(hits)).toBeNull();
+    expect(unambiguousPlaceHit(searchPlaces("kudremukh", peaks, DISTRICTS))?.place.id).toBe("kudremukh");
+    // A generic word later in one name does not pick that place either.
+    const river = [place({ id: "barapole", name: "Barapole River", district: "Kodagu", categories: ["lake_river_dam"] })];
+    expect(searchPlaces("river", river, DISTRICTS)).toHaveLength(1);
+    expect(unambiguousPlaceHit(searchPlaces("river", river, DISTRICTS))).toBeNull();
+    expect(unambiguousPlaceHit(searchPlaces("barap", river, DISTRICTS))?.place.id).toBe("barapole");
+  });
+});
+
+describe("Kannada place names", () => {
+  it("finds places and districts typed in Kannada", () => {
+    expect(ids(search("ಹಂಪಿ"))[0]).toBe("hampi");
+    expect(ids(search("ಗೋಕರ್ಣ"))[0]).toBe("gokarna");
+    expect(ids(search("ಕೊಡಗು"))).toEqual(expect.arrayContaining(["abbey-falls", "rajas-seat", "dubare"]));
+    expect(ids(search("ಚಿಕ್ಕಮಗಳೂರು"))).toEqual(expect.arrayContaining(["mullayanagiri", "baba-budangiri"]));
+    expect(ids(search("ಹಂ"))[0]).toBe("hampi"); // still typing
+  });
 });
 
 describe("highlightParts", () => {
@@ -289,6 +382,7 @@ describe("Kannada for the search words", () => {
       "No place or trip matches that yet. Check the spelling or try a nearby town.",
       "Tell us your dates and group size, and we'll plan a car trip there.",
       "No places in this category yet.",
+      "Couldn't load places. Check your connection and try again.", "Trip results",
       // CATEGORY_LABELS in karnataka-places.ts (chips and group headings)
       "Hill stations", "Coffee & tea country", "Waterfalls", "Treks & peaks", "Wildlife & forests", "Beaches & coast",
       "Islands", "Heritage & history", "Temples & pilgrimage", "Lakes, rivers & dams", "Caves", "Cities & towns",
@@ -303,6 +397,13 @@ describe("Kannada for the search words", () => {
     expect(translatePattern("No trip to Hampi yet", t)).toMatch(/[ಀ-೿]/);
     expect(translatePattern("Ask us to plan Hampi", t)).toMatch(/[ಀ-೿]/);
     expect(translatePattern("5 suggestions", t)).toBe("5 ಸಲಹೆಗಳು");
+    expect(translatePattern("Hill stations: 12 places", t)).toBe("ಗಿರಿಧಾಮಗಳು: 12 ಸ್ಥಳಗಳು");
+    expect(translatePattern("2 trips go to Hampi", t)).toBe("ಹಂಪಿ ಗೆ 2 ಪ್ರವಾಸಗಳು ಹೋಗುತ್ತವೆ");
+    expect(translatePattern("1 trip goes to Hampi", t)).toBe("ಹಂಪಿ ಗೆ 1 ಪ್ರವಾಸ ಹೋಗುತ್ತದೆ");
+  });
+
+  it("puts the verb first in the Kannada placeholder, so a narrow box still shows it", () => {
+    expect(dict["Search Chikmagalur, Coorg, Gokarna, Hampi..."]).toMatch(/^ಹುಡುಕಿ/);
   });
 });
 
@@ -334,10 +435,13 @@ describe("TripSearch markup", () => {
     const banner = renderToStaticMarkup(createElement(PlaceFilterBanner, { place: hampi, onClear: () => {} }));
     expect(banner).toContain("Trips that go to Hampi (Vijayanagara)");
     expect(banner).toContain("aria-label=\"Clear place\"");
+    // The page announces the result in its own live region; these cards are not live regions.
+    expect(banner).not.toContain("role=\"status\"");
     const panel = renderToStaticMarkup(createElement(NoTripForPlace, { place: hampi, onClear: () => {} }));
     expect(panel).toContain("No trip to Hampi yet");
     expect(panel).toContain("href=\"#ask\"");
     expect(panel).toContain("Ask us to plan Hampi");
     expect(panel).toContain("Show all trips");
+    expect(panel).not.toContain("role=\"status\"");
   });
 });
