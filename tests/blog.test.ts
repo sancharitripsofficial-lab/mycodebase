@@ -30,8 +30,12 @@ describe("blog posts", () => {
       post({ id: "poster", title: "Bad poster", posterUrl: "data:image/png;base64,AAAA" }),
       "nonsense",
     ]);
-    expect(list.map((p) => p.id)).toEqual(["good", "no-address-yet", "poster"]);
-    expect(list[2].posterUrl).toBe("");
+    // Unsafe video links are never kept; those posts still have a safe cover photo, so they stay as
+    // photo stories (15 Nov: a story may be a video, a cover photo, or both).
+    expect(list.map((p) => p.id)).toEqual(["good", "bad-link", "proto", "no-address-yet", "poster"]);
+    expect(list.find((p) => p.id === "bad-link")?.videoUrl).toBe("");
+    expect(list.find((p) => p.id === "proto")?.videoUrl).toBe("");
+    expect(list.find((p) => p.id === "poster")?.posterUrl).toBe("");
     expect(blogIdFrom("Monsoon weekend in Coorg!")).toBe("monsoon-weekend-in-coorg");
   });
 
@@ -48,8 +52,11 @@ describe("blog posts", () => {
   it("admin saves are checked: a video is required and links must be safe", () => {
     const ok = settingsSaveSchema.safeParse({ key: "blog_posts", value: [post()] });
     expect(ok.success).toBe(true);
-    const noVideo = settingsSaveSchema.safeParse({ key: "blog_posts", value: [post({ videoUrl: "" })] });
-    expect(noVideo.success).toBe(false);
+    // A photo story (cover photo, no video) saves; a post with neither does not.
+    const photoOnly = settingsSaveSchema.safeParse({ key: "blog_posts", value: [post({ videoUrl: "" })] });
+    expect(photoOnly.success).toBe(true);
+    const neither = settingsSaveSchema.safeParse({ key: "blog_posts", value: [post({ videoUrl: "", posterUrl: "" })] });
+    expect(neither.success).toBe(false);
     const evil = settingsSaveSchema.safeParse({ key: "blog_posts", value: [post({ posterUrl: "javascript:alert(1)" })] });
     expect(evil.success).toBe(false);
     const dup = settingsSaveSchema.safeParse({ key: "blog_posts", value: [post(), post()] });

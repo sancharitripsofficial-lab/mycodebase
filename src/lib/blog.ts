@@ -66,17 +66,20 @@ export function mergeBlogPosts(saved: unknown): BlogPost[] {
     if (!isObj(v)) continue;
     const title = str(v.title, 120).trim();
     const id = /^[a-z0-9][a-z0-9-]{0,79}$/.test(String(v.id ?? "")) ? String(v.id) : blogIdFrom(title);
-    const videoUrl = str(v.videoUrl, 500).trim();
-    if (!title || !videoUrl || !isSafeMediaLink(videoUrl) || seen.has(id)) continue;
+    // A post shows a video, a cover photo, or both.
+    const rawVideo = str(v.videoUrl, 500).trim();
+    const videoUrl = rawVideo && isSafeMediaLink(rawVideo) ? rawVideo : "";
+    const rawPoster = str(v.posterUrl, 500).trim();
+    const poster = rawPoster && isSafeMediaLink(rawPoster) ? rawPoster : "";
+    if (!title || (!videoUrl && !poster) || seen.has(id)) continue;
     seen.add(id);
-    const poster = str(v.posterUrl, 500).trim();
     out.push({
       id,
       title,
       excerpt: str(v.excerpt, 300).trim(),
       body: str(v.body, 6000).trim(),
       videoUrl,
-      posterUrl: poster && isSafeMediaLink(poster) ? poster : "",
+      posterUrl: poster,
       tripSlug: typeof v.tripSlug === "string" && /^[a-z0-9][a-z0-9-]{0,119}$/.test(v.tripSlug) ? v.tripSlug : null,
       publishedOn: /^\d{4}-\d{2}-\d{2}$/.test(String(v.publishedOn ?? "")) ? String(v.publishedOn) : "2026-01-01",
       published: v.published !== false,

@@ -348,20 +348,25 @@ const mediaLink = z
   .max(500)
   .refine((v) => v === "" || isSafeMediaLink(v), "Use a file from the Media library (or an https:// link).");
 
-/** Blog / trip stories with videos (Admin → Website → Blog & videos). */
+/** Blog / trip stories: a video, a cover photo, or both (Admin → Website → Blog & videos). */
 export const blogPostsSchema = z
   .array(
-    z.object({
+    z
+      .object({
       id: z.string().trim().regex(/^[a-z0-9][a-z0-9-]{0,79}$/, "Post address: lowercase letters, numbers and dashes"),
       title: z.string().trim().min(3, "Each post needs a title (3+ characters)").max(120, "Title: at most 120 characters"),
       excerpt: z.string().trim().max(300, "Short text: at most 300 characters"),
       body: z.string().trim().max(6000, "Story: at most 6,000 characters"),
-      videoUrl: mediaLink.refine((v) => v !== "", "Each post needs a video"),
+      videoUrl: mediaLink,
       posterUrl: mediaLink,
       tripSlug: z.string().trim().regex(/^[a-z0-9][a-z0-9-]{0,119}$/).nullable(),
       publishedOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Pick a date"),
       published: z.boolean(),
-    }),
+    })
+      .refine((p) => p.videoUrl !== "" || p.posterUrl !== "", {
+        message: "Each post needs a video or a cover photo",
+        path: ["posterUrl"],
+      }),
   )
   .max(60, "At most 60 posts")
   .refine((list) => new Set(list.map((p) => p.id)).size === list.length, "Two posts have the same address. Change one title.");

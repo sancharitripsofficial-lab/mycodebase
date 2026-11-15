@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, CalendarDays, PlayCircle } from "lucide-react";
+import { ArrowRight, CalendarDays, Clock } from "lucide-react";
 import { PageBanner3D } from "@/components/banners/PageBanner3D";
-import { BlogVideo } from "@/components/blog/BlogVideo";
+import { BlogCardImage, BlogCover } from "@/components/blog/BlogCover";
 import { visiblePosts } from "@/lib/blog";
 import { getSiteSettings } from "@/lib/data/repository";
 
@@ -16,6 +16,8 @@ export const metadata: Metadata = {
 
 const DATE = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
 const postDate = (iso: string) => DATE.format(new Date(`${iso}T12:00:00Z`));
+/** About how long the story takes to read (200 words a minute), at least 1 minute. */
+const readMinutes = (text: string) => Math.max(1, Math.round(text.split(/\s+/).filter(Boolean).length / 200));
 
 export default async function BlogPage() {
   const { settings } = await getSiteSettings();
@@ -36,11 +38,24 @@ export default async function BlogPage() {
           {!featured ? (
             <p className="rounded-2xl border border-stone-200 bg-white p-6 text-center text-stone-600">New stories are coming soon.</p>
           ) : (
-            <article className="space-y-4">
-              <BlogVideo src={featured.videoUrl} poster={featured.posterUrl} title={featured.title} />
+            <article className="space-y-5">
+              {featured.videoUrl ? (
+                <BlogCover videoUrl={featured.videoUrl} posterUrl={featured.posterUrl} title={featured.title} priority />
+              ) : (
+                <Link href={`/blog/${featured.id}`} aria-label={featured.title} className="group block">
+                  <BlogCover videoUrl="" posterUrl={featured.posterUrl} title={featured.title} priority className="transition duration-500 group-hover:shadow-[0_34px_80px_-30px_rgb(13_95_107/0.75)]" />
+                </Link>
+              )}
               <div className="space-y-2">
-                <p className="flex items-center gap-1.5 text-xs font-semibold text-stone-600">
-                  <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" /> {postDate(featured.publishedOn)}
+                <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold text-stone-600">
+                  <span className="inline-flex items-center gap-1.5">
+                    <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" /> {postDate(featured.publishedOn)}
+                  </span>
+                  {featured.body && (
+                    <span className="inline-flex items-center gap-1.5">
+                      <Clock className="h-3.5 w-3.5" aria-hidden="true" /> {readMinutes(featured.body)} min read
+                    </span>
+                  )}
                 </p>
                 <h2 className="font-display text-2xl font-semibold text-forest-900 sm:text-3xl">
                   <Link href={`/blog/${featured.id}`} className="hover:underline">
@@ -63,18 +78,16 @@ export default async function BlogPage() {
               <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {rest.map((p) => (
                   <li key={p.id} className="min-w-0">
-                    <Link href={`/blog/${p.id}`} className="group card-theme theme-brand block overflow-hidden">
-                      <div className="relative aspect-video w-full bg-[#0f2b2b]">
-                        {p.posterUrl && (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={p.posterUrl} alt="" loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover" />
-                        )}
-                        <span className="absolute inset-0 grid place-items-center bg-black/10 transition group-hover:bg-black/25">
-                          <PlayCircle className="h-12 w-12 text-white drop-shadow" aria-hidden="true" />
-                        </span>
-                      </div>
-                      <div className="space-y-1 p-4">
-                        <p className="text-xs font-semibold text-stone-600">{postDate(p.publishedOn)}</p>
+                    <Link
+                      href={`/blog/${p.id}`}
+                      className="group card-theme theme-brand block h-full overflow-hidden rounded-3xl shadow-[var(--shadow-soft)] transition duration-300 hover:-translate-y-1 hover:shadow-[var(--shadow-lift)]"
+                    >
+                      <BlogCardImage posterUrl={p.posterUrl} hasVideo={Boolean(p.videoUrl)} title={p.title} />
+                      <div className="space-y-1.5 p-4">
+                        <p className="text-xs font-semibold text-stone-600">
+                          {postDate(p.publishedOn)}
+                          {p.body ? ` · ${readMinutes(p.body)} min read` : ""}
+                        </p>
                         <h3 className="font-display text-lg leading-snug font-semibold text-forest-900 group-hover:underline">{p.title}</h3>
                         {p.excerpt && <p className="line-clamp-3 text-sm text-stone-600">{p.excerpt}</p>}
                       </div>

@@ -6,6 +6,7 @@ import { Check, Copy, ExternalLink, ImagePlus, Search, Trash2, Upload } from "lu
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Notice, Panel } from "@/components/admin/kit";
 import { getCached, setCached } from "@/lib/admin/memo-cache";
+import { uploadMedia } from "@/lib/admin/upload-media";
 
 interface MediaItem {
   path: string;
@@ -147,14 +148,11 @@ export function MediaLibrary({
     for (const [n, file] of list.entries()) {
       setProgress(`Uploading ${n + 1} of ${list.length}: ${file.name}`);
       try {
-        const form = new FormData();
-        form.append("file", file);
-        const res = await fetch("/api/admin/media", { method: "POST", body: form });
-        const json = await res.json().catch(() => ({}));
-        if (!res.ok) failed.push(`${file.name}: ${json.error ?? "upload failed"}`);
-        else done += 1;
-      } catch {
-        failed.push(`${file.name}: network problem`);
+        // Straight to storage (big phone photos are resized first): no server size limit.
+        await uploadMedia(file);
+        done += 1;
+      } catch (err) {
+        failed.push(`${file.name}: ${err instanceof Error ? err.message : "network problem"}`);
       }
     }
     setProgress(null);
@@ -220,7 +218,7 @@ export function MediaLibrary({
               ref={fileRef}
               type="file"
               multiple
-              accept="image/jpeg,image/png,image/webp,image/avif,video/mp4,video/webm"
+              accept="image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif,video/mp4,video/webm"
               className="hidden"
               onChange={(e) => void upload(e.target.files)}
             />

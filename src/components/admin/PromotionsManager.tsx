@@ -12,6 +12,7 @@ import { DateTimeField, Notice, Panel } from "@/components/admin/kit";
 import { PromoBanner } from "@/components/promo/PromoBanner";
 import { PromoMedia } from "@/components/promo/PromoMedia";
 import { getCached, setCached } from "@/lib/admin/memo-cache";
+import { uploadMedia } from "@/lib/admin/upload-media";
 import type { AdminPromotion, PromoMediaType, PromoPlacement, PromoTheme, Promotion } from "@/lib/data/promotions";
 import type { PublicDepartureAvailability, StaffRole, Trip } from "@/lib/types";
 import { isBookable } from "@/lib/departure-rules";
@@ -311,21 +312,15 @@ function Editor({
     setUploading(target);
     setUploadError(null);
     try {
-      const form = new FormData();
-      form.append("file", file);
-      const res = await fetch("/api/admin/media", { method: "POST", body: form });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setUploadError(json.error || "Upload failed.");
-        return;
-      }
+      // Straight to storage (big phone photos are resized first): no server size limit.
+      const { url } = await uploadMedia(file);
       if (target === "media") {
-        setDraft({ ...draft, mediaUrl: String(json.url), mediaType: file.type.startsWith("video/") ? "video" : "image" });
+        setDraft({ ...draft, mediaUrl: url, mediaType: file.type.startsWith("video/") ? "video" : "image" });
       } else {
-        setDraft({ ...draft, posterUrl: String(json.url) });
+        setDraft({ ...draft, posterUrl: url });
       }
-    } catch {
-      setUploadError("Network problem during upload.");
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : "Network problem during upload.");
     } finally {
       setUploading(null);
     }
@@ -391,7 +386,7 @@ function Editor({
                 {uploading === "media" ? "Uploading…" : "Upload photo or video"}
                 <input
                   type="file"
-                  accept="image/jpeg,image/png,image/webp,image/avif,video/mp4,video/webm"
+                  accept="image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif,video/mp4,video/webm"
                   className="sr-only"
                   disabled={uploading !== null}
                   onChange={(e) => {
@@ -410,7 +405,7 @@ function Editor({
                   {uploading === "poster" ? "Uploading…" : "Upload cover"}
                   <input
                     type="file"
-                    accept="image/jpeg,image/png,image/webp,image/avif"
+                    accept="image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif"
                     className="sr-only"
                     disabled={uploading !== null}
                     onChange={(e) => {

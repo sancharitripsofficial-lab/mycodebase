@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowRight, CalendarDays } from "lucide-react";
-import { BlogVideo } from "@/components/blog/BlogVideo";
+import { BlogCover } from "@/components/blog/BlogCover";
 import { paragraphs, visiblePosts } from "@/lib/blog";
 import { getPublishedTripsWithDetails, getSiteSettings } from "@/lib/data/repository";
 import { absoluteUrl, breadcrumbJsonLd, clip, jsonLdText } from "@/lib/seo";
@@ -87,7 +87,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ id: s
           <h1 className="font-display text-3xl leading-tight font-semibold text-forest-900 sm:text-4xl">{post.title}</h1>
           {post.excerpt && <p className="text-lg leading-relaxed text-stone-600">{post.excerpt}</p>}
         </header>
-        <BlogVideo src={post.videoUrl} poster={post.posterUrl} title={post.title} />
+        <BlogCover videoUrl={post.videoUrl} posterUrl={post.posterUrl} title={post.title} priority />
         {post.body && (
           <div className="max-w-3xl space-y-4 text-[1.02rem] leading-relaxed text-ink-900">
             {paragraphs(post.body).map((p, i) => (
