@@ -62,7 +62,6 @@ function FitBox({
  */
 export function PromoMedia({ promo, sizes, priority = false }: { promo: Promotion; sizes: string; priority?: boolean }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const [ytOpen, setYtOpen] = useState(false);
   const [dims, setDims] = useState<{ w: number; h: number } | null>(null);
   // Pictures are usually posters with words and a logo near the edges: never crop them (any
   // difference in shape shows the whole picture over its blurred copy). Videos may fill the box.
@@ -175,31 +174,7 @@ export function PromoMedia({ promo, sizes, priority = false }: { promo: Promotio
 
   if (promo.mediaType === "youtube") {
     const id = youtubeId(promo.mediaUrl);
-    if (id) {
-      return ytOpen ? (
-        <iframe
-          src={`https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&playsinline=1`}
-          title={promo.title}
-          allow="autoplay; encrypted-media; picture-in-picture"
-          allowFullScreen
-          className="absolute inset-0 h-full w-full"
-        />
-      ) : (
-        <button
-          type="button"
-          onClick={() => setYtOpen(true)}
-          className="group absolute inset-0 h-full w-full"
-          aria-label={`Play video: ${promo.title}`}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={`https://i.ytimg.com/vi/${id}/hqdefault.jpg`} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
-          <span className="absolute inset-0 bg-[#0B5683]/20 transition group-hover:bg-[#0B5683]/10" />
-          <span className="absolute top-1/2 left-1/2 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-copper-600 shadow-lg transition group-hover:scale-105">
-            <Play className="ml-0.5 h-6 w-6 fill-current" aria-hidden="true" />
-          </span>
-        </button>
-      );
-    }
+    if (id) return <YouTubeLoop id={id} title={promo.title} isShort={/\/shorts\//i.test(promo.mediaUrl)} />;
   }
 
   // No media: a moving light over the brand colour so the banner still feels alive.
@@ -210,6 +185,108 @@ export function PromoMedia({ promo, sizes, priority = false }: { promo: Promotio
         <path d="M40 190 C160 190 330 170 330 120 C330 70 120 90 120 45 C120 15 220 8 380 8" fill="none" stroke="white" strokeWidth="14" strokeLinecap="round" />
         <path d="M40 190 C160 190 330 170 330 120 C330 70 120 90 120 45 C120 15 220 8 380 8" fill="none" stroke="#0B5683" strokeWidth="2" strokeDasharray="10 12" className="promo-dash" />
       </svg>
+    </div>
+  );
+}
+
+/**
+ * A YouTube clip in an offer: plays by itself, muted, on a loop, once the offer is on screen (the
+ * player loads only then). Shorts keep their tall shape over a blurred copy of their picture
+ * instead of black bars. "Sound on" unmutes; visitors who prefer less motion get a play button.
+ */
+function YouTubeLoop({ id, title, isShort }: { id: string; title: string; isShort: boolean }) {
+  const box = useRef<HTMLDivElement | null>(null);
+  const frame = useRef<HTMLIFrameElement | null>(null);
+  const [live, setLive] = useState(false);
+  const [manual, setManual] = useState(false);
+  const [sound, setSound] = useState(false);
+  const thumb = `https://i.ytimg.com/vi/${id}/${isShort ? "oar2" : "hqdefault"}.jpg`;
+
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setManual(true);
+      return;
+    }
+    const io = new IntersectionObserver(
+      ([e]) => {
+        if (e?.isIntersecting && e.intersectionRatio >= 0.25) {
+          setLive(true);
+          io.disconnect();
+        }
+      },
+      { threshold: [0, 0.25] }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  const command = (func: string) =>
+    frame.current?.contentWindow?.postMessage(JSON.stringify({ event: "command", func, args: [] }), "*");
+
+  const params = `autoplay=1&mute=1&loop=1&playlist=${id}&controls=0&playsinline=1&rel=0&modestbranding=1&enablejsapi=1`;
+
+  return (
+    <div ref={box} className="absolute inset-0 overflow-hidden bg-[#0f2b2b]">
+      {/* Blurred picture behind (fills the sides of a tall Short). */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={`https://i.ytimg.com/vi/${id}/hqdefault.jpg`}
+        alt=""
+        aria-hidden="true"
+        loading="lazy"
+        className="absolute inset-0 h-full w-full scale-110 object-cover opacity-70 blur-xl saturate-150"
+      />
+      <div className={isShort ? "absolute inset-y-0 left-1/2 aspect-[9/16] h-full -translate-x-1/2" : "absolute inset-0"}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={thumb}
+          alt=""
+          aria-hidden="true"
+          loading="lazy"
+          onError={(e) => {
+            e.currentTarget.src = `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
+          }}
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+        {live && (
+          <iframe
+            ref={frame}
+            src={`https://www.youtube-nocookie.com/embed/${id}?${params}`}
+            title={title}
+            allow="autoplay; encrypted-media; picture-in-picture"
+            allowFullScreen
+            className="absolute inset-0 h-full w-full"
+          />
+        )}
+      </div>
+      {manual && !live && (
+        <button
+          type="button"
+          onClick={() => setLive(true)}
+          className="group absolute inset-0 h-full w-full"
+          aria-label={`Play video: ${title}`}
+        >
+          <span className="absolute top-1/2 left-1/2 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-copper-600 shadow-lg transition group-hover:scale-105">
+            <Play className="ml-0.5 h-6 w-6 fill-current" aria-hidden="true" />
+          </span>
+        </button>
+      )}
+      {live && (
+        <button
+          type="button"
+          onClick={() => {
+            command(sound ? "mute" : "unMute");
+            command("playVideo");
+            setSound(!sound);
+          }}
+          className="absolute bottom-3 left-3 z-10 inline-flex min-h-9 items-center rounded-full bg-black/55 px-3 text-xs font-semibold text-white backdrop-blur-sm hover:bg-black/70"
+          aria-label={sound ? "Turn sound off" : "Turn sound on"}
+        >
+          {sound ? "Sound on" : "Sound off"}
+        </button>
+      )}
     </div>
   );
 }
