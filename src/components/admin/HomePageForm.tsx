@@ -44,6 +44,8 @@ const ICON_LABELS: Record<IconKey, string> = {
   star: "Star",
   camera: "Camera",
   utensils: "Food",
+  bed: "Bed / hotel room",
+  route: "Route / pick-up to drop",
 };
 
 function move<T>(list: T[], i: number, d: number): T[] {
@@ -270,6 +272,15 @@ export function HomePageForm({ initial, trips, save, canEdit }: { initial: HomeP
 
       <Group title="Upcoming departures">
         <SectionEditor label="Upcoming departures" value={f.departuresSection} onChange={(v) => set("departuresSection", v)} canEdit={canEdit} />
+      </Group>
+
+      <Group title="Stays & pick-up to drop (coming soon)">
+        <SectionEditor label="Stays & pick-up to drop" value={f.beyondSection} onChange={(v) => set("beyondSection", { ...f.beyondSection, ...v })} canEdit={canEdit} bodyLabel="Paragraph" />
+        <div className="grid gap-3 md:grid-cols-2">
+          <TextInput label="Highlighted line" value={f.beyondSection.tagline} isDisabled={!canEdit} onChange={(v) => set("beyondSection", { ...f.beyondSection, tagline: v })} />
+          <TextInput label="Button (opens Plan my trip)" value={f.beyondSection.buttonLabel} isDisabled={!canEdit} onChange={(v) => set("beyondSection", { ...f.beyondSection, buttonLabel: v })} />
+        </div>
+        <CardsEditor cards={f.beyondCards} onChange={(v) => set("beyondCards", v)} canEdit={canEdit} max={6} linkHint="Optional: #plan, /contact, /trips…" />
       </Group>
 
       <Group title="Comparison table">

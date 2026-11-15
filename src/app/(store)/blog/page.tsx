@@ -4,6 +4,7 @@ import { ArrowRight, CalendarDays, Clock } from "lucide-react";
 import { PageBanner3D } from "@/components/banners/PageBanner3D";
 import { BlogCardImage, BlogCover } from "@/components/blog/BlogCover";
 import { visiblePosts } from "@/lib/blog";
+import { blogPlainText } from "@/lib/blog-format";
 import { getSiteSettings } from "@/lib/data/repository";
 
 export const revalidate = 60;
@@ -17,7 +18,7 @@ export const metadata: Metadata = {
 const DATE = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
 const postDate = (iso: string) => DATE.format(new Date(`${iso}T12:00:00Z`));
 /** About how long the story takes to read (200 words a minute), at least 1 minute. */
-const readMinutes = (text: string) => Math.max(1, Math.round(text.split(/\s+/).filter(Boolean).length / 200));
+const readMinutes = (text: string) => Math.max(1, Math.round(blogPlainText(text).split(/\s+/).filter(Boolean).length / 200));
 
 export default async function BlogPage() {
   const { settings } = await getSiteSettings();

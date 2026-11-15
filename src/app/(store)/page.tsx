@@ -403,6 +403,55 @@ export default async function HomePage() {
         </section>
       )}
 
+      {/* Coming soon: resorts, hotel rooms and pick-up-to-drop planning (words and cards from Admin) */}
+      {home.beyondSection.show && (
+        <section className="sec-sunrise mt-12 border-y border-stone-200/70" aria-labelledby="beyond-trip">
+          <div className="mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:px-6 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
+            <div className="space-y-5">
+              <SectionHead text={home.beyondSection} id="beyond-trip" />
+              <ol aria-label="Your trip, end to end" className="flex flex-wrap items-center gap-y-2 text-xs font-semibold text-forest-900">
+                {["Pick-up", "Stay", "Drop"].map((stop, i) => (
+                  <li key={stop} className="flex items-center">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 shadow-sm ring-1 ring-stone-200">
+                      <span className={`h-2 w-2 rounded-full ${i === 1 ? "bg-forest-700" : "bg-copper-600"}`} aria-hidden="true" />
+                      {stop}
+                    </span>
+                    {i < 2 && <span aria-hidden="true" className="mx-1.5 w-6 border-t-2 border-dashed border-forest-800/35 sm:w-10" />}
+                  </li>
+                ))}
+              </ol>
+              {home.beyondSection.tagline && (
+                <p className="font-display text-xl leading-snug font-semibold text-copper-700 sm:text-2xl">{home.beyondSection.tagline}</p>
+              )}
+              {home.beyondSection.buttonLabel && (
+                <Link href={home.planSection.show ? "#plan" : "/contact"} className="btn-sunset px-6 py-3 text-sm">
+                  {home.beyondSection.buttonLabel}
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </Link>
+              )}
+            </div>
+            {home.beyondCards.length > 0 && (
+              <div className="grid gap-4 sm:grid-cols-2">
+                {home.beyondCards.map((item, i) => (
+                  <Reveal key={`${item.title}-${i}`} delay={i * 80} className={`tile tile-${item.colour} card-lift space-y-2.5 p-5`}>
+                    <span className="tile-num inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white/85 shadow-sm">
+                      <HomeIcon name={item.icon} className="h-5 w-5" />
+                    </span>
+                    <h3 className="font-display text-lg font-semibold text-ink-900">{item.title}</h3>
+                    {item.body && <p className="text-sm leading-relaxed text-ink-900/75">{item.body}</p>}
+                    {item.href && (
+                      <Link href={item.href} className="tile-num inline-flex items-center gap-1 text-xs font-semibold">
+                        Learn more <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+                      </Link>
+                    )}
+                  </Reveal>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
       {/* Comparison table (rows from Admin) */}
       {home.compareSection.show && home.compareRows.length > 0 && (
         <section className="mx-auto max-w-6xl px-4 py-14 sm:px-6" aria-labelledby="car-vs-bus">

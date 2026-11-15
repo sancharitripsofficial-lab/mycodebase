@@ -4,6 +4,9 @@
  * list for the first time, the built-in post below is shown.
  */
 
+/** Longest story the editor allows (formatting marks included). */
+export const BLOG_BODY_MAX = 20000;
+
 export interface BlogPost {
   /** Address of the post: /blog/<id> (lowercase letters, numbers and dashes). */
   id: string;
@@ -77,7 +80,7 @@ export function mergeBlogPosts(saved: unknown): BlogPost[] {
       id,
       title,
       excerpt: str(v.excerpt, 300).trim(),
-      body: str(v.body, 6000).trim(),
+      body: str(v.body, BLOG_BODY_MAX).trim(),
       videoUrl,
       posterUrl: poster,
       tripSlug: typeof v.tripSlug === "string" && /^[a-z0-9][a-z0-9-]{0,119}$/.test(v.tripSlug) ? v.tripSlug : null,

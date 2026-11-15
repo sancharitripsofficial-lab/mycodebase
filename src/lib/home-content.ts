@@ -44,6 +44,8 @@ export const ICON_KEYS = [
   "star",
   "camera",
   "utensils",
+  "bed",
+  "route",
 ] as const;
 export type IconKey = (typeof ICON_KEYS)[number];
 
@@ -79,6 +81,9 @@ export interface HomePageContent {
   categories: HomeCategory[];
   travellerCards: HomeCard[];
   departuresSection: SectionText;
+  /** Coming soon: resorts, hotel rooms and pick-up-to-drop planning. */
+  beyondSection: SectionText & { tagline: string; buttonLabel: string };
+  beyondCards: HomeCard[];
   compareSection: SectionText & { usLabel: string; themLabel: string };
   compareRows: { label: string; us: string; them: string }[];
   howSection: SectionText;
@@ -136,6 +141,20 @@ export const DEFAULT_HOME_CONTENT: HomePageContent = {
     { title: "Friends & teams", body: "More than six? We run two or more cars on your date.", colour: "leaf", icon: "group", href: "#plan" },
   ],
   departuresSection: { show: true, eyebrow: "Live departure availability", title: "Upcoming 6-seat departures", body: "" },
+  beyondSection: {
+    show: true,
+    eyebrow: "Coming soon: beyond the trip",
+    title: "Pick-up to drop, all in one plan",
+    body: "We are going beyond our tours. We are connecting with resorts and hotel rooms, so your trip runs smoothly from pick-up to drop without you searching for stays. For batch trips, solo travellers and every group.",
+    tagline: "Plan your unplanned experiences with Sanchari Trips.",
+    buttonLabel: "Tell us your plan",
+  },
+  beyondCards: [
+    { title: "Resort stays", body: "Resorts linked to your trip, so you never hunt for a stay on your own.", colour: "leaf", icon: "mountain", href: "" },
+    { title: "Hotel rooms", body: "Rooms on your route, arranged along with your booking.", colour: "lagoon", icon: "bed", href: "" },
+    { title: "Pick-up to drop", body: "One plan from your pick-up point to the drop after the trip ends.", colour: "sunset", icon: "route", href: "" },
+    { title: "Batch, solo or group", body: "Joining a batch date, going solo or bringing your own group, we plan around you.", colour: "amber", icon: "users", href: "#plan" },
+  ],
   compareSection: {
     show: true,
     eyebrow: "Why a car, not a bus",
@@ -218,6 +237,8 @@ export function mergeHomeContent(saved: unknown): HomePageContent {
     categories: Array.isArray(s.categories) ? s.categories : d.categories,
     travellerCards: Array.isArray(s.travellerCards) ? s.travellerCards : d.travellerCards,
     departuresSection: mergeSection(d.departuresSection, s.departuresSection),
+    beyondSection: mergeSection(d.beyondSection, s.beyondSection),
+    beyondCards: Array.isArray(s.beyondCards) ? s.beyondCards : d.beyondCards,
     compareSection: mergeSection(d.compareSection, s.compareSection),
     compareRows: Array.isArray(s.compareRows) ? s.compareRows : d.compareRows,
     howSection: mergeSection(d.howSection, s.howSection),

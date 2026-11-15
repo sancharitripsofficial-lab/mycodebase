@@ -256,6 +256,8 @@ export const homePageSchema = z.object({
     .refine((cats) => new Set(cats.map((c) => c.id)).size === cats.length, "Two categories have the same short name"),
   travellerCards: z.array(homeCard).max(8),
   departuresSection: sectionText,
+  beyondSection: sectionText.extend({ tagline: z.string().trim().max(160), buttonLabel: z.string().trim().max(40) }),
+  beyondCards: z.array(homeCard).max(6),
   compareSection: sectionText.extend({ usLabel: z.string().trim().min(1).max(40), themLabel: z.string().trim().min(1).max(40) }),
   compareRows: z
     .array(z.object({ label: z.string().trim().min(1).max(60), us: z.string().trim().min(1).max(160), them: z.string().trim().min(1).max(160) }))
@@ -356,7 +358,7 @@ export const blogPostsSchema = z
       id: z.string().trim().regex(/^[a-z0-9][a-z0-9-]{0,79}$/, "Post address: lowercase letters, numbers and dashes"),
       title: z.string().trim().min(3, "Each post needs a title (3+ characters)").max(120, "Title: at most 120 characters"),
       excerpt: z.string().trim().max(300, "Short text: at most 300 characters"),
-      body: z.string().trim().max(6000, "Story: at most 6,000 characters"),
+      body: z.string().trim().max(20000, "Story: at most 20,000 characters"),
       videoUrl: mediaLink,
       posterUrl: mediaLink,
       tripSlug: z.string().trim().regex(/^[a-z0-9][a-z0-9-]{0,119}$/).nullable(),

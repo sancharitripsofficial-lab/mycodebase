@@ -17,6 +17,9 @@ describe("home page content", () => {
     expect(merged.categoriesSection.title).toBe("Pick one");
     expect(merged.categoriesSection.show).toBe(true);
     expect(merged.compareRows.length).toBeGreaterThan(0);
+    expect(merged.beyondSection.show).toBe(true);
+    expect(merged.beyondSection.tagline).toContain("Sanchari Trips");
+    expect(merged.beyondCards.length).toBe(4);
     expect(mergeHomeContent(null)).toEqual(DEFAULT_HOME_CONTENT);
   });
 

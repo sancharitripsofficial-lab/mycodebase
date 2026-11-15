@@ -12,6 +12,8 @@ import { BlogVideo } from "@/components/blog/BlogVideo";
 import { blogIdFrom, isSafeMediaLink, mergeBlogPosts, type BlogPost } from "@/lib/blog";
 import { localISODate } from "@/lib/dates";
 import { uploadMedia } from "@/lib/admin/upload-media";
+import { BlogStoryEditor } from "@/components/admin/BlogStoryEditor";
+import { BLOG_BODY_MAX } from "@/lib/blog";
 
 type Editor = ReturnType<typeof useAdminContent>;
 
@@ -203,7 +205,13 @@ export function BlogManager({ editor, canEdit }: { editor: Editor; canEdit: bool
             )}
           </div>
 
-          <TextArea label="Story (optional, blank line = new paragraph)" rows={6} value={draft.body} onChange={(v) => setDraft({ ...draft, body: v.slice(0, 6000) })} />
+          <BlogStoryEditor
+            value={draft.body}
+            onChange={(body) => setDraft((d) => (d ? { ...d, body } : d))}
+            canEdit={canEdit}
+            maxLength={BLOG_BODY_MAX}
+            onNotice={setNotice}
+          />
           <div className="grid gap-3 md:grid-cols-2">
             <Selector
               label="Which trip is this story about?"

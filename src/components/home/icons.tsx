@@ -1,4 +1,5 @@
 import {
+  BedDouble,
   CalendarDays,
   Camera,
   Car,
@@ -7,6 +8,7 @@ import {
   Landmark,
   Map,
   Mountain,
+  Route,
   ShieldCheck,
   Star,
   Sun,
@@ -37,6 +39,8 @@ export const HOME_ICONS: Record<IconKey, LucideIcon> = {
   star: Star,
   camera: Camera,
   utensils: UtensilsCrossed,
+  bed: BedDouble,
+  route: Route,
 };
 
 export function HomeIcon({ name, className }: { name: IconKey; className?: string }) {

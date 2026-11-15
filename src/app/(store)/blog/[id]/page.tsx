@@ -3,7 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowRight, CalendarDays } from "lucide-react";
 import { BlogCover } from "@/components/blog/BlogCover";
-import { paragraphs, visiblePosts } from "@/lib/blog";
+import { visiblePosts } from "@/lib/blog";
+import { BlogBody } from "@/components/blog/BlogBody";
 import { getPublishedTripsWithDetails, getSiteSettings } from "@/lib/data/repository";
 import { absoluteUrl, breadcrumbJsonLd, clip, jsonLdText } from "@/lib/seo";
 
@@ -88,13 +89,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ id: s
           {post.excerpt && <p className="text-lg leading-relaxed text-stone-600">{post.excerpt}</p>}
         </header>
         <BlogCover videoUrl={post.videoUrl} posterUrl={post.posterUrl} title={post.title} priority />
-        {post.body && (
-          <div className="max-w-3xl space-y-4 text-[1.02rem] leading-relaxed text-ink-900">
-            {paragraphs(post.body).map((p, i) => (
-              <p key={i}>{p}</p>
-            ))}
-          </div>
-        )}
+        {post.body && <BlogBody text={post.body} />}
         {/* The heading keeps a real width (never squeezed to one letter per line, e.g. in Kannada);
             on phones the button drops below it at full width. */}
         <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-stone-200 bg-white p-5">
