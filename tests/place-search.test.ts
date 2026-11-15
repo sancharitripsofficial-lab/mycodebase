@@ -1,4 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { describe, expect, it, vi } from "vitest";
 import {
   categoryOrderByRank,
   groupByCategory,
@@ -17,6 +19,9 @@ import type { KarnatakaDistrict, KarnatakaPlace, PlaceCategory } from "@/lib/pla
 import type { ItineraryDay, Trip, TripWithDetails } from "@/lib/types";
 import { translatePattern } from "@/lib/i18n/patterns";
 import { cleanPlaceText, planMessageFor } from "@/lib/places/plan-prefill";
+import { NoTripForPlace, PlaceFilterBanner, TripSearch } from "@/components/TripSearch";
+
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: () => {} }) }));
 import kn from "@/lib/i18n/kn.json";
 
 // --- small fixture (the real list lives in karnataka-places.ts) ---------------------------------
@@ -190,9 +195,13 @@ describe("searchPlaces", () => {
     }));
     searchPlaces("warmup", many, DISTRICTS); // builds the index once
     const queries = ["c", "co", "coo", "coor", "coorg", "abby fal", "mullayanagri", "hampi ruins", "xyzzyq"];
-    const start = performance.now();
-    for (let r = 0; r < 20; r++) for (const q of queries) searchPlaces(q, many, DISTRICTS);
-    const perSearch = (performance.now() - start) / (20 * queries.length);
+    // Best of 5 rounds, so a busy test machine does not make it flaky (desktop: ~0.3 ms).
+    let perSearch = Infinity;
+    for (let round = 0; round < 5; round++) {
+      const start = performance.now();
+      for (let r = 0; r < 10; r++) for (const q of queries) searchPlaces(q, many, DISTRICTS);
+      perSearch = Math.min(perSearch, (performance.now() - start) / (10 * queries.length));
+    }
     expect(perSearch).toBeLessThan(2);
   });
 });
@@ -306,5 +315,29 @@ describe("plan prefill", () => {
     expect(cleanPlaceText(42)).toBe("");
     expect(cleanPlaceText(null)).toBe("");
     expect(planMessageFor("Hampi, Vijayanagara")).toBe("I'd like a trip to Hampi, Vijayanagara.");
+  });
+});
+
+describe("TripSearch markup", () => {
+  it("renders an accessible combobox, closed until focused", () => {
+    const html = renderToStaticMarkup(createElement(TripSearch, { trips: TRIPS, onFilterChange: () => {} }));
+    expect(html).toContain("role=\"combobox\"");
+    expect(html).toContain("aria-expanded=\"false\"");
+    expect(html).toContain("aria-autocomplete=\"list\"");
+    expect(html).toContain("role=\"listbox\"");
+    expect(html).toMatch(/<label[^>]*>Search trips and places<\/label>/);
+    expect(html).toContain("Search Chikmagalur, Coorg, Gokarna, Hampi...");
+  });
+
+  it("renders the place banner and the no-trip panel with the plan link", () => {
+    const hampi = PLACES.find((p) => p.id === "hampi")!;
+    const banner = renderToStaticMarkup(createElement(PlaceFilterBanner, { place: hampi, onClear: () => {} }));
+    expect(banner).toContain("Trips that go to Hampi (Vijayanagara)");
+    expect(banner).toContain("aria-label=\"Clear place\"");
+    const panel = renderToStaticMarkup(createElement(NoTripForPlace, { place: hampi, onClear: () => {} }));
+    expect(panel).toContain("No trip to Hampi yet");
+    expect(panel).toContain("href=\"#ask\"");
+    expect(panel).toContain("Ask us to plan Hampi");
+    expect(panel).toContain("Show all trips");
   });
 });
