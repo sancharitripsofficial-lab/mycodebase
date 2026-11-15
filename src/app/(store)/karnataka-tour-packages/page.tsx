@@ -78,7 +78,7 @@ export default async function KarnatakaTourPackagesPage() {
         subtitle={`Small-group weekend tours from Bengaluru to ${placeList}, with at most ${maxGroup} travellers in one car.`}
       />
 
-      <div className="sec-route">
+      <div>
         <div className="mx-auto max-w-6xl space-y-12 px-4 py-10 sm:px-6 sm:py-12">
           <section className="max-w-3xl space-y-3 text-[1.02rem] leading-relaxed text-ink-900">
             <p>

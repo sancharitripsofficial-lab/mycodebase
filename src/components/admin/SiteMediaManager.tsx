@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@astryxdesign/core/Button";
-import { ExternalLink, Film, ImageIcon, Images, RotateCcw, Upload } from "lucide-react";
+import { ExternalLink, Film, ImageIcon, Images, RotateCcw, Sparkles, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import { MediaLibrary } from "@/components/admin/MediaLibrary";
 import { Notice, Panel, useAdminContent } from "@/components/admin/kit";
@@ -11,6 +11,7 @@ import {
   BANNER_PAGES,
   BUILT_IN_MEDIA,
   builtInBannerStill,
+  readyBannerPicture,
   isVideoLink,
   mergeSiteMedia,
   type BannerMedia,
@@ -35,6 +36,7 @@ function MediaSlot({
   canEdit,
   onChange,
   onNotice,
+  preset,
 }: {
   label: string;
   hint?: string;
@@ -46,6 +48,8 @@ function MediaSlot({
   canEdit: boolean;
   onChange: (url: string) => void;
   onNotice: (n: NoticeState) => void;
+  /** A ready-made file the owner can pick with one tap. */
+  preset?: { label: string; url: string };
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [progress, setProgress] = useState<number | null>(null);
@@ -117,6 +121,17 @@ function MediaSlot({
             onClick={() => fileRef.current?.click()}
           />
           <Button size="sm" label={picking ? "Close library" : "Media library"} icon={<Images className="h-4 w-4" />} onClick={() => setPicking((p) => !p)} />
+          {preset && value !== preset.url && (
+            <Button
+              size="sm"
+              label={preset.label}
+              icon={<Sparkles className="h-4 w-4" />}
+              onClick={() => {
+                onChange(preset.url);
+                onNotice({ kind: "ok", text: `${label}: ready-made picture chosen. Press “Save pictures & videos” to put it on the website.` });
+              }}
+            />
+          )}
           {value && <Button size="sm" variant="ghost" label="Use built-in" icon={<RotateCcw className="h-4 w-4" />} onClick={() => onChange("")} />}
           <input
             ref={fileRef}
@@ -277,7 +292,7 @@ export function SiteMediaManager({ editor, canEdit }: { editor: Editor; canEdit:
 
         <Section
           title="Page banners"
-          description="The picture at the top of each page, behind the page title. Built-in = the moving 3D scene. Your picture replaces it; add a short silent video to play over the picture. Keep the main subject on the right: the title sits on the left."
+          description="The picture at the top of each page, behind the page title. Built-in = the moving 3D scene of the place (it stays unless you choose a picture). Your picture replaces it on that page only; “Sanchari picture” is a ready-made one. Add a short silent video to play over the picture. Keep the main subject on the right: the title sits on the left."
         >
           <div className="space-y-4">
             {BANNER_PAGES.map((page) => {
@@ -306,6 +321,7 @@ export function SiteMediaManager({ editor, canEdit }: { editor: Editor; canEdit:
                       builtIn={builtInBannerStill(page)}
                       emptyNote=""
                       onChange={(v) => setBanner(page, { image: v })}
+                      preset={{ label: "Sanchari picture", url: readyBannerPicture(page) }}
                     />
                     <MediaSlot
                       {...slot}

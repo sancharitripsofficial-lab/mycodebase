@@ -35,7 +35,7 @@ export default async function BlogPage() {
         title="Stories from the road"
         subtitle="Small-group weekends from Bengaluru, one car and six seats at a time."
       />
-      <div className="sec-route">
+      <div>
         <div className="mx-auto max-w-5xl space-y-10 px-4 py-10 sm:px-6 sm:py-12">
           {!featured ? (
             <p className="rounded-2xl border border-stone-200 bg-white p-6 text-center text-stone-600">New stories are coming soon.</p>

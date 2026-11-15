@@ -556,3 +556,70 @@ html[lang="kn"] body { overflow-wrap: break-word; }
 /* Kannada words are longer: a slightly tighter top menu keeps it on one line on laptops. */
 html[lang="kn"] nav[aria-label="Primary navigation"] a { padding-inline: 0.55rem; font-size: 0.8125rem; }
 html[lang="kn"] header .btn-sunset { padding-inline: 1rem; font-size: 0.8125rem; }
+
+/* ---------- Page backgrounds (components/PageCanvas.tsx) ----------
+   Each page has its own colour combination, a light pattern and soft glows that drift slowly.
+   Fixed behind the content: composited once, so scrolling stays smooth on phones. */
+.page-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+  background-color: var(--pc-a);
+  background-image: linear-gradient(165deg, var(--pc-a) 0%, var(--pc-b) 52%, var(--pc-c) 100%);
+}
+.page-canvas::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: var(--pc-pat);
+  background-size: var(--pc-pat-size);
+}
+.page-glow {
+  position: absolute;
+  width: 62vmax;
+  height: 62vmax;
+  border-radius: 9999px;
+  background: radial-gradient(closest-side, var(--glow), transparent 72%);
+  will-change: transform;
+  animation: page-glow-drift 40s ease-in-out infinite alternate;
+}
+.page-glow-a { --glow: var(--pc-glow-a); top: -22vmax; left: -18vmax; }
+.page-glow-b { --glow: var(--pc-glow-b); bottom: -26vmax; right: -20vmax; animation-duration: 48s; animation-delay: -14s; }
+.page-glow-c { --glow: var(--pc-glow-c); top: 38%; left: 52%; width: 42vmax; height: 42vmax; animation-duration: 56s; animation-delay: -28s; }
+@keyframes page-glow-drift {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(7vmax, 5vmax, 0) scale(1.1); }
+  100% { transform: translate3d(-5vmax, 8vmax, 0) scale(0.94); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-glow { animation: none; }
+}
+.canvas-trips { --pc-a: #dcf1ea; --pc-b: #e4f4f6; --pc-c: #fdf1e3; --pc-pat: var(--pat-route); --pc-pat-size: 260px 130px; --pc-glow-a: rgb(27 163 179 / 0.32); --pc-glow-b: rgb(79 170 110 / 0.3); --pc-glow-c: rgb(255 138 61 / 0.18); }
+.canvas-karnataka { --pc-a: #fff0dc; --pc-b: #fde6d3; --pc-c: #e6f3ec; --pc-pat: var(--pat-boulder); --pc-pat-size: 118px 92px; --pc-glow-a: rgb(245 165 36 / 0.3); --pc-glow-b: rgb(194 85 31 / 0.2); --pc-glow-c: rgb(27 163 179 / 0.2); }
+.canvas-blog { --pc-a: #ffeee4; --pc-b: #fce8ee; --pc-c: #e3f3f4; --pc-pat: var(--pat-wave); --pc-pat-size: 80px 40px; --pc-glow-a: rgb(255 138 61 / 0.28); --pc-glow-b: rgb(27 163 179 / 0.26); --pc-glow-c: rgb(236 72 120 / 0.14); }
+.canvas-faqs { --pc-a: #e3f4e6; --pc-b: #f1f8e6; --pc-c: #fff4e3; --pc-pat: var(--pat-leaf); --pc-pat-size: 60px 60px; --pc-glow-a: rgb(79 170 110 / 0.3); --pc-glow-b: rgb(245 165 36 / 0.24); --pc-glow-c: rgb(27 163 179 / 0.16); }
+.canvas-safety { --pc-a: #e0eff8; --pc-b: #e3f5f1; --pc-c: #f4f1fb; --pc-pat: var(--pat-kolam); --pc-pat-size: 56px 56px; --pc-glow-a: rgb(56 140 210 / 0.26); --pc-glow-b: rgb(27 163 179 / 0.28); --pc-glow-c: rgb(79 170 110 / 0.16); }
+.canvas-policies { --pc-a: #fbf3e4; --pc-b: #e7f4ee; --pc-c: #e2f1f5; --pc-pat: var(--pat-contour); --pc-pat-size: 180px 90px; --pc-glow-a: rgb(245 165 36 / 0.24); --pc-glow-b: rgb(27 163 179 / 0.26); --pc-glow-c: rgb(79 170 110 / 0.16); }
+.canvas-contact { --pc-a: #ffeadb; --pc-b: #fff4e6; --pc-c: #dcf2f3; --pc-pat: var(--pat-wave); --pc-pat-size: 80px 40px; --pc-glow-a: rgb(255 138 61 / 0.32); --pc-glow-b: rgb(27 163 179 / 0.3); --pc-glow-c: rgb(245 165 36 / 0.18); }
+.canvas-booking { --pc-a: #ddf1f2; --pc-b: #eef7ef; --pc-c: #fff0d6; --pc-pat: var(--pat-kolam); --pc-pat-size: 56px 56px; --pc-glow-a: rgb(27 163 179 / 0.3); --pc-glow-b: rgb(245 165 36 / 0.26); --pc-glow-c: rgb(255 138 61 / 0.14); }
+.canvas-about { --pc-a: #f7ebdc; --pc-b: #fbf4ea; --pc-c: #e6f3ec; --pc-pat: var(--pat-coffee); --pc-pat-size: 56px 56px; --pc-glow-a: rgb(138 90 51 / 0.2); --pc-glow-b: rgb(79 170 110 / 0.24); --pc-glow-c: rgb(245 165 36 / 0.18); }
+
+/* Owner's banner picture (not the 3D scenes): a slow, gentle zoom; still when less motion is preferred. */
+.banner-kenburns {
+  animation: banner-kenburns 26s ease-in-out infinite alternate;
+  transform-origin: 65% 50%;
+  will-change: transform;
+}
+@keyframes banner-kenburns {
+  from { transform: scale(1.02); }
+  to { transform: scale(1.12) translate3d(-1.5%, 0, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .banner-kenburns { animation: none; }
+}
+/* Pages with their own background: the body's plain wash steps aside (it would paint over it). */
+body:has(.page-canvas) {
+  background: transparent;
+}

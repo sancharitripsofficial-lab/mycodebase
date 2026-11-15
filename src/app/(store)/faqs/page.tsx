@@ -41,7 +41,7 @@ export default async function FaqsPage() {
         title={head.title || "Frequently asked questions"}
         subtitle={head.body || undefined}
       />
-      <div className="sec-kolam">
+      <div>
         <div className="mx-auto max-w-4xl space-y-6 px-4 py-10 sm:px-6 sm:py-12">
           {faqs.length > 0 ? (
             <div className="space-y-3">

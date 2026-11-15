@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowRight, CalendarDays } from "lucide-react";
 import { BlogCover } from "@/components/blog/BlogCover";
 import { visiblePosts } from "@/lib/blog";
 import { BlogBody } from "@/components/blog/BlogBody";
+import { PageCanvas } from "@/components/PageCanvas";
 import { getPublishedTripsWithDetails, getSiteSettings } from "@/lib/data/repository";
 import { absoluteUrl, breadcrumbJsonLd, clip, jsonLdText } from "@/lib/seo";
 
@@ -74,9 +75,10 @@ export default async function BlogPostPage({ params }: { params: Promise<{ id: s
   ]);
 
   return (
-    <div className="sec-route">
+    <div>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdText(article) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdText(breadcrumb) }} />
+      <PageCanvas theme="blog" />
       <article className="mx-auto max-w-4xl space-y-6 px-4 py-8 sm:px-6 sm:py-12">
         <Link href="/blog" className="inline-flex min-h-10 items-center gap-1.5 text-sm font-semibold text-forest-800 hover:underline">
           <ArrowLeft className="h-4 w-4" aria-hidden="true" /> All stories

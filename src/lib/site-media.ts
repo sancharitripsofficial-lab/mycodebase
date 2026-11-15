@@ -58,6 +58,9 @@ export const BUILT_IN_MEDIA = {
 /** Built-in still of a page's 3D banner scene (shown in Admin as the "Built-in" preview). */
 export const builtInBannerStill = (page: BannerPage) => `/media/banners/${BANNER_PAGE_INFO[page].scene}-wide.jpg`;
 
+/** Ready-made banner picture for each page (designed in Canva from free photos). Optional: the 3D scene stays until the owner picks it. */
+export const readyBannerPicture = (page: BannerPage) => `/media/banners/pages/${page}.jpg`;
+
 const EMPTY_BANNER: BannerMedia = { image: "", mobileImage: "", video: "" };
 
 export const EMPTY_SITE_MEDIA: SiteMedia = {

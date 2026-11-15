@@ -174,7 +174,7 @@ function CustomBanner({ media }: { media: BannerMedia }) {
         <source media="(min-width: 768px)" srcSet={wideSet} />
         <source media="(max-width: 767px)" srcSet={tallSet} />
         {/* eslint-disable-next-line jsx-a11y/alt-text, @next/next/no-img-element */}
-        <img {...img} className="object-cover" aria-hidden="true" />
+        <img {...img} className="banner-kenburns object-cover object-[65%_50%]" aria-hidden="true" />
       </picture>
     );
   }

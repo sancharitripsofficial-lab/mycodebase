@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LivingPhoto } from "@/components/living/LivingPhoto";
+import { PageCanvas } from "@/components/PageCanvas";
 import { getSiteSettings } from "@/lib/data/repository";
 import { BUILT_IN_MEDIA } from "@/lib/site-media";
 
@@ -16,6 +17,7 @@ export default async function AboutPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 space-y-10">
+      <PageCanvas theme="about" />
       <div className="space-y-3">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-copper-700">
           About Sanchari
