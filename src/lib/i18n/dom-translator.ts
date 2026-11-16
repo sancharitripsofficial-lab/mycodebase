@@ -1,4 +1,4 @@
-import { translatePattern } from "./patterns";
+import { translatePattern, translateTripTitle } from "./patterns";
 
 /**
  * Switches the visible page between English and Kannada without changing the React tree:
@@ -8,10 +8,12 @@ import { translatePattern } from "./patterns";
  * Safe with React: only `nodeValue` and attributes change, never nodes. When React later writes
  * new English into a node (seats changed, a new page), the observer translates it again.
  * Anything inside [data-no-translate] or translate="no", form fields and code is left alone.
+ * Words drawn inside an SVG (the car seat map's "Front", "Back row", "Window", "You") are translated
+ * too; an SVG's own <style> and <script> are skipped like any other.
  */
 
 const ATTRS = ["placeholder", "aria-label", "title", "alt"] as const;
-const SKIP = "script,style,noscript,code,pre,textarea,svg,[data-no-translate],[translate='no'],[contenteditable='true']";
+const SKIP = "script,style,noscript,code,pre,textarea,[data-no-translate],[translate='no'],[contenteditable='true']";
 
 const normalise = (s: string) => s.replace(/\s+/g, " ").trim();
 /** Any Latin letter (so "3D / 2N" counts); numbers and prices alone are left alone. */
@@ -50,6 +52,8 @@ export class DomTranslator {
     this.translateTitle();
     this.observer = new MutationObserver((records) => {
       for (const r of records) {
+        // <head>: only the page title matters, and flush() always re-checks it.
+        if (!this.root.contains(r.target)) continue;
         if (r.type === "characterData") this.pending.add(r.target);
         else if (r.type === "attributes") this.pending.add(r.target);
         else r.addedNodes.forEach((n) => this.pending.add(n));
@@ -63,8 +67,9 @@ export class DomTranslator {
       attributes: true,
       attributeFilter: [...ATTRS],
     });
-    const title = document.querySelector("title");
-    if (title) this.observer.observe(title, { childList: true, characterData: true, subtree: true });
+    // The whole <head>, not just today's <title>: on a new page React can put in a new <title>
+    // element, and streamed metadata can arrive after the page itself.
+    this.observer.observe(document.head, { childList: true, characterData: true, subtree: true });
   }
 
   /** Stop and put every English text back. */
@@ -166,13 +171,13 @@ export class DomTranslator {
   private translatedTitle = "";
 }
 
-/** Page titles are "Trip name | Sanchari • Micro Trips": translate each part on its own. */
-function translateTitleParts(title: string, dict: Dictionary): string | null {
+/** Page titles are "Trip name | Sanchari • Micro Trips": translate each part on its own. Exported for tests. */
+export function translateTitleParts(title: string, dict: Dictionary): string | null {
   const parts = title.split(" | ");
   if (parts.length < 2) return null;
   let changed = false;
   const out = parts.map((p) => {
-    const kn = translateText(p, dict);
+    const kn = translateText(p, dict) ?? translateTripTitle(normalise(p), (s) => dict.get(normalise(s)));
     if (kn !== null) changed = true;
     return kn ?? p;
   });

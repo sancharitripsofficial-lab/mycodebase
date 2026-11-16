@@ -47,6 +47,9 @@ const RULES: Rule[] = [
   [/^(\d+) left$/, (m) => `${m[1]} ಉಳಿದಿವೆ`],
   [/^(\d+) open$/, (m) => `${m[1]} ಖಾಲಿ`],
   [/^(\d+) \/ (\d+) (?:open|seats open)$/, (m) => `${m[2]} ರಲ್ಲಿ ${m[1]} ಖಾಲಿ`],
+  [/^Next date: (.+) · (\d+) of (\d+) seats? open$/, (m) => `ಮುಂದಿನ ದಿನಾಂಕ: ${dateIn(m[1])} · ${m[3]} ರಲ್ಲಿ ${m[2]} ${seatWord(m[2])} ಖಾಲಿ`],
+  [new RegExp(`^From ${AMOUNT} / seat$`), (m) => `ಪ್ರತಿ ಸೀಟಿಗೆ ${m[1]} ರಿಂದ`],
+  [new RegExp(`^· Whole car ${AMOUNT}$`), (m) => `· ಸಂಪೂರ್ಣ ಕಾರು ${m[1]}`],
   [/^\/ seat$/, () => "/ ಸೀಟು"],
   [/^\/ person$/, () => "/ ವ್ಯಕ್ತಿ"],
   [/^per seat$/i, () => "ಪ್ರತಿ ಸೀಟಿಗೆ"],
@@ -79,6 +82,9 @@ const RULES: Rule[] = [
   [/^(.+) — this booking is free\. Your seats are confirmed as soon as you continue\.$/, (m) => `${m[1]} — ಈ ಬುಕಿಂಗ್ ಉಚಿತ. ನೀವು ಮುಂದುವರಿದ ತಕ್ಷಣ ನಿಮ್ಮ ಸೀಟುಗಳು ಖಚಿತವಾಗುತ್ತವೆ.`],
   [/^• UPI ref (.+)$/, (m) => `• UPI ರೆಫ್ ${m[1]}`],
   [/^Batch (\S+)$/, (m) => `ಬ್ಯಾಚ್ ${m[1]}`],
+  // Cancellation slabs ("Refund 100%") and the live weather time ("Updated 1:15 am")
+  [/^Refund (\d+(?:\.\d+)?)%$/, (m) => `${m[1]}% ಮರುಪಾವತಿ`],
+  [/^Updated (\d{1,2}:\d{2}\s?(?:am|pm|AM|PM))$/, (m) => `ನವೀಕರಿಸಿದ ಸಮಯ ${m[1]}`],
   // Photos, offers, maps
   [/^Photo (\d+) of (\d+)$/, (m) => `ಫೋಟೋ ${m[1]} / ${m[2]}`],
   [/^Open photo (\d+) of (\d+) full screen$/, (m) => `ಫೋಟೋ ${m[1]} / ${m[2]} ಪೂರ್ಣ ಪರದೆಯಲ್ಲಿ ತೆರೆಯಿರಿ`],
@@ -116,6 +122,35 @@ const RULES: Rule[] = [
   [/^From the live trip calendar · (.+)$/, (m) => `ಲೈವ್ ಪ್ರವಾಸ ಕ್ಯಾಲೆಂಡರ್‌ನಿಂದ · ${m[1]}`],
   [/^Seats and prices as of (.+) — ask again for the latest$/, (m) => `${m[1]} ರ ಪ್ರಕಾರ ಸೀಟುಗಳು ಮತ್ತು ಬೆಲೆಗಳು — ಇತ್ತೀಚಿನದಕ್ಕೆ ಮತ್ತೆ ಕೇಳಿ`],
 ];
+
+const daysOf = (n: string) => (n === "1" ? "1 ದಿನದ" : `${n} ದಿನಗಳ`);
+
+/**
+ * Trip page titles in the browser tab, e.g. "Kodagu Rainforest & Spice Drive – 3-Day Coorg Trip
+ * from Bangalore" or "Coorg Trip from Bangalore – 3D/2N". Only used for the page title, so the
+ * broad "… Trip" rules never touch other text on the page.
+ */
+const TITLE_RULES: Rule[] = [
+  [/^(.+) – (\d+)-Day (?:(.+) )?Trip from Bangalore$/, (m, t) => `${tr(t, m[1])} – ಬೆಂಗಳೂರಿನಿಂದ ${daysOf(m[2])} ${m[3] ? `${tr(t, m[3])} ` : ""}ಪ್ರವಾಸ`],
+  [/^(.+) Trip from Bangalore – (\d+)D\/(\d+)N$/, (m, t) => `ಬೆಂಗಳೂರಿನಿಂದ ${tr(t, m[1])} ಪ್ರವಾಸ – ${m[2]} ದಿನ / ${m[3]} ರಾತ್ರಿ`],
+  [/^(.+) Day Trip from Bangalore$/, (m, t) => `ಬೆಂಗಳೂರಿನಿಂದ ${tr(t, m[1])} ಒಂದು ದಿನದ ಪ್ರವಾಸ`],
+  [/^(.+) – Trip from Bangalore$/, (m, t) => `${tr(t, m[1])} – ಬೆಂಗಳೂರಿನಿಂದ ಪ್ರವಾಸ`],
+  [/^(.+) Trip from Bangalore$/, (m, t) => `ಬೆಂಗಳೂರಿನಿಂದ ${tr(t, m[1])} ಪ್ರವಾಸ`],
+  // Short forms only when the place / trip name is known, so "Plan a Custom Trip" stays as it is.
+  [/^(.+) Day Trip$/, (m, t) => (t(m[1]) ? `${tr(t, m[1])} ಒಂದು ದಿನದ ಪ್ರವಾಸ` : "")],
+  [/^(.+) – (.+) Trip$/, (m, t) => (t(m[1]) && t(m[2]) ? `${tr(t, m[1])} – ${tr(t, m[2])} ಪ್ರವಾಸ` : "")],
+  [/^(.+) Trip$/, (m, t) => (t(m[1]) ? `${tr(t, m[1])} ಪ್ರವಾಸ` : "")],
+];
+
+/** Kannada for one part of a trip page title, or null when it is not one. */
+export function translateTripTitle(text: string, lookup: Lookup): string | null {
+  for (const [re, build] of TITLE_RULES) {
+    const m = re.exec(text);
+    const out = m ? build(m, lookup) : "";
+    if (out) return out;
+  }
+  return null;
+}
 
 /** Kannada for a whole text with live values in it, or null when no rule fits. */
 export function translatePattern(text: string, lookup: Lookup): string | null {
