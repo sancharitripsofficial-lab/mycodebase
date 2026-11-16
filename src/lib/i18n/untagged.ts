@@ -69,6 +69,8 @@ export function untaggedPair(en: string, kn: string): [en: string, kn: string] |
     const knParts = sentences(k);
     if (knParts.length !== enParts.length) return null;
     if (knParts.some((s, i) => KN_OWNER.test(s) && !drop[i])) return null;
+    // Only drop a Kannada sentence that really is the owner note, never one picked by position alone.
+    if (knParts.some((s, i) => drop[i] && !KN_OWNER.test(s))) return null;
     e = enParts.filter((_, i) => !drop[i]).join(" ");
     k = knParts.filter((_, i) => !drop[i]).join(" ");
   }
