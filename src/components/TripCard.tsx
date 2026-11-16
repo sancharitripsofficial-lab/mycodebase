@@ -8,6 +8,7 @@ import { formatINR } from "@/lib/currency";
 import { themeClass } from "@/lib/destination-theme";
 import type { DepartureStatus, TripWithDetails } from "@/lib/types";
 import { isBookable } from "@/lib/departure-rules";
+import { tripPriceInfo } from "@/lib/trip-price";
 
 const shortDate = (iso: string) =>
   new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "Asia/Kolkata" });
@@ -50,6 +51,9 @@ export function TripCard({ item, weather = null }: { item: TripWithDetails; weat
 
   // The trip's first uploaded film (Admin → Trips → Photos & videos) plays silently in the card.
   const cardVideo = trip.videoLinks.find((v) => classifyVideoLink(v.url).kind === "file")?.url ?? null;
+
+  // The same "From" price as the trip page, its search snippet and its structured data.
+  const fromPaise = tripPriceInfo(trip, departures).fromPaise;
 
   const privateAvailable = departures.some(
     (d) => d.seatsTaken === 0 && d.status !== "cancelled" && d.status !== "completed"
@@ -130,10 +134,10 @@ export function TripCard({ item, weather = null }: { item: TripWithDetails; weat
         <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-black/5 pt-4">
           <div>
             <p className="text-[11px] uppercase tracking-wider text-stone-600">
-              Sample from
+              From
             </p>
             <p className="text-lg font-bold text-forest-900">
-              {formatINR(trip.basePricePaise)}
+              {formatINR(fromPaise)}
               <span className="text-xs font-normal text-stone-600"> / person</span>
             </p>
           </div>

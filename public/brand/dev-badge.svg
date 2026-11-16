@@ -1,0 +1,163 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <title>Developer badge (small sizes, 40 px and below)</title>
+  <defs>
+    <clipPath id="sphereClip"><circle cx="256" cy="256" r="224"/></clipPath>
+    <clipPath id="ringClip"><path fill-rule="evenodd" clip-rule="evenodd" d="M6 256a250 250 0 1 0 500 0a250 250 0 1 0 -500 0Z M36 256a220 220 0 1 0 440 0a220 220 0 1 0 -440 0Z"/></clipPath>
+
+    <!-- sphere body: magenta top-right into violet, deep at the edges -->
+    <radialGradient id="sBase" gradientUnits="userSpaceOnUse" cx="330" cy="130" r="330">
+      <stop offset="0" stop-color="#e8b2e4"/>
+      <stop offset="0.16" stop-color="#d898d6"/>
+      <stop offset="0.40" stop-color="#b585d6"/>
+      <stop offset="0.66" stop-color="#8a72c8"/>
+      <stop offset="0.88" stop-color="#5a4aa6"/>
+      <stop offset="1" stop-color="#4a3f92"/>
+    </radialGradient>
+    <radialGradient id="sBlue" gradientUnits="userSpaceOnUse" cx="78" cy="200" r="150">
+      <stop offset="0" stop-color="#9eaaff" stop-opacity="0.95"/>
+      <stop offset="0.55" stop-color="#7f8cf2" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#7f8cf2" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="sPink" gradientUnits="userSpaceOnUse" cx="322" cy="132" r="96">
+      <stop offset="0" stop-color="#e98ce6" stop-opacity="0.7"/>
+      <stop offset="0.5" stop-color="#f7a0f2" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#f7a0f2" stop-opacity="0"/>
+    </radialGradient>
+    <!-- the darker violet band across the middle -->
+    <linearGradient id="sBand" gradientUnits="userSpaceOnUse" x1="0" y1="236" x2="0" y2="430">
+      <stop offset="0" stop-color="#5e5e84" stop-opacity="0.7"/>
+      <stop offset="0.28" stop-color="#535672" stop-opacity="0.7"/>
+      <stop offset="0.6" stop-color="#3a4555" stop-opacity="0.76"/>
+      <stop offset="0.85" stop-color="#4c5966" stop-opacity="0.52"/>
+      <stop offset="1" stop-color="#4c5966" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="sCyan" gradientUnits="userSpaceOnUse" cx="262" cy="478" r="200" gradientTransform="translate(262 478) scale(1 0.5) translate(-262 -478)">
+      <stop offset="0" stop-color="#c4f6ff" stop-opacity="1"/>
+      <stop offset="0.35" stop-color="#9ae6fb" stop-opacity="0.9"/>
+      <stop offset="0.7" stop-color="#7fd2f0" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#7fd2f0" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="sReflect" gradientUnits="userSpaceOnUse" cx="160" cy="356" r="80">
+      <stop offset="0" stop-color="#c3c3e0" stop-opacity="0.75"/>
+      <stop offset="1" stop-color="#c3c3e0" stop-opacity="0"/>
+    </radialGradient>
+    <!-- soft white / lilac rim -->
+    <radialGradient id="sRim" gradientUnits="userSpaceOnUse" cx="256" cy="256" r="220">
+      <stop offset="0.78" stop-color="#efe4ff" stop-opacity="0"/>
+      <stop offset="0.90" stop-color="#efe4ff" stop-opacity="0.5"/>
+      <stop offset="0.975" stop-color="#ffffff" stop-opacity="0.85"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0.95"/>
+    </radialGradient>
+    <linearGradient id="rimSide" gradientUnits="userSpaceOnUse" x1="30" y1="200" x2="300" y2="330">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="1"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="rimRight" gradientUnits="userSpaceOnUse" x1="482" y1="292" x2="318" y2="236">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="rimBottom" gradientUnits="userSpaceOnUse" x1="0" y1="330" x2="0" y2="482">
+      <stop offset="0" stop-color="#e6fbff" stop-opacity="0"/>
+      <stop offset="1" stop-color="#e6fbff" stop-opacity="1"/>
+    </linearGradient>
+    <radialGradient id="sGloss" gradientUnits="userSpaceOnUse" cx="246" cy="86" r="150" gradientTransform="translate(246 86) scale(1 0.42) translate(-246 -86)">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.30"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- symbol yellow -->
+    <linearGradient id="gYellow" gradientUnits="userSpaceOnUse" x1="0" y1="138" x2="0" y2="388">
+      <stop offset="0" stop-color="#ffe066"/>
+      <stop offset="0.5" stop-color="#ffd84a"/>
+      <stop offset="1" stop-color="#f8c830"/>
+    </linearGradient>
+
+    <!-- gold ring -->
+    <linearGradient id="gOuter" gradientUnits="userSpaceOnUse" x1="60" y1="40" x2="452" y2="472">
+      <stop offset="0" stop-color="#fff7cf"/>
+      <stop offset="0.14" stop-color="#f8d66e"/>
+      <stop offset="0.32" stop-color="#c99520"/>
+      <stop offset="0.47" stop-color="#fff0b0"/>
+      <stop offset="0.6" stop-color="#e2b23c"/>
+      <stop offset="0.76" stop-color="#9c6814"/>
+      <stop offset="0.9" stop-color="#e8bd4e"/>
+      <stop offset="1" stop-color="#7d5410"/>
+    </linearGradient>
+    <linearGradient id="gInner" gradientUnits="userSpaceOnUse" x1="452" y1="472" x2="60" y2="40">
+      <stop offset="0" stop-color="#fff2b8"/>
+      <stop offset="0.16" stop-color="#e9bf52"/>
+      <stop offset="0.34" stop-color="#a87418"/>
+      <stop offset="0.5" stop-color="#f3d27a"/>
+      <stop offset="0.66" stop-color="#c18e22"/>
+      <stop offset="0.82" stop-color="#7a520e"/>
+      <stop offset="1" stop-color="#b98a26"/>
+    </linearGradient>
+
+    <radialGradient id="gBezel" gradientUnits="userSpaceOnUse" cx="256" cy="256" r="250">
+      <stop offset="0.88" stop-color="#3a2404"/>
+      <stop offset="0.91" stop-color="#b98a2e"/>
+      <stop offset="0.938" stop-color="#fff6d6"/>
+      <stop offset="0.95" stop-color="#fff2c8"/>
+      <stop offset="0.975" stop-color="#b07e22"/>
+      <stop offset="1" stop-color="#3a2404"/>
+    </radialGradient>
+
+    <filter id="blurBand" x="-10%" y="-20%" width="120%" height="140%"><feGaussianBlur stdDeviation="3.5"/></filter>
+    <filter id="blur2" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="2"/></filter>
+    <filter id="blur6" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="6"/></filter>
+    <filter id="blur12" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="12"/></filter>
+    <filter id="symShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#1c0c38" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+
+  <!-- opaque backing: nothing behind the badge can show through where edges meet -->
+  <circle cx="256" cy="256" r="249.6" fill="#b8862a"/>
+
+  <!-- ===== glossy sphere ===== -->
+  <g clip-path="url(#sphereClip)">
+    <rect x="20" y="20" width="472" height="472" fill="url(#sBase)"/>
+    <rect x="20" y="20" width="472" height="472" fill="url(#sBlue)"/>
+    <ellipse cx="322" cy="134" rx="100" ry="82" fill="url(#sPink)"/>
+    <!-- middle band -->
+    <path filter="url(#blurBand)" fill="url(#sBand)" d="M10 346 C 60 296 118 258 178 246 L 300 238 L 420 236 C 452 238 480 252 506 274 L 506 506 L 10 506 Z"/>
+    <!-- deeper shade on the right of the band -->
+    <ellipse cx="380" cy="300" rx="110" ry="60" fill="#2c3448" opacity="0.22" filter="url(#blur12)"/>
+    <!-- cyan glow at the bottom -->
+    <ellipse cx="262" cy="478" rx="210" ry="104" fill="url(#sCyan)" filter="url(#blur6)"/>
+    <!-- soft gloss on top -->
+    <ellipse cx="246" cy="86" rx="150" ry="64" fill="url(#sGloss)"/>
+    <!-- rim -->
+    <circle cx="256" cy="256" r="224" fill="url(#sRim)"/>
+    <circle cx="256" cy="256" r="218" fill="none" stroke="url(#rimSide)" stroke-width="40" filter="url(#blur12)" opacity="1"/>
+    <circle cx="256" cy="256" r="218" fill="none" stroke="url(#rimRight)" stroke-width="40" filter="url(#blur12)" opacity="0.85"/>
+    <circle cx="256" cy="256" r="218" fill="none" stroke="url(#rimBottom)" stroke-width="20" filter="url(#blur12)" opacity="0.8"/>
+    <!-- depth just under the ring -->
+    <circle cx="256" cy="256" r="222" fill="none" stroke="#1d1238" stroke-opacity="0.45" stroke-width="6" filter="url(#blur2)"/>
+  </g>
+
+  <!-- ===== I-beam cursor + arrows ===== -->
+  <g transform="translate(256 263) scale(1.12) translate(-256 -263)" fill="url(#gYellow)" stroke="#6b4300" stroke-opacity="0.6" stroke-width="2.68" stroke-linejoin="miter">
+    <path d="M209 138 H303 V168 H271.5 V358 H303 V388 H209 V358 H240.5 V168 H209 Z"/>
+    <path d="M105 261 L168 202 L168 320 Z"/>
+    <path d="M407 261 L344 202 L344 320 Z"/>
+  </g>
+
+  <!-- ===== gold-coated ring ===== -->
+  <g>
+    <circle cx="256" cy="256" r="229" fill="none" stroke="url(#gInner)" stroke-width="18"/>
+    <circle cx="256" cy="256" r="244" fill="none" stroke="url(#gOuter)" stroke-width="12"/>
+    <!-- bevel ridge -->
+    <circle cx="256" cy="256" r="237" fill="none" stroke="#fff6d2" stroke-opacity="0.55" stroke-width="1"/>
+    <!-- specular shine, clipped to the ring -->
+    <g clip-path="url(#ringClip)">
+      <!-- rounded bezel: dark at both edges, light along the middle of the gold -->
+      <circle cx="256" cy="256" r="250" fill="url(#gBezel)" opacity="0.35"/>
+      <path d="M39.6 164.5 A235 235 0 0 1 145.9 48.4" fill="none" stroke="#ffffff" stroke-width="7" stroke-linecap="round" opacity="0.85" filter="url(#blur2)"/>
+      <path d="M473.4 345.1 A235 235 0 0 1 404.8 437.9" fill="none" stroke="#fff4cc" stroke-width="5" stroke-linecap="round" opacity="0.45" filter="url(#blur2)"/>
+    </g>
+    <!-- edges -->
+    <circle cx="256" cy="256" r="248" fill="none" stroke="#4a3006" stroke-width="4"/>
+    <circle cx="256" cy="256" r="220.4" fill="none" stroke="#2b1a04" stroke-width="2.5"/>
+  </g>
+</svg>

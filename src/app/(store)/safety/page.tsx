@@ -2,25 +2,22 @@ import type { Metadata } from "next";
 import { ShieldCheck, Lock, Users, BedDouble } from "lucide-react";
 import { PageBanner } from "@/components/banners/PageBanner";
 import { getSiteSettings } from "@/lib/data/repository";
+import { PAGE_SEO, jsonLdText, pageBreadcrumb, pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Safety & Comfort Standards",
-  description:
-    "How Sanchari handles operational safety, privacy-protected co-traveler requests, and room allocation drafts.",
-  alternates: { canonical: "/safety" },
-};
+export const metadata: Metadata = pageMetadata(PAGE_SEO.safety);
 
 export default async function SafetyPage() {
   const { settings } = await getSiteSettings();
 
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdText(pageBreadcrumb("Safety & comfort", "/safety")) }} />
       <PageBanner
         page="safety"
         scene="safety"
         width="4xl"
         eyebrow="Safety, Privacy & Comfort"
-        title="Operational Care Without Public Profiling"
+        title="Safety & comfort on every trip"
         subtitle="Small-group road trips require thoughtful planning—and equally thoughtful privacy."
       />
       <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 sm:py-12 space-y-8">
@@ -63,7 +60,9 @@ export default async function SafetyPage() {
           <div className="tile tile-amber p-5 space-y-2">
             <ShieldCheck className="h-5 w-5 text-forest-700" aria-hidden="true" />
             <h2 className="font-display text-lg font-semibold text-forest-900">
-              ID Minimization &amp; Draft Safety Note
+              {/* "Draft" only while the legal texts await owner review (Admin → Text & policies), like the
+                  booking widget's "draft Terms". The draft wording keeps its existing Kannada entry. */}
+              {settings.legalDrafts.ownerReviewRequired ? "ID Minimization & Draft Safety Note" : "ID Minimization & Safety Note"}
             </h2>
             <p className="text-xs leading-relaxed text-stone-600">
               We do not collect or store government ID scans or Aadhaar/passport numbers online.

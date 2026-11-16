@@ -6,14 +6,11 @@ import { BlogCardImage, BlogCover } from "@/components/blog/BlogCover";
 import { visiblePosts } from "@/lib/blog";
 import { blogPlainText } from "@/lib/blog-format";
 import { getSiteSettings } from "@/lib/data/repository";
+import { PAGE_SEO, jsonLdText, pageBreadcrumb, pageMetadata } from "@/lib/seo";
 
 export const revalidate = 60;
 
-export const metadata: Metadata = {
-  title: "Travel Blog & Trip Videos",
-  description: "Videos and stories from Sanchari's small-group road trips from Bengaluru: Coorg, Chikmagalur, Gokarna and Hampi in a six-seat car.",
-  alternates: { canonical: "/blog" },
-};
+export const metadata: Metadata = pageMetadata(PAGE_SEO.blog);
 
 const DATE = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
 const postDate = (iso: string) => DATE.format(new Date(`${iso}T12:00:00Z`));
@@ -27,13 +24,14 @@ export default async function BlogPage() {
 
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdText(pageBreadcrumb("Blog", "/blog")) }} />
       <PageBanner
         page="blog"
         scene="trips"
         width="4xl"
         eyebrow="Blog & trip videos"
         title="Stories from the road"
-        subtitle="Small-group weekends from Bengaluru, one car and six seats at a time."
+        subtitle="Small-group road trips from Bengaluru, one car and six seats at a time."
       />
       <div>
         <div className="mx-auto max-w-5xl space-y-10 px-4 py-10 sm:px-6 sm:py-12">

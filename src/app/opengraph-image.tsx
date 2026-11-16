@@ -3,7 +3,9 @@ import path from "node:path";
 import { ImageResponse } from "next/og";
 
 // Link previews (WhatsApp, Instagram, Facebook, Google): the official Sanchari logo, not a photo.
-export const alt = "Sanchari Micro Trips — weekend road trips from Bengaluru, max 6 per car";
+// Pages link this card as DEFAULT_OG_IMAGE (src/lib/seo.ts): after any change here, bump the "?v="
+// number there so cached share cards refresh, and keep this `alt` equal to DEFAULT_OG_IMAGE.alt.
+export const alt = "Sanchari Trips – small-group road trips from Bengaluru, max 6 travellers per car";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -27,10 +29,10 @@ export default async function OpenGraphImage() {
       >
         <img src={logoSrc} width={430} height={415} alt="" style={{ objectFit: "contain" }} />
         <div style={{ display: "flex", flexDirection: "column", maxWidth: 560, gap: 18 }}>
-          <div style={{ fontSize: 30, fontWeight: 700, color: "#e8600f", letterSpacing: 2 }}>WEEKEND TRIPS FROM BENGALURU</div>
+          <div style={{ fontSize: 30, fontWeight: 700, color: "#e8600f", letterSpacing: 2 }}>SMALL-GROUP ROAD TRIPS FROM BENGALURU</div>
           <div style={{ fontSize: 58, fontWeight: 800, color: "#0d5f6b", lineHeight: 1.08 }}>Leave as strangers. Return as a story.</div>
           <div style={{ fontSize: 28, color: "#3d5552", lineHeight: 1.35 }}>
-            Coorg · Chikmagalur · Gokarna · Hampi — max 6 travellers per car, pick your seat, pay by UPI.
+            Max 6 travellers per car · scheduled dates or a private car on request · pay by UPI
           </div>
         </div>
       </div>

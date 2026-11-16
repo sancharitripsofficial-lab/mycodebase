@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import { PageBanner } from "@/components/banners/PageBanner";
 import { AstryxShell } from "@/components/AstryxShell";
 import { BookingLookupClient } from "@/components/BookingLookupClient";
+import { PAGE_SEO, pageMetadata } from "@/lib/seo";
 
+// Private self-service page: never in search (meta here + X-Robots-Tag from middleware), not in the sitemap.
 export const metadata: Metadata = {
-  title: "My Booking Lookup",
+  ...pageMetadata({ ...PAGE_SEO.bookingLookup, noindex: true }),
   robots: { index: false, follow: false },
 };
 

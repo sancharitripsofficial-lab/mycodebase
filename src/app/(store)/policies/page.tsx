@@ -1,13 +1,9 @@
 import type { Metadata } from "next";
 import { PageBanner } from "@/components/banners/PageBanner";
 import { getSiteSettings } from "@/lib/data/repository";
+import { PAGE_SEO, jsonLdText, pageBreadcrumb, pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Terms, Privacy & Refund Policy",
-  description:
-    "Booking terms, privacy notice and cancellation & refund policy for Sanchari Micro Trips weekend trips from Bengaluru.",
-  alternates: { canonical: "/policies" },
-};
+export const metadata: Metadata = pageMetadata(PAGE_SEO.policies);
 
 export default async function PoliciesPage() {
   const { settings } = await getSiteSettings();
@@ -18,6 +14,7 @@ export default async function PoliciesPage() {
 
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdText(pageBreadcrumb("Terms, privacy & refunds", "/policies")) }} />
       <PageBanner
         page="policies"
         scene="policies"

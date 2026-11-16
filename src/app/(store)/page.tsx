@@ -18,7 +18,8 @@ import { isOptimizableImage } from "@/lib/media";
 import { buildClickToWhatsAppUrl } from "@/lib/messaging/provider";
 import type { TripWithDetails } from "@/lib/types";
 import { getDestinationWeather } from "@/lib/weather-server";
-import { businessJsonLd, jsonLdText } from "@/lib/seo";
+import { HOME_DESCRIPTION, HOME_TITLE, businessJsonLd, jsonLdText, pageMetadata, tripPriceInfo } from "@/lib/seo";
+import { visiblePosts } from "@/lib/blog";
 import type { Metadata } from "next";
 import { LiveWeatherBadge } from "@/components/living/LiveWeatherBadge";
 import { isBookable } from "@/lib/departure-rules";
@@ -30,7 +31,8 @@ import { HeroJourneySteps } from "@/components/HeroJourneySteps";
 export const revalidate = 30;
 
 // The one address Google should list for the home page (not ?lang=kn, not the old vercel.app link).
-export const metadata: Metadata = { alternates: { canonical: "/" } };
+// Brand first in the home title: the strongest signal for people searching "sancharitrips".
+export const metadata: Metadata = pageMetadata({ title: HOME_TITLE, description: HOME_DESCRIPTION, path: "/", absoluteTitle: true });
 
 const shortDate = (iso: string) =>
   new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "Asia/Kolkata" });
@@ -68,6 +70,7 @@ export default async function HomePage() {
     getLivePromotions(),
   ]);
   const home = settings.homePage;
+  const hasStories = visiblePosts(settings.blogPosts ?? []).length > 0;
   const homeOffers = forPlacement(promotions, "home_banner");
 
   // Live weather at every destination, looked up while the page is built (cached 15 min), so the
@@ -94,7 +97,8 @@ export default async function HomePage() {
     categoryViews.push({
       category,
       trips: list,
-      fromPaise: Math.min(...list.map((t) => t.trip.basePricePaise)),
+      // Same "From" price as each trip's own page (lowest open date price).
+      fromPaise: Math.min(...list.map((t) => tripPriceInfo(t.trip, t.departures).fromPaise)),
       next: first ? { date: first.d.startDate, seats: first.d.seatsRemaining, slug: first.slug, departureId: first.d.departureId } : null,
       photo: list[0].trip.heroImageUrl,
       weather: weatherBySlug.get(list[0].trip.slug) ?? null,
@@ -158,7 +162,7 @@ export default async function HomePage() {
               className="float-right mb-2 ml-3 w-[104px] min-[360px]:w-[128px] md:absolute md:top-8 md:right-6 md:m-0 md:w-[232px] lg:w-[252px]"
             />
             <Reveal onLoad>
-              {/* The page's main heading for Google: what we are ("Weekend trips from Bengaluru • Max 6 per car").
+              {/* The page's main heading for Google: who and what we are ("Sanchari Trips • Small-group road trips from Bengaluru • Max 6 per car").
                   Looks exactly like before (small chip); the big slogan below is a styled paragraph. */}
               <h1 className="glass inline-flex max-w-[calc(100%-7.4rem)] items-center gap-2 rounded-2xl px-3.5 py-1.5 text-xs font-semibold tracking-wide text-white [font-family:inherit] min-[360px]:max-w-[calc(100%-8.9rem)] md:max-w-none md:rounded-full">
                 <Compass className="h-3.5 w-3.5 text-saffron-500" aria-hidden="true" />
@@ -248,9 +252,9 @@ export default async function HomePage() {
 
       {/* Categories (Admin → Home page): photo header in the place's colours, description, trips, price, next date, live weather */}
       {home.categoriesSection.show && categoryViews.length > 0 && (
-        <section className="mx-auto max-w-6xl px-4 pt-14 pb-4 sm:px-6" aria-labelledby="pick-weekend">
+        <section className="mx-auto max-w-6xl px-4 pt-14 pb-4 sm:px-6" aria-labelledby="pick-trip">
           <div className="mb-6">
-            <SectionHead text={home.categoriesSection} id="pick-weekend" />
+            <SectionHead text={home.categoriesSection} id="pick-trip" />
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {categoryViews.map((v, i) => (
@@ -362,6 +366,11 @@ export default async function HomePage() {
                 <Link href="/trips" className="inline-flex min-h-10 items-center gap-1.5 text-sm font-semibold text-forest-900 hover:text-copper-700">
                   Filter all dates <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </Link>
+                {hasStories && (
+                  <Link href="/blog" className="inline-flex min-h-10 items-center gap-1.5 text-sm font-semibold text-forest-900 hover:text-copper-700">
+                    Latest stories <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                  </Link>
+                )}
               </div>
             </div>
 

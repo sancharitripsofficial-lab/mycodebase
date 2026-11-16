@@ -51,7 +51,7 @@ const trip = (slug: string): TripWithDetails => {
   if (!t) throw new Error(`fixture trip ${slug} missing`);
   return t;
 };
-const COORG = trip("coorg-rainforest-slow-drive");
+const COORG = trip("coorg-rainforest-spice-drive");
 const CKM = trip("chikmagalur-coffee-trails");
 const GOK = trip("gokarna-coastal-headlands");
 const HAMPI = trip("hampi-boulders-and-ruins");

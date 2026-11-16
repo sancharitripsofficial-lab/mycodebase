@@ -79,6 +79,8 @@ export interface Trip {
   isSampleDemo: boolean;
   isPublished: boolean;
   sortOrder: number;
+  /** Last change to the trip row (trips.updated_at); the sitemap's lastModified. Optional: demo data has none. */
+  updatedAt?: string | null;
 }
 
 export interface ItineraryDay {
@@ -244,6 +246,13 @@ export interface SocialLinks {
   whatsappChannelUrl: string;
 }
 
+/** "Designed & Developed by" badge at the bottom of the footer (Admin → Website text → Footer credit). */
+export interface DeveloperCreditSettings {
+  enabled: boolean;
+  /** https:// link the badge opens in a new tab. */
+  url: string;
+}
+
 export interface SiteSettings {
   brandIdentity: {
     brandName: string;
@@ -283,6 +292,8 @@ export interface SiteSettings {
   blogPosts: BlogPost[];
   /** Home background video, page banners and section photos (Admin → Website → Site pictures & videos). */
   siteMedia: SiteMedia;
+  /** Footer developer credit: on by default (missing setting = shown). */
+  developerCredit: DeveloperCreditSettings;
   legalDrafts: {
     ownerReviewRequired: boolean;
     termsSummary: string;

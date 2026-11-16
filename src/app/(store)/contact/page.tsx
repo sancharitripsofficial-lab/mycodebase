@@ -3,13 +3,9 @@ import type { Metadata } from "next";
 import { PageBanner } from "@/components/banners/PageBanner";
 import { getSiteSettings } from "@/lib/data/repository";
 import { buildClickToWhatsAppUrl } from "@/lib/messaging/provider";
+import { PAGE_SEO, jsonLdText, pageBreadcrumb, pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Contact & WhatsApp Support",
-  description:
-    "Contact Sanchari Micro Trips in Bengaluru on WhatsApp or by email about weekend trip bookings, private car dates and pickup points.",
-  alternates: { canonical: "/contact" },
-};
+export const metadata: Metadata = pageMetadata(PAGE_SEO.contact);
 
 export default async function ContactPage() {
   const { settings } = await getSiteSettings();
@@ -22,12 +18,13 @@ export default async function ContactPage() {
 
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdText(pageBreadcrumb("Contact", "/contact")) }} />
       <PageBanner
         page="contact"
         scene="contact"
         width="3xl"
         eyebrow="Contact Operations"
-        title="Get in Touch"
+        title="Contact Sanchari Trips"
         subtitle="For private 6-seat date requests, accessibility queries, or booking changes."
       />
       <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-12 space-y-8">

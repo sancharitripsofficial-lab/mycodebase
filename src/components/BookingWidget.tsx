@@ -46,6 +46,8 @@ interface BookingWidgetProps {
   bookingPolicy: SiteSettings["bookingPolicy"];
   /** Taken seat numbers per departure, read while the page was built: the car map shows at once. */
   initialSeatMaps?: Record<string, number[]>;
+  /** The terms are still an owner-review draft (Admin → Text & policies); the checkbox says "draft Terms" only then. */
+  termsAreDraft?: boolean;
 }
 
 interface TravelerFormRow {
@@ -99,6 +101,7 @@ export function BookingWidget({
   pickupPoints,
   bookingPolicy,
   initialSeatMaps,
+  termsAreDraft = true,
 }: BookingWidgetProps) {
   const initialDep =
     departures.find((d) => isBookable(d) && d.status !== "sold_out") ??
@@ -1566,7 +1569,7 @@ export function BookingWidget({
               <span>
                 I have read and accept the{" "}
                 <Link href="/policies#terms" className="underline text-copper-700">
-                  draft Terms
+                  {termsAreDraft ? "draft Terms" : "Terms"}
                 </Link>
                 ,{" "}
                 <Link href="/policies#privacy" className="underline text-copper-700">

@@ -5,24 +5,31 @@ import { PageBanner } from "@/components/banners/PageBanner";
 import { TripCard } from "@/components/TripCard";
 import { formatINR } from "@/lib/currency";
 import { getPublishedTripsWithDetails, getSiteSettings } from "@/lib/data/repository";
-import { absoluteUrl, breadcrumbJsonLd, jsonLdText, searchName } from "@/lib/seo";
+import {
+  ANY_DAY_LINE,
+  BRAND_NAME,
+  PAGE_SEO,
+  jsonLdText,
+  liveDestinations,
+  packagesPageDescription,
+  pageBreadcrumb,
+  pageMetadata,
+  searchName,
+  tripListJsonLd,
+  tripPriceInfo,
+} from "@/lib/seo";
 
 // Same freshness as the trips page: live trips and prices, refreshed every 60 s.
 export const revalidate = 60;
 
-export const metadata: Metadata = {
-  title: { absolute: "Karnataka Tour Packages from Bangalore – Weekend Trips & Tours | Sanchari" },
-  description:
-    "Karnataka tour packages from Bangalore: weekend trips to Coorg, Chikmagalur, Gokarna and Hampi in small groups of max 6 per car. Pickup in Bengaluru, pay by UPI.",
-  alternates: { canonical: "/karnataka-tour-packages" },
-  openGraph: {
-    title: "Karnataka Tour Packages from Bangalore – Weekend Trips & Tours",
-    description: "Small-group weekend tours from Bengaluru to Coorg, Chikmagalur, Gokarna and Hampi. Max 6 travellers per car.",
-    url: "/karnataka-tour-packages",
-    type: "website",
-    siteName: "Sanchari Micro Trips",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { trips } = await getPublishedTripsWithDetails();
+  return pageMetadata({
+    title: PAGE_SEO.packages.title,
+    description: packagesPageDescription(liveDestinations(trips)),
+    path: PAGE_SEO.packages.path,
+  });
+}
 
 /**
  * Well-known travel facts per destination (approximate road distance from Bengaluru, drive time,
@@ -37,33 +44,21 @@ const PLACE_FACTS: Record<string, { distance: string; drive: string; season: str
 
 /**
  * Landing page for people searching "Karnataka tour packages", "tour planners in Karnataka",
- * "weekend trips from Bangalore" etc. Everything on it comes from the live trips (Admin → Trips)
+ * "road trips from Bangalore" etc. Everything on it comes from the live trips (Admin → Trips)
  * and the FAQs (Admin → Website text), plus the general place facts above.
  */
 export default async function KarnatakaTourPackagesPage() {
   const [{ trips }, { settings }] = await Promise.all([getPublishedTripsWithDetails(), getSiteSettings()]);
   const maxGroup = settings.bookingPolicy.maxGroupSize || 6;
-  const places = trips.map(({ trip }) => searchName(trip.destination)).filter((p, i, all) => p && all.indexOf(p) === i);
-  const placeList = places.length > 1 ? `${places.slice(0, -1).join(", ")} and ${places[places.length - 1]}` : places[0] ?? "Karnataka";
-  const fromPrice = trips.reduce((min, { trip }) => (trip.basePricePaise > 0 && trip.basePricePaise < min ? trip.basePricePaise : min), Infinity);
+  const placeList = liveDestinations(trips) || "Karnataka";
+  // Each trip's "From" price is the same number its own page shows (lowest open date price).
+  const fromByTrip = new Map(trips.map(({ trip, departures }) => [trip.id, tripPriceInfo(trip, departures).fromPaise]));
+  const fromPrice = [...fromByTrip.values()].reduce((min, p) => (p > 0 && p < min ? p : min), Infinity);
   const anyPrivate = trips.some(({ trip }) => trip.privateGroupPricePaise);
   const faqs = settings.faqs.filter((f) => f.question.trim() && f.answer.trim()).slice(0, 4);
 
-  const list = {
-    "@context": "https://schema.org",
-    "@type": "ItemList",
-    name: "Karnataka tour packages from Bangalore",
-    itemListElement: trips.map(({ trip }, i) => ({
-      "@type": "ListItem",
-      position: i + 1,
-      url: absoluteUrl(`/trips/${trip.slug}`),
-      name: trip.title,
-    })),
-  };
-  const breadcrumb = breadcrumbJsonLd([
-    { name: "Home", path: "/" },
-    { name: "Karnataka tour packages", path: "/karnataka-tour-packages" },
-  ]);
+  const list = tripListJsonLd("Karnataka tour packages from Bangalore", trips);
+  const breadcrumb = pageBreadcrumb("Karnataka tour packages", "/karnataka-tour-packages");
 
   return (
     <>
@@ -75,16 +70,20 @@ export default async function KarnatakaTourPackagesPage() {
         width="6xl"
         eyebrow="Tours & trips across Karnataka"
         title="Karnataka tour packages from Bangalore"
-        subtitle={`Small-group weekend tours from Bengaluru to ${placeList}, with at most ${maxGroup} travellers in one car.`}
+        subtitle={
+          <>
+            {`Small-group tours from Bengaluru to ${placeList}, at most ${maxGroup} travellers in one car.`} {ANY_DAY_LINE}
+          </>
+        }
       />
 
       <div>
         <div className="mx-auto max-w-6xl space-y-12 px-4 py-10 sm:px-6 sm:py-12">
           <section className="max-w-3xl space-y-3 text-[1.02rem] leading-relaxed text-ink-900">
             <p>
-              Sanchari Micro Trips is a Bengaluru tour planner for weekend trips across Karnataka. Every tour starts and
-              ends in Bengaluru and travels in one car with no more than {maxGroup} people, so you see the hills, coffee
-              estates, beaches and ruins without a crowded bus.
+              {/* One text node per sentence so the Kannada view (kn.json) can match each one whole. */}
+              {`${BRAND_NAME} is a Bengaluru tour planner for small-group road trips across Karnataka.`} {ANY_DAY_LINE}{" "}
+              {`Every tour starts and ends in Bengaluru and travels in one car with no more than ${maxGroup} people, never a crowded bus.`}
             </p>
             <p>
               Pick a date, choose your exact seat on the live car map and pay by UPI.
@@ -153,10 +152,10 @@ export default async function KarnatakaTourPackagesPage() {
                             </li>
                           </>
                         )}
-                        {trip.basePricePaise > 0 && (
+                        {(fromByTrip.get(trip.id) ?? 0) > 0 && (
                           <li className="flex items-start gap-2">
                             <IndianRupee className="mt-0.5 h-4 w-4 shrink-0 text-copper-700" aria-hidden="true" />
-                            <span>From {formatINR(trip.basePricePaise)} per seat</span>
+                            <span>From {formatINR(fromByTrip.get(trip.id) ?? 0)} per seat</span>
                           </li>
                         )}
                       </ul>
@@ -218,7 +217,7 @@ export default async function KarnatakaTourPackagesPage() {
           )}
 
           <section className="flex flex-wrap items-center gap-3 rounded-2xl border border-stone-200 bg-white p-5">
-            <p className="min-w-0 flex-[1_1_15rem] font-display text-lg font-semibold text-forest-900">Ready for your Karnataka weekend?</p>
+            <p className="min-w-0 flex-[1_1_15rem] font-display text-lg font-semibold text-forest-900">Ready for your Karnataka road trip?</p>
             <Link href="/trips" className="btn-sunset inline-flex w-full items-center justify-center gap-2 px-5 py-3 text-center text-sm sm:w-auto">
               See all dates <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>

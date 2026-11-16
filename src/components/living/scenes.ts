@@ -132,6 +132,13 @@ const HERITAGE: DestinationPreset = {
 /** Per trip slug. */
 export const DESTINATIONS: Record<string, DestinationPreset> = {
   "chikmagalur-coffee-trails": { ...WESTERN_GHATS, place: "Chikkamagaluru" },
+  "coorg-rainforest-spice-drive": {
+    ...WESTERN_GHATS,
+    place: "Kodagu",
+    latitude: 12.4244,
+    longitude: 75.7382,
+  },
+  // Old address of the same trip (redirects to the one above, lib/trip-slugs.ts); kept for rollback.
   "coorg-rainforest-slow-drive": {
     ...WESTERN_GHATS,
     place: "Kodagu",

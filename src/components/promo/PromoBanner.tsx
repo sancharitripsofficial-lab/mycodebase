@@ -123,7 +123,7 @@ export function PromoBanner({ promotions, className = "", preview = false }: { p
               {current.badge}
             </span>
           )}
-          <h2 className="font-display text-2xl leading-tight font-semibold sm:text-3xl">{current.title}</h2>
+          <p className="font-display text-2xl leading-tight font-semibold sm:text-3xl">{current.title}</p>
           {current.message && <p className="text-sm leading-relaxed text-white/90 sm:text-base">{current.message}</p>}
           <PromoCta
             promo={current}

@@ -7,7 +7,7 @@ import { visiblePosts } from "@/lib/blog";
 import { BlogBody } from "@/components/blog/BlogBody";
 import { PageCanvas } from "@/components/PageCanvas";
 import { getPublishedTripsWithDetails, getSiteSettings } from "@/lib/data/repository";
-import { absoluteUrl, breadcrumbJsonLd, clip, jsonLdText } from "@/lib/seo";
+import { blogPostingJsonLd, breadcrumbJsonLd, clip, jsonLdText, pageMetadata, sameTripSlug } from "@/lib/seo";
 
 export const revalidate = 60;
 
@@ -18,56 +18,42 @@ async function findPost(id: string) {
   return visiblePosts(settings.blogPosts ?? []).find((p) => p.id === id) ?? null;
 }
 
+/**
+ * Builds the visible stories ahead of time, which makes this route ISR like /trips/[slug]. That
+ * is what gives an unknown id a real HTTP 404: a dynamically rendered route streams its shell
+ * first (loading.tsx), so a later notFound() can only add a noindex to a 200 page. New posts
+ * still render on first visit (dynamicParams stays at its default, true).
+ */
+export async function generateStaticParams() {
+  const { settings } = await getSiteSettings();
+  return visiblePosts(settings.blogPosts ?? []).map((p) => ({ id: p.id }));
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const post = await findPost((await params).id);
-  if (!post) return { title: "Story not found", robots: { index: false } };
-  return {
+  // A 404 for an unknown or hidden story (a real HTTP 404 thanks to generateStaticParams above).
+  if (!post) notFound();
+  const published = `${post.publishedOn}T12:00:00+05:30`;
+  return pageMetadata({
     title: post.title,
-    description: post.excerpt ? clip(post.excerpt) : undefined,
-    alternates: { canonical: `/blog/${post.id}` },
-    openGraph: {
-      title: post.title,
-      description: post.excerpt || undefined,
-      type: "article",
-      url: `/blog/${post.id}`,
-      publishedTime: `${post.publishedOn}T12:00:00+05:30`,
-      images: post.posterUrl ? [post.posterUrl] : undefined,
-    },
-  };
+    description: clip(post.excerpt || post.title),
+    path: `/blog/${post.id}`,
+    type: "article",
+    publishedTime: published,
+    modifiedTime: published,
+    image: post.posterUrl ? { url: post.posterUrl, alt: post.title } : undefined,
+  });
 }
 
 export default async function BlogPostPage({ params }: { params: Promise<{ id: string }> }) {
   const post = await findPost((await params).id);
   if (!post) notFound();
-  const trip = post.tripSlug ? (await getPublishedTripsWithDetails()).trips.find((t) => t.trip.slug === post.tripSlug)?.trip ?? null : null;
+  // The story's trip, also when the saved slug is the trip's old address (lib/trip-slugs.ts).
+  const trip = post.tripSlug
+    ? (await getPublishedTripsWithDetails()).trips.find((t) => sameTripSlug(t.trip.slug, post.tripSlug))?.trip ?? null
+    : null;
 
-  const postUrl = absoluteUrl(`/blog/${post.id}`);
-  const article = {
-    "@context": "https://schema.org",
-    "@type": "BlogPosting",
-    headline: post.title,
-    description: post.excerpt || undefined,
-    datePublished: `${post.publishedOn}T12:00:00+05:30`,
-    url: postUrl,
-    mainEntityOfPage: postUrl,
-    image: post.posterUrl ? absoluteUrl(post.posterUrl) : absoluteUrl("/opengraph-image"),
-    author: { "@type": "Organization", name: "Sanchari Micro Trips", url: absoluteUrl("/") },
-    publisher: {
-      "@type": "Organization",
-      name: "Sanchari Micro Trips",
-      logo: { "@type": "ImageObject", url: absoluteUrl("/brand/sanchari-logo.png") },
-    },
-    ...(post.videoUrl && {
-      video: {
-        "@type": "VideoObject",
-        name: post.title,
-        description: post.excerpt || post.title,
-        contentUrl: absoluteUrl(post.videoUrl),
-        thumbnailUrl: post.posterUrl ? absoluteUrl(post.posterUrl) : absoluteUrl("/opengraph-image"),
-        uploadDate: `${post.publishedOn}T12:00:00+05:30`,
-      },
-    }),
-  };
+  const article = blogPostingJsonLd(post);
   const breadcrumb = breadcrumbJsonLd([
     { name: "Home", path: "/" },
     { name: "Blog", path: "/blog" },
@@ -95,7 +81,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ id: s
         {/* The heading keeps a real width (never squeezed to one letter per line, e.g. in Kannada);
             on phones the button drops below it at full width. */}
         <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-stone-200 bg-white p-5">
-          <p className="min-w-0 flex-[1_1_15rem] font-display text-lg font-semibold text-forest-900">{trip ? trip.title : "Ready for your own weekend?"}</p>
+          <p className="min-w-0 flex-[1_1_15rem] font-display text-lg font-semibold text-forest-900">{trip ? trip.title : "Ready for your own trip?"}</p>
           <Link href={trip ? `/trips/${trip.slug}#book` : "/trips"} className="btn-sunset inline-flex w-full items-center justify-center gap-2 px-5 py-3 text-center text-sm sm:w-auto">
             {trip ? "See dates" : "See trips and dates"} <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </Link>

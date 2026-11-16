@@ -4,19 +4,16 @@ import { LivingPhoto } from "@/components/living/LivingPhoto";
 import { PageCanvas } from "@/components/PageCanvas";
 import { getSiteSettings } from "@/lib/data/repository";
 import { BUILT_IN_MEDIA } from "@/lib/site-media";
+import { ANY_DAY_LINE, BRAND_NAME, PAGE_SEO, jsonLdText, pageBreadcrumb, pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "About us",
-  description:
-    "Sanchari Micro Trips runs small-group weekend road trips from Bengaluru to Coorg, Chikmagalur, Gokarna and Hampi, with at most six travellers in one car.",
-  alternates: { canonical: "/about" },
-};
+export const metadata: Metadata = pageMetadata(PAGE_SEO.about);
 
 export default async function AboutPage() {
   const { settings } = await getSiteSettings();
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 space-y-10">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdText(pageBreadcrumb("About us", "/about")) }} />
       <PageCanvas theme="about" />
       <div className="space-y-3">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-copper-700">
@@ -26,9 +23,10 @@ export default async function AboutPage() {
           Road trips paced for real conversation, not crowded buses.
         </h1>
         <p className="text-base leading-relaxed text-stone-600">
-          Based in {settings.brandIdentity.baseCity}, Sanchari • Micro Trips curates weekend
-          drives across Karnataka’s Western Ghats, coast, and heritage regions—strictly capped at
-          six travelers per Ertiga-class vehicle.
+          {/* Each sentence is one text node so the Kannada view (kn.json) can match it whole. */}
+          Based in {settings.brandIdentity.baseCity}
+          {`, ${BRAND_NAME} (sancharitrips.com) plans small-group road trips across Karnataka, strictly capped at six travellers per Ertiga-class vehicle.`}{" "}
+          {ANY_DAY_LINE}
         </p>
       </div>
 
@@ -43,6 +41,8 @@ export default async function AboutPage() {
         />
       </div>
 
+      {/* Owner checklist: shown only while Admin → Brand identity still marks the copy as a draft. */}
+      {settings.brandIdentity.isCopyDraft && (
       <div className="sec-contour rounded-2xl border border-stone-200 p-6 space-y-3 text-sm leading-relaxed text-stone-600">
         <h2 className="font-display text-xl font-semibold text-forest-900">
           Business Identity &amp; Owner Verification Checklist
@@ -61,6 +61,7 @@ export default async function AboutPage() {
           before live launch.
         </p>
       </div>
+      )}
 
       <div className="flex gap-3">
         <Link

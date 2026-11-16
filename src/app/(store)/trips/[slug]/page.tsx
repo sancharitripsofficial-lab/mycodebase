@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect, redirect } from "next/navigation";
 import { BookingWidget } from "@/components/BookingWidget";
 import { EnquiryForm } from "@/components/EnquiryForm";
 import { WhatsAppChannelCta } from "@/components/WhatsAppChannelCta";
@@ -38,14 +38,62 @@ import {
 import { themeClass } from "@/lib/destination-theme";
 import { getDestinationWeather } from "@/lib/weather-server";
 import { isBookable } from "@/lib/departure-rules";
-import { absoluteUrl, breadcrumbJsonLd, jsonLdText, tripSeoDescription, tripSeoTitle } from "@/lib/seo";
+import { isSupabaseConfigured } from "@/lib/env";
+import { decideMovedTrip, demoRenderWouldMislead } from "@/lib/trip-slugs";
+import {
+  breadcrumbJsonLd,
+  jsonLdText,
+  pageMetadata,
+  sameTripSlug,
+  tripImageAlt,
+  tripJsonLd,
+  tripOgTitle,
+  tripPriceInfo,
+  tripSeoDescription,
+  tripSeoTitle,
+  tripStaticSlugs,
+} from "@/lib/seo";
+import { visiblePosts } from "@/lib/blog";
 
 // Served from the CDN; refreshed every 30 s and immediately after bookings / admin edits.
 export const revalidate = 30;
 
+/** Live trips, plus the old/new form of a renamed trip's address (lib/trip-slugs.ts), so both resolve. */
 export async function generateStaticParams() {
   const { trips } = await getPublishedTripsWithDetails();
-  return trips.map((t) => ({ slug: t.trip.slug }));
+  return tripStaticSlugs(trips.map((t) => t.trip.slug)).map((slug) => ({ slug }));
+}
+
+/** Thrown instead of rendering from demo data: the CDN keeps serving the last good page. */
+class TripDataUnavailableError extends Error {
+  constructor(slug: string) {
+    super(`Trip data unavailable for /trips/${slug} (database failed); keeping the last good page.`);
+  }
+}
+
+/**
+ * A slug that is not a live trip: an old address 308-redirects for good to the renamed trip, a
+ * new address used before the rename 307-redirects for now to the old one, anything else is 404.
+ * Called by generateMetadata and the page, so the redirect wins however the page is rendered.
+ * Never decided from demo trips (lib/trip-slugs.ts decideMovedTrip): a failed database read throws.
+ */
+async function redirectMovedTrip(slug: string): Promise<void> {
+  const { trips, isDemoFallback } = await getPublishedTripsWithDetails();
+  const next = decideMovedTrip(slug, {
+    liveSlugs: trips.map((t) => t.trip.slug),
+    isDemoFallback,
+    databaseConfigured: isSupabaseConfigured(),
+  });
+  if (next.kind === "data-unavailable") throw new TripDataUnavailableError(slug);
+  if (next.kind === "permanent") permanentRedirect(`/trips/${next.to}`);
+  if (next.kind === "temporary") redirect(`/trips/${next.to}`);
+}
+
+/** A renamed trip's address is never rendered from demo data (it would cache a 200 there). */
+function refuseMisleadingDemo(slug: string, isDemoFallback: boolean): void {
+  if (demoRenderWouldMislead(slug, { isDemoFallback, databaseConfigured: isSupabaseConfigured() })) {
+    throw new TripDataUnavailableError(slug);
+  }
 }
 
 export async function generateMetadata({
@@ -54,25 +102,33 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const { item } = await getPublishedTripBySlug(slug);
-  if (!item) return { title: "Trip Not Found", robots: { index: false } };
+  const [{ item, isDemoFallback }, { trips }, { settings }] = await Promise.all([
+    getPublishedTripBySlug(slug),
+    getPublishedTripsWithDetails(),
+    getSiteSettings(),
+  ]);
+  if (!item) {
+    await redirectMovedTrip(slug);
+    return { title: "Trip Not Found", robots: { index: false } };
+  }
+  refuseMisleadingDemo(slug, isDemoFallback);
 
-  // Words people actually search ("Coorg trip from Bangalore"), then the trip's own name and facts.
-  const title = tripSeoTitle(item.trip);
-  const description = tripSeoDescription(item.trip);
-  return {
-    title: { absolute: `${title} | Sanchari` },
+  const { trip } = item;
+  // Words people actually search ("Coorg Trip from Bangalore – 3D/2N"), with the same "From"
+  // price the page, the cards and the structured data show.
+  const price = tripPriceInfo(trip, item.departures);
+  // The itinerary's day count guards the days/nights figure (owner fact F1): on a mismatch the
+  // title and description leave the figure out rather than print a disputed one.
+  const itineraryDays = item.itinerary.length;
+  const description = tripSeoDescription(trip, price.fromPaise, settings.bookingPolicy.maxGroupSize || 6, itineraryDays);
+  return pageMetadata({
+    title: tripSeoTitle(trip, trips.map((t) => t.trip), itineraryDays),
     description,
-    alternates: { canonical: `/trips/${item.trip.slug}` },
-    openGraph: {
-      title,
-      description,
-      type: "website",
-      siteName: "Sanchari Micro Trips",
-      url: `/trips/${item.trip.slug}`,
-      images: [item.trip.heroImageUrl],
-    },
-  };
+    path: `/trips/${trip.slug}`,
+    ogTitle: tripOgTitle(trip),
+    ogDescription: trip.tagline || description,
+    image: trip.heroImageUrl ? { url: trip.heroImageUrl, alt: tripImageAlt(trip) } : undefined,
+  });
 }
 
 export default async function TripDetailPage({
@@ -81,15 +137,18 @@ export default async function TripDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const [{ item }, { settings }, promotions] = await Promise.all([
+  const [{ item, isDemoFallback }, { settings }, promotions, { trips: allTrips }] = await Promise.all([
     getPublishedTripBySlug(slug),
     getSiteSettings(),
     getLivePromotions(),
+    getPublishedTripsWithDetails(),
   ]);
 
   if (!item) {
+    await redirectMovedTrip(slug);
     notFound();
   }
+  refuseMisleadingDemo(slug, isDemoFallback);
 
   const { trip, itinerary, pickupPoints, departures } = item;
   const theme = themeClass(trip.slug, trip.destination, trip.region);
@@ -107,45 +166,18 @@ export default async function TripDetailPage({
   const nextOpen = [...openDeps]
     .filter((d) => isBookable(d) && d.seatsRemaining > 0)
     .sort((a, b) => a.startDate.localeCompare(b.startDate))[0];
-  // The lowest real price a visitor can book now (a date's own price if set, else the trip price).
-  const fromPaise = Math.min(
-    trip.basePricePaise,
-    ...openDeps.filter((d) => isBookable(d) && d.seatsRemaining > 0).map((d) => d.priceOverridePaise ?? trip.basePricePaise)
-  );
+  // The lowest price of a date a visitor can book now (the trip price only when no date is open).
+  // The same number goes into the search snippet, the structured data and the trip cards.
+  const price = tripPriceInfo(trip, departures);
+  const fromPaise = price.fromPaise;
   const dayLabel = (iso: string) =>
     new Date(`${iso.slice(0, 10)}T12:00:00+05:30`).toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "Asia/Kolkata" });
 
-  const tripUrl = absoluteUrl(`/trips/${trip.slug}`);
-  const anyBookable = openDeps.some((d) => isBookable(d));
-  const structuredData = {
-    "@context": "https://schema.org",
-    "@type": "TouristTrip",
-    "@id": `${tripUrl}#trip`,
-    name: trip.title,
-    description: trip.summary,
-    url: tripUrl,
-    image: [absoluteUrl(trip.heroImageUrl), ...trip.galleryUrls.slice(0, 3).map((u) => absoluteUrl(u))],
-    touristType: ["Small groups (max 6 travellers per car)", "Solo travellers", "Weekend travellers from Bengaluru"],
-    provider: { "@type": "TravelAgency", "@id": `${absoluteUrl("/")}#business`, name: "Sanchari Micro Trips", url: absoluteUrl("/") },
-    ...(itinerary.length > 0 && {
-      itinerary: {
-        "@type": "ItemList",
-        numberOfItems: itinerary.length,
-        itemListElement: itinerary.map((day) => ({
-          "@type": "ListItem",
-          position: day.dayNumber,
-          name: `Day ${day.dayNumber}: ${day.title}`,
-        })),
-      },
-    }),
-    offers: {
-      "@type": "Offer",
-      priceCurrency: "INR",
-      price: (trip.basePricePaise / 100).toFixed(0),
-      url: `${tripUrl}#book`,
-      availability: anyBookable ? "https://schema.org/InStock" : "https://schema.org/SoldOut",
-    },
-  };
+  const structuredData = tripJsonLd(item, price);
+
+  // Internal links: the other trips, and the stories told about this one (Admin → Blog → trip).
+  const otherTrips = allTrips.filter((t) => t.trip.id !== trip.id);
+  const stories = visiblePosts(settings.blogPosts ?? []).filter((p) => sameTripSlug(p.tripSlug, trip.slug));
   const breadcrumb = breadcrumbJsonLd([
     { name: "Home", path: "/" },
     { name: "Trips", path: "/trips" },
@@ -182,8 +214,8 @@ export default async function TripDetailPage({
             <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
               <span className="th-chip rounded-full px-3 py-1 tracking-wider uppercase">{trip.region}</span>
               <span className="inline-flex items-center gap-1 rounded-full bg-white/90 px-3 py-1 text-forest-900 ring-1 ring-stone-200">
-                <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" /> {trip.durationDays} {trip.durationDays === 1 ? "day" : "days"} · {trip.durationNights}{" "}
-                {trip.durationNights === 1 ? "night" : "nights"}
+                <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" /> {trip.durationDays} {trip.durationDays === 1 ? "day" : "days"} ·{" "}
+                {trip.durationNights} {trip.durationNights === 1 ? "night" : "nights"}
               </span>
               <span className="inline-flex items-center gap-1 rounded-full bg-white/90 px-3 py-1 text-forest-900 ring-1 ring-stone-200">
                 <Mountain className="h-3.5 w-3.5" aria-hidden="true" /> {trip.difficulty}
@@ -231,7 +263,7 @@ export default async function TripDetailPage({
             <PromoBanner promotions={forPlacement(promotions, "trip_page", trip.id)} />
           )}
 
-          {/* Why this trip works: the facts that make a small-group weekend different */}
+          {/* Why this trip works: the facts that make a small-group trip different */}
           <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {[
               { Icon: Users, label: "Group size", value: "6 travellers" },
@@ -251,7 +283,7 @@ export default async function TripDetailPage({
           {itinerary.length > 0 && (
             <section className="space-y-5" aria-labelledby="plan-heading">
               <div>
-                <p className="eyebrow">Your weekend, hour by hour</p>
+                <p className="eyebrow">Your trip, hour by hour</p>
                 <h2 id="plan-heading" className="font-display text-2xl font-semibold text-forest-900 sm:text-3xl">
                   Day-by-day plan
                 </h2>
@@ -425,6 +457,7 @@ export default async function TripDetailPage({
               pickupPoints={pickupPoints}
               bookingPolicy={settings.bookingPolicy}
               initialSeatMaps={initialSeatMaps}
+              termsAreDraft={settings.legalDrafts.ownerReviewRequired}
             />
           </div>
         </aside>
@@ -434,6 +467,43 @@ export default async function TripDetailPage({
         priceLabel={`From ${formatINR(fromPaise)} / seat`}
         nextDateLabel={nextOpen ? `${dayLabel(nextOpen.startDate)} – ${dayLabel(nextOpen.endDate)}` : null}
       />
+
+      {(otherTrips.length > 0 || stories.length > 0) && (
+        <div className="mt-14 grid gap-8 md:grid-cols-2">
+          {otherTrips.length > 0 && (
+            <section aria-labelledby="other-trips" className="space-y-3">
+              <h2 id="other-trips" className="font-display text-2xl font-semibold text-forest-900">
+                Other trips from Bangalore
+              </h2>
+              <ul className="space-y-2">
+                {otherTrips.map(({ trip: other }) => (
+                  <li key={other.id}>
+                    <Link href={`/trips/${other.slug}`} className="inline-flex min-h-10 items-center gap-1.5 text-sm font-semibold text-forest-900 hover:text-copper-700">
+                      {other.title} <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+          {stories.length > 0 && (
+            <section aria-labelledby="trip-stories" className="space-y-3">
+              <h2 id="trip-stories" className="font-display text-2xl font-semibold text-forest-900">
+                Stories from this trip
+              </h2>
+              <ul className="space-y-2">
+                {stories.map((post) => (
+                  <li key={post.id}>
+                    <Link href={`/blog/${post.id}`} className="inline-flex min-h-10 items-center gap-1.5 text-sm font-semibold text-forest-900 hover:text-copper-700">
+                      {post.title} <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+        </div>
+      )}
 
       <div id="ask" className="mx-auto mt-14 max-w-2xl scroll-mt-24 space-y-4">
         {settings.socialLinks.whatsappChannelUrl && (

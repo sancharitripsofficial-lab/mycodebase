@@ -30,10 +30,10 @@ export const DEFAULT_BLOG_POSTS: BlogPost[] = [
   {
     id: "a-sanchari-weekend",
     title: "Six seats, one car: a Sanchari weekend",
-    excerpt: "Dawn pickup in Bengaluru, misty ghat roads, coffee estates, a Hampi sunset and a walk on the beach, all in one small car.",
+    excerpt: "Dawn pickup in Bengaluru, misty ghat roads, coffee estates and filter coffee on a verandah, all in one small car.",
     body: [
       "This is what a Sanchari weekend feels like. We leave Bengaluru before sunrise, while the city is still quiet, with no more than six travellers in one comfortable car.",
-      "The road climbs into the Western Ghats through mist and forest. There is time for a walk through a coffee estate and filter coffee on a wooden verandah, then a sunset over the boulders of Hampi and a barefoot walk by the sea.",
+      "The road climbs into the Western Ghats through mist and forest. There is time for a walk through a coffee estate and filter coffee on a wooden verandah.",
       "On the way home the car is quieter, phones are full of photos, and a few of us are asleep. Pick a date, choose your seat on the live car map, and come along.",
     ].join("\n\n"),
     videoUrl: "/media/blog/sanchari-weekend-live.mp4",

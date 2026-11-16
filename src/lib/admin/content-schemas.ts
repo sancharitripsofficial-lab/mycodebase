@@ -1,5 +1,6 @@
 import { GUIDE_EMOTIONS, type GuideEmotion } from "@/lib/assistant/types";
 import { isSafeMediaLink } from "@/lib/blog";
+import { DEFAULT_DEVELOPER_CREDIT, DEFAULT_DEVELOPER_CREDIT_URL, isHttpsUrl } from "@/lib/developer-credit";
 import { ICON_KEYS, JOURNEY_STEP_KEYS, THEME_KEYS, TILE_COLOURS } from "@/lib/home-content";
 import { BANNER_PAGES, isSiteMediaLink, isVideoLink, type BannerPage } from "@/lib/site-media";
 import { z } from "zod";
@@ -404,6 +405,18 @@ export const siteMediaSchema = z.object({
   journeyPoster: sitePicture,
 });
 
+/** Footer "Designed & Developed by" badge: on by default, link must be https (empty = default link). */
+export const developerCreditSchema = z.object({
+  enabled: z.boolean().default(DEFAULT_DEVELOPER_CREDIT.enabled),
+  url: z
+    .string()
+    .trim()
+    .max(600, "Link is too long")
+    .default(DEFAULT_DEVELOPER_CREDIT_URL)
+    .transform((v) => v || DEFAULT_DEVELOPER_CREDIT_URL)
+    .refine(isHttpsUrl, "Credit link: use a full https:// address"),
+});
+
 export const settingsSaveSchema = z.discriminatedUnion("key", [
   z.object({ key: z.literal("brand_identity"), value: brandIdentitySchema }),
   z.object({ key: z.literal("booking_policy"), value: bookingPolicySchema }),
@@ -415,6 +428,7 @@ export const settingsSaveSchema = z.discriminatedUnion("key", [
   z.object({ key: z.literal("translations_kn"), value: translationsKnSchema }),
   z.object({ key: z.literal("blog_posts"), value: blogPostsSchema }),
   z.object({ key: z.literal("site_media"), value: siteMediaSchema }),
+  z.object({ key: z.literal("developer_credit"), value: developerCreditSchema }),
 ]);
 
 export const reviewSaveSchema = z

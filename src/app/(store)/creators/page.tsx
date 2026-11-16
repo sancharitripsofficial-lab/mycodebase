@@ -2,20 +2,18 @@ import { BadgeCheck, Camera, Sparkles, Ticket } from "lucide-react";
 import type { Metadata } from "next";
 import { CreatorApplyForm } from "@/components/CreatorApplyForm";
 import { followersLabel, getPublicTiers, rewardLabel } from "@/lib/data/creators";
+import { PAGE_SEO, jsonLdText, pageBreadcrumb, pageMetadata } from "@/lib/seo";
 
 export const revalidate = 300;
 
-export const metadata: Metadata = {
-  title: "Creators programme",
-  description: "Travel creators with an audience can earn discounts or free seats on Sanchari road trips.",
-  alternates: { canonical: "/creators" },
-};
+export const metadata: Metadata = pageMetadata(PAGE_SEO.creators);
 
 export default async function CreatorsPage() {
   const tiers = await getPublicTiers();
 
   return (
     <div className="mx-auto max-w-5xl space-y-10 px-4 py-12 sm:px-6">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdText(pageBreadcrumb("Creators programme", "/creators")) }} />
       <header className="space-y-3">
         <p className="eyebrow text-copper-700">Sanchari creators</p>
         <h1 className="font-display text-3xl font-semibold text-forest-900 sm:text-5xl">Travel with us. Tell the story.</h1>

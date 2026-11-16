@@ -12,10 +12,11 @@ import { AssistantForm } from "@/components/admin/AssistantForm";
 import { HomePageForm } from "@/components/admin/HomePageForm";
 import { KannadaForm } from "@/components/admin/KannadaForm";
 import { Notice, Panel, useAdminContent } from "@/components/admin/kit";
+import { DEFAULT_DEVELOPER_CREDIT_URL, isHttpsUrl, mergeDeveloperCredit } from "@/lib/developer-credit";
 import type { SiteSettings } from "@/lib/types";
 
 type Editor = ReturnType<typeof useAdminContent>;
-type Tab = "home" | "assistant" | "kannada" | "brand" | "social" | "policy" | "faqs" | "legal";
+type Tab = "home" | "assistant" | "kannada" | "brand" | "social" | "policy" | "faqs" | "legal" | "credit";
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "home", label: "Home page" },
@@ -26,6 +27,7 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "policy", label: "Booking rules" },
   { key: "faqs", label: "FAQs" },
   { key: "legal", label: "Legal pages" },
+  { key: "credit", label: "Footer credit" },
 ];
 
 /** Website words, contact details, booking rules, FAQs and legal text. */
@@ -80,6 +82,9 @@ export function SiteContentManager({ editor }: { editor: Editor }) {
       {tab === "policy" && <PolicyForm key="p" initial={content.settings.bookingPolicy} editor={editor} canEdit={canEdit} />}
       {tab === "faqs" && <FaqForm key="f" initial={content.settings.faqs} editor={editor} canEdit={canEdit} />}
       {tab === "legal" && <LegalForm key="l" initial={content.settings.legalDrafts} editor={editor} canEdit={canEdit} />}
+      {tab === "credit" && (
+        <DeveloperCreditForm key="c" initial={mergeDeveloperCredit(content.settings.developerCredit)} editor={editor} canEdit={canEdit} />
+      )}
     </Panel>
   );
 }
@@ -288,6 +293,32 @@ function FaqForm({ initial, editor, canEdit }: { initial: SiteSettings["faqs"]; 
         />
       )}
       <SaveBar editor={editor} keyName="faqs" value={items} canEdit={canEdit} />
+    </div>
+  );
+}
+
+function DeveloperCreditForm({ initial, editor, canEdit }: { initial: SiteSettings["developerCredit"]; editor: Editor; canEdit: boolean }) {
+  const [f, setF] = useState(initial);
+  const urlOk = f.url.trim() === "" || isHttpsUrl(f.url.trim());
+  return (
+    <div className="space-y-4">
+      <Switch
+        label="Show 'Designed & Developed by' credit in the footer"
+        description="A small line with the developer's round badge at the very bottom of every website page."
+        value={f.enabled}
+        isDisabled={!canEdit}
+        onChange={(v) => setF({ ...f, enabled: v })}
+      />
+      <TextInput
+        label="Badge link"
+        description="Opens in a new tab when a visitor taps the badge. Must start with https://. Leave empty for the default link."
+        placeholder={DEFAULT_DEVELOPER_CREDIT_URL}
+        value={f.url}
+        isDisabled={!canEdit}
+        onChange={(v) => setF({ ...f, url: v.trim() })}
+      />
+      {!urlOk && <Notice kind="error">Use a full https:// address, for example {DEFAULT_DEVELOPER_CREDIT_URL}</Notice>}
+      <SaveBar editor={editor} keyName="developer_credit" value={f} canEdit={canEdit} />
     </div>
   );
 }

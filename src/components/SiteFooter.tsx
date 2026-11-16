@@ -1,5 +1,6 @@
 import { Facebook, Instagram, Mail, Youtube } from "lucide-react";
 import { WhatsAppChannelButton } from "@/components/WhatsAppChannelCta";
+import { DeveloperCredit } from "@/components/DeveloperCredit";
 import Image from "next/image";
 import Link from "next/link";
 import type { SiteSettings } from "@/lib/types";
@@ -30,7 +31,8 @@ export function SiteFooter({
               <Image src="/brand/sanchari-mark.png" alt="" width={48} height={48} className="h-11 w-11" />
               <Image
                 src="/brand/sanchari-wordmark.png"
-                alt={brand.brandName || "Sanchari Micro Trips"}
+                // The alt describes the picture, whose text reads "Sanchari MICRO TRIPS" (not brandName).
+                alt="Sanchari Micro Trips"
                 width={106}
                 height={36}
                 data-no-translate
@@ -102,6 +104,7 @@ export function SiteFooter({
 
       <div className="border-t border-white/15 px-4 py-4 text-center text-xs text-white/70">
         © {new Date().getFullYear()} {looksSet(brand.legalEntityName) ? brand.legalEntityName : brand.brandName} — {brand.baseCity}
+        <DeveloperCredit />
       </div>
     </footer>
   );

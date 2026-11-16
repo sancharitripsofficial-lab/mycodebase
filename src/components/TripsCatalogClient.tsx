@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Search, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { TripCard } from "@/components/TripCard";
 import { NoTripForPlace, PlaceFilterBanner, TripSearch, type TripSearchFilter } from "@/components/TripSearch";
 import type { HomeCategory } from "@/lib/home-content";
+import type { KarnatakaDistrict, KarnatakaPlace } from "@/lib/places/types";
+import { readTripQuery, tripIdsForQuery, withoutTripQuery } from "@/lib/trip-query";
 import type { TripWithDetails } from "@/lib/types";
 import { isBookable } from "@/lib/departure-rules";
 
@@ -16,6 +19,40 @@ export function TripsCatalogClient({ trips, categories = [] }: { trips: TripWith
   const [difficulty, setDifficulty] = useState("all");
   const [onlyPrivateEligible, setOnlyPrivateEligible] = useState(false);
   const [onlyWomenBatch, setOnlyWomenBatch] = useState(false);
+  // /trips?q=… (links and Google's site search): the text filters the trips like the search box.
+  const [urlQuery, setUrlQuery] = useState<string | null>(null);
+  const [urlPlaceData, setUrlPlaceData] = useState<{ places: readonly KarnatakaPlace[]; districts: readonly KarnatakaDistrict[] } | null>(null);
+
+  // Read in the browser so the page stays cached and its canonical stays /trips.
+  useEffect(() => {
+    const q = readTripQuery(window.location.search);
+    if (!q) return;
+    setUrlQuery(q);
+    // Place names ("Abbey Falls") need the place list: the same chunk the search box loads.
+    import("@/lib/places/karnataka-places")
+      .then((m) => setUrlPlaceData({ places: m.KARNATAKA_PLACES, districts: m.KARNATAKA_DISTRICTS }))
+      .catch(() => {
+        /* the trips' own words still match */
+      });
+  }, []);
+
+  /** Forget ?q= (also in the address bar, other filters stay). */
+  const dropUrlQuery = useCallback(() => {
+    setUrlQuery(null);
+    if (new URLSearchParams(window.location.search).has("q")) {
+      const { pathname, search, hash } = window.location;
+      window.history.replaceState(window.history.state, "", `${pathname}${withoutTripQuery(search)}${hash}`);
+    }
+  }, []);
+
+  // Typing in the box (or picking a place) replaces the ?q= text.
+  const onSearchChange = useCallback(
+    (filter: TripSearchFilter) => {
+      setSearch(filter);
+      if (filter.kind !== "none") dropUrlQuery();
+    },
+    [dropUrlQuery]
+  );
 
   // "Book the whole car" links land here with ?mode=private (read in the browser so the page stays cached).
   useEffect(() => {
@@ -51,13 +88,19 @@ export function TripsCatalogClient({ trips, categories = [] }: { trips: TripWith
     if (!finePointer) setFocusResultsTick((n) => n + 1);
     setSearchKey((k) => k + 1);
     setSearch({ kind: "none" });
+    dropUrlQuery();
   };
 
   useEffect(() => {
     if (focusResultsTick > 0) resultsRef.current?.focus();
   }, [focusResultsTick]);
 
-  const searchIds = useMemo(() => (search.kind === "none" ? null : new Set(search.tripIds)), [search]);
+  const urlQueryIds = useMemo(
+    () => (urlQuery ? new Set(tripIdsForQuery(urlQuery, trips, urlPlaceData)) : null),
+    [urlQuery, trips, urlPlaceData]
+  );
+  const searchIds = useMemo(() => (search.kind === "none" ? urlQueryIds : new Set(search.tripIds)), [search, urlQueryIds]);
+  const showUrlQuery = search.kind === "none" && urlQuery !== null;
 
   const filtered = useMemo(() => {
     const cat = liveCategories.find((c) => c.id === category);
@@ -126,7 +169,7 @@ export function TripsCatalogClient({ trips, categories = [] }: { trips: TripWith
       )}
       <div className="sec-route rounded-2xl border border-stone-200 p-4 shadow-[var(--shadow-soft)] sm:p-5">
         <div className="grid gap-3 md:grid-cols-4">
-          <TripSearch key={searchKey} trips={trips} onFilterChange={setSearch} autoFocus={focusSearchBox} className="md:col-span-2" />
+          <TripSearch key={searchKey} trips={trips} onFilterChange={onSearchChange} autoFocus={focusSearchBox} className="md:col-span-2" />
 
           <label className="block">
             <span className="sr-only">Filter by region</span>
@@ -188,6 +231,23 @@ export function TripsCatalogClient({ trips, categories = [] }: { trips: TripWith
 
       {search.kind === "place" && search.tripIds.length > 0 && (
         <PlaceFilterBanner place={search.place} onClear={clearSearch} />
+      )}
+
+      {showUrlQuery && (
+        <div className="flex items-center gap-3 rounded-2xl border border-forest-700/20 bg-lagoon-100/70 py-1 pl-4 pr-1">
+          <Search className="h-4 w-4 shrink-0 text-forest-700" aria-hidden="true" />
+          <p className="min-w-0 flex-1 py-2 text-sm font-semibold text-forest-900">
+            <span>Showing trips for</span> <span data-no-translate>“{urlQuery}”</span>
+          </p>
+          <button
+            type="button"
+            onClick={clearSearch}
+            aria-label="Show all trips"
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-forest-900 hover:bg-white/70"
+          >
+            <X className="h-4 w-4" aria-hidden="true" />
+          </button>
+        </div>
       )}
 
       <div ref={resultsRef} tabIndex={-1} role="region" aria-label="Trip results" className="scroll-mt-24 rounded-2xl outline-none">

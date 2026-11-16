@@ -103,11 +103,11 @@ export interface HomePageContent {
 
 export const DEFAULT_HOME_CONTENT: HomePageContent = {
   kannadaLine: "ಬನ್ನಿ, ಕರ್ನಾಟಕ ಸುತ್ತೋಣ",
-  heroChip: "Weekend trips from Bengaluru • Max 6 per car",
+  heroChip: "Sanchari Trips • Small-group road trips from Bengaluru • Max 6 per car",
   categoriesSection: {
     show: true,
-    eyebrow: "Pick your weekend",
-    title: "Hills, coffee, coast or ruins?",
+    eyebrow: "Pick your trip",
+    title: "Which kind of trip suits you?",
     body: "Every kind of trip we run, with live weather at the place right now and the price per seat.",
   },
   categories: [
@@ -116,7 +116,7 @@ export const DEFAULT_HOME_CONTENT: HomePageContent = {
       name: "Hills & rainforest",
       description: "Misty shola valleys, spice estates and slow forest drives in Kodagu.",
       theme: "coorg",
-      tripSlugs: ["coorg-rainforest-slow-drive"],
+      tripSlugs: ["coorg-rainforest-spice-drive"],
     },
     {
       id: "coffee",
@@ -189,7 +189,7 @@ export const DEFAULT_HOME_CONTENT: HomePageContent = {
     },
     {
       title: "Ertiga-class comfort",
-      body: "Curated weekend routes from Bengaluru with planned highway meal stops and ghat-road daylight pacing.",
+      body: "Curated routes from Bengaluru with planned highway meal stops and ghat-road daylight pacing.",
       colour: "sunset",
       icon: "car",
       href: "",
@@ -224,7 +224,7 @@ export const DEFAULT_HOME_CONTENT: HomePageContent = {
     title: "Your date, your group, your route.",
     body: "Private car on a date we don't list, a group bigger than six, or a place we don't run yet. Tell us once and we reply on WhatsApp.",
   },
-  faqSection: { show: true, eyebrow: "Questions", title: "Before you book", body: "Luggage space, pickup timing, private 6-seat dates and more." },
+  faqSection: { show: true, eyebrow: "Questions", title: "Frequently asked questions", body: "The six-seat cap, joining solo, room requests, pickup points and more." },
 };
 
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
@@ -233,15 +233,54 @@ function mergeSection<T extends SectionText>(def: T, v: unknown): T {
   return isObj(v) ? ({ ...def, ...v } as T) : def;
 }
 
+/**
+ * Old built-in wording that said "weekend" (trips run on any listed day, or on the traveller's
+ * own dates with a private car). A saved value that is EXACTLY the old default is shown as the
+ * new default; anything the owner wrote themselves is never touched (SEO plan §8.2).
+ */
+export const OLD_HOME_DEFAULTS = {
+  heroChip: "Weekend trips from Bengaluru • Max 6 per car",
+  categoriesEyebrow: "Pick your weekend",
+  // Named a coast and ruins, but only hill and coffee trips run (no Gokarna or Hampi trip).
+  categoriesTitle: "Hills, coffee, coast or ruins?",
+  howCardBody: "Curated weekend routes from Bengaluru with planned highway meal stops and ghat-road daylight pacing.",
+  faqTitle: "Before you book",
+  // Named "luggage space", which no FAQ answers (the luggage allowance is shared only after owner
+  // confirmation, /policies).
+  faqBody: "Luggage space, pickup timing, private 6-seat dates and more.",
+} as const;
+
+const upgrade = (value: unknown, oldDefault: string, newDefault: string) => (value === oldDefault ? newDefault : value);
+
+function upgradeSection(v: unknown, fields: Partial<Record<"eyebrow" | "title" | "body", [string, string]>>): unknown {
+  if (!isObj(v)) return v;
+  const out: Record<string, unknown> = { ...v };
+  for (const [key, pair] of Object.entries(fields)) {
+    if (pair) out[key] = upgrade(out[key], pair[0], pair[1]);
+  }
+  return out;
+}
+
 /** Saved copy + defaults for anything missing (older saves, fields added later). */
 export function mergeHomeContent(saved: unknown): HomePageContent {
   const d = DEFAULT_HOME_CONTENT;
   if (!isObj(saved)) return d;
   const s = saved as Partial<HomePageContent>;
+  const old = OLD_HOME_DEFAULTS;
+  const savedHero = upgrade(s.heroChip, old.heroChip, d.heroChip);
+  const howCards = Array.isArray(s.howCards)
+    ? s.howCards.map((card) => (isObj(card) ? { ...card, body: upgrade(card.body, old.howCardBody, d.howCards[1].body) } : card) as HomeCard)
+    : d.howCards;
   return {
     kannadaLine: typeof s.kannadaLine === "string" ? s.kannadaLine : d.kannadaLine,
-    heroChip: typeof s.heroChip === "string" && s.heroChip.trim() ? s.heroChip : d.heroChip,
-    categoriesSection: mergeSection(d.categoriesSection, s.categoriesSection),
+    heroChip: typeof savedHero === "string" && savedHero.trim() ? savedHero : d.heroChip,
+    categoriesSection: mergeSection(
+      d.categoriesSection,
+      upgradeSection(s.categoriesSection, {
+        eyebrow: [old.categoriesEyebrow, d.categoriesSection.eyebrow],
+        title: [old.categoriesTitle, d.categoriesSection.title],
+      })
+    ),
     categories: Array.isArray(s.categories) ? s.categories : d.categories,
     travellerCards: Array.isArray(s.travellerCards) ? s.travellerCards : d.travellerCards,
     departuresSection: mergeSection(d.departuresSection, s.departuresSection),
@@ -250,12 +289,12 @@ export function mergeHomeContent(saved: unknown): HomePageContent {
     compareSection: mergeSection(d.compareSection, s.compareSection),
     compareRows: Array.isArray(s.compareRows) ? s.compareRows : d.compareRows,
     howSection: mergeSection(d.howSection, s.howSection),
-    howCards: Array.isArray(s.howCards) ? s.howCards : d.howCards,
+    howCards,
     routesSection: mergeSection(d.routesSection, s.routesSection),
     safetySection: mergeSection(d.safetySection, s.safetySection),
     reviewsSection: mergeSection(d.reviewsSection, s.reviewsSection),
     planSection: mergeSection(d.planSection, s.planSection),
-    faqSection: mergeSection(d.faqSection, s.faqSection),
+    faqSection: mergeSection(d.faqSection, upgradeSection(s.faqSection, { title: [old.faqTitle, d.faqSection.title], body: [old.faqBody, d.faqSection.body] })),
   };
 }
 

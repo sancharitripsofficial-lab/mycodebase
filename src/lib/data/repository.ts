@@ -32,7 +32,9 @@ import { createSupabaseAdminClient, createSupabasePublicClient } from "@/lib/sup
 import { assertWomenOnlyConfirmed, preferenceForDeparture } from "@/lib/women-only";
 import { withoutStartedDepartures } from "@/lib/departure-rules";
 import { mergeBlogPosts } from "@/lib/blog";
+import { mergeDeveloperCredit } from "@/lib/developer-credit";
 import { cleanSettingsForVisitors, cleanTripForVisitors } from "@/lib/display-text";
+import { expandTripSlugs } from "@/lib/trip-slugs";
 import type {
   BookingMode,
   AdminBookingRow,
@@ -76,11 +78,26 @@ function cleanTranslations(value: unknown): Record<string, string> {
   return out;
 }
 
-/** Site settings for visitors (pages, chat guide, booking): first-draft tags removed. */
-export async function getSiteSettings(): Promise<{ settings: SiteSettings; isDemoFallback: boolean }> {
+/**
+ * Site settings for visitors (pages, chat guide, booking): first-draft tags removed, and each
+ * home category also knows the old/new form of a renamed trip slug (lib/trip-slugs.ts), so a
+ * category keeps its trip while the saved list still names the old address.
+ * Read once per page render: generateMetadata and the page body share the query.
+ */
+export const getSiteSettings = cache(async (): Promise<{ settings: SiteSettings; isDemoFallback: boolean }> => {
   const raw = await getRawSiteSettings();
-  return { ...raw, settings: cleanSettingsForVisitors(raw.settings) };
-}
+  const settings = cleanSettingsForVisitors(raw.settings);
+  return {
+    ...raw,
+    settings: {
+      ...settings,
+      homePage: {
+        ...settings.homePage,
+        categories: settings.homePage.categories.map((c) => ({ ...c, tripSlugs: expandTripSlugs(c.tripSlugs) })),
+      },
+    },
+  };
+});
 
 /** Site settings exactly as saved (the admin editor uses this, so saving never changes text silently). */
 export async function getRawSiteSettings(): Promise<{ settings: SiteSettings; isDemoFallback: boolean }> {
@@ -113,6 +130,7 @@ export async function getRawSiteSettings(): Promise<{ settings: SiteSettings; is
         translationsKn: cleanTranslations(map.get("translations_kn")),
         blogPosts: mergeBlogPosts(map.get("blog_posts")),
         siteMedia: mergeSiteMedia(map.get("site_media")),
+        developerCredit: mergeDeveloperCredit(map.get("developer_credit")),
       },
     };
   } catch {
@@ -122,6 +140,9 @@ export async function getRawSiteSettings(): Promise<{ settings: SiteSettings; is
 
 /** Owner's site pictures and videos (one read per page render, shared by every banner on it). */
 export const getSiteMedia = cache(async (): Promise<SiteMedia> => (await getRawSiteSettings()).settings.siteMedia);
+
+/** Footer "Designed & Developed by" credit (on unless the owner switched it off). */
+export const getDeveloperCredit = cache(async () => mergeDeveloperCredit((await getSiteSettings()).settings.developerCredit));
 
 /**
  * Published trips with their dates, itinerary and pickups. Dates that have already left (IST)
@@ -137,10 +158,11 @@ export async function getPublishedTripsWithDetails(opts: { includeStarted?: bool
   return opts.includeStarted ? res : { ...res, trips: withoutStartedDepartures(res.trips) };
 }
 
-async function loadPublishedTripsWithDetails(): Promise<{
+/** One database read per page render (generateMetadata and the page body share it). */
+const loadPublishedTripsWithDetails = cache(async (): Promise<{
   trips: TripWithDetails[];
   isDemoFallback: boolean;
-}> {
+}> => {
   if (!isSupabaseConfigured()) {
     return { trips: getDemoTripsWithDetails(), isDemoFallback: true };
   }
@@ -198,6 +220,7 @@ async function loadPublishedTripsWithDetails(): Promise<{
         isSampleDemo: row.is_sample_demo,
         isPublished: row.is_published,
         sortOrder: row.sort_order,
+        updatedAt: typeof row.updated_at === "string" ? row.updated_at : null,
       };
 
       const itinerary: ItineraryDay[] = (itRows ?? [])
@@ -253,7 +276,7 @@ async function loadPublishedTripsWithDetails(): Promise<{
   } catch {
     return { trips: getDemoTripsWithDetails(), isDemoFallback: true };
   }
-}
+});
 
 export async function getPublishedTripBySlug(slug: string): Promise<{
   item: TripWithDetails | null;

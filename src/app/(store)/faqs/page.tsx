@@ -3,12 +3,18 @@ import Link from "next/link";
 import { MessageCircle } from "lucide-react";
 import { PageBanner } from "@/components/banners/PageBanner";
 import { getSiteSettings } from "@/lib/data/repository";
+import { PAGE_SEO, faqJsonLd, hasWeekendFaq, jsonLdText, pageBreadcrumb, pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "FAQs",
-  description: "Answers before you book a Sanchari micro trip: luggage space, pickup timing, private 6-seat dates and more.",
-  alternates: { canonical: "/faqs" },
-};
+/** The description mentions "do trips run only on weekends" only once a visible FAQ answers it. */
+export async function generateMetadata(): Promise<Metadata> {
+  const { settings } = await getSiteSettings();
+  const faqs = settings.faqs.filter((f) => f.question.trim() && f.answer.trim());
+  return pageMetadata({
+    title: PAGE_SEO.faqs.title,
+    description: hasWeekendFaq(faqs) ? PAGE_SEO.faqs.description : PAGE_SEO.faqs.descriptionWithoutWeekendFaq,
+    path: PAGE_SEO.faqs.path,
+  });
+}
 
 /**
  * Frequently asked questions. The questions and answers come from Admin → Website text → FAQs,
@@ -20,19 +26,13 @@ export default async function FaqsPage() {
   const head = settings.homePage.faqSection;
   const faqs = settings.faqs.filter((f) => f.question.trim() && f.answer.trim());
 
-  const faqLd = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: faqs.map((f) => ({
-      "@type": "Question",
-      name: f.question,
-      acceptedAnswer: { "@type": "Answer", text: f.answer },
-    })),
-  };
+  // FAQPage only here, and only for the questions shown on this page (SEO plan §4.5).
+  const faqLd = faqJsonLd(faqs);
 
   return (
     <>
-      {faqs.length > 0 && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }} />}
+      {faqs.length > 0 && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdText(faqLd) }} />}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdText(pageBreadcrumb("FAQs", "/faqs")) }} />
       <PageBanner
         page="faqs"
         scene="contact"

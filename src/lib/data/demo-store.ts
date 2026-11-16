@@ -1,5 +1,6 @@
 import { DEFAULT_ASSISTANT_SETTINGS } from "@/lib/assistant/settings";
 import { DEFAULT_BLOG_POSTS } from "@/lib/blog";
+import { DEFAULT_DEVELOPER_CREDIT } from "@/lib/developer-credit";
 import { DEFAULT_HOME_CONTENT } from "@/lib/home-content";
 import { EMPTY_SITE_MEDIA } from "@/lib/site-media";
 import crypto from "node:crypto";
@@ -100,7 +101,7 @@ function createInitialDemoState(): DemoDatabaseState {
       tagline:
         "Unhurried estate walks, monsoon-washed ridges, and filter coffee before the crowds arrive.",
       summary:
-        "Sample itinerary: A calm 3-day weekend drive from Bengaluru into the Mullayanagiri foothills, staying at a small coffee-estate homestay with guided plantation walks and scenic ridge viewpoints.",
+        "Sample itinerary: A calm 3-day drive from Bengaluru into the Mullayanagiri foothills, staying at a small coffee-estate homestay with guided plantation walks and scenic ridge viewpoints.",
       durationDays: 3,
       durationNights: 2,
       difficulty: "Easy",
@@ -148,7 +149,7 @@ function createInitialDemoState(): DemoDatabaseState {
     },
     {
       id: "11111111-1111-4111-8111-111111111102",
-      slug: "coorg-rainforest-slow-drive",
+      slug: "coorg-rainforest-spice-drive",
       title: "Kodagu Rainforest & Spice Drive",
       destination: "Kodagu (Coorg), Karnataka",
       region: "Western Ghats",
@@ -642,7 +643,7 @@ function createInitialDemoState(): DemoDatabaseState {
 
   const settings: SiteSettings = {
     brandIdentity: {
-      brandName: "Sanchari • Micro Trips",
+      brandName: "Sanchari Trips",
       headline: "Leave as strangers. Return as a story.",
       subheadline: "Curated Karnataka road trips, shared with no more than six travelers.",
       baseCity: "Bengaluru, Karnataka",
@@ -720,6 +721,7 @@ function createInitialDemoState(): DemoDatabaseState {
     translationsKn: {},
     blogPosts: DEFAULT_BLOG_POSTS,
     siteMedia: EMPTY_SITE_MEDIA,
+    developerCredit: DEFAULT_DEVELOPER_CREDIT,
     legalDrafts: {
       ownerReviewRequired: true,
       termsSummary:

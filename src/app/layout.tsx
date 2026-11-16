@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Noto_Sans_Kannada, Plus_Jakarta_Sans } from "next/font/google";
 import { TapFeedback } from "@/components/TapFeedback";
+import { BRAND_NAME, DEFAULT_OG_IMAGE, HOME_DESCRIPTION, HOME_TITLE, SITE_URL } from "@/lib/seo";
 import "./globals.css";
 // Sanchari Astryx theme styles (CSS only; the Theme JavaScript loads only where Astryx is used).
 import "@/themes/sanchari/sanchari.css";
@@ -26,38 +27,34 @@ const plusJakarta = Plus_Jakarta_Sans({
   display: "swap",
 });
 
+// Defaults for every page; each page sets its own title, description, canonical and share card
+// through pageMetadata() (src/lib/seo.ts). No place names here: this metadata is static.
+// No "keywords" list: Google ignores it and it read as keyword stuffing (SEO plan §3, §8.1).
 export const metadata: Metadata = {
   title: {
-    default: "Weekend Trips from Bangalore in a 6-Seat Car | Sanchari Micro Trips",
-    template: "%s | Sanchari • Micro Trips",
+    default: HOME_TITLE,
+    template: `%s | ${BRAND_NAME}`,
   },
-  // Kept under ~158 characters so Google shows it whole.
-  description:
-    "Weekend road trips from Bangalore to Coorg, Chikmagalur, Gokarna and Hampi with max 6 travellers per car. Pick your seat on a live car map and pay by UPI.",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
-  // Google ignores "keywords"; Bing reads it lightly. Kept short and true to what we sell.
-  keywords: [
-    "Karnataka tour packages",
-    "weekend trips from Bangalore",
-    "tour packages from Bangalore",
-    "Coorg trip from Bangalore",
-    "Chikmagalur trip from Bangalore",
-    "Gokarna trip from Bangalore",
-    "Hampi trip from Bangalore",
-    "small group tours Bangalore",
-    "weekend getaways from Bangalore",
-    "road trips from Bangalore",
-    "tour planner Bangalore",
-    "travel agency Bangalore",
-  ],
-  applicationName: "Sanchari Micro Trips",
+  description: HOME_DESCRIPTION,
+  metadataBase: new URL(SITE_URL),
+  applicationName: BRAND_NAME,
   category: "travel",
   // The share picture is the official logo card (src/app/opengraph-image.tsx).
+  // No og:url here: a page that sets no Open Graph of its own (admin, motion-preview) must not
+  // claim the home address. The home page sets og:url "/" itself through pageMetadata().
   openGraph: {
-    title: "Sanchari • Micro Trips — weekend trips from Bengaluru, max 6 per car",
-    description: "Coorg, Chikmagalur, Gokarna and Hampi in a 6-seat car. Pick your seat on a live car map and pay by UPI.",
-    siteName: "Sanchari Micro Trips",
+    title: HOME_TITLE,
+    description: HOME_DESCRIPTION,
+    siteName: BRAND_NAME,
+    locale: "en_IN",
     type: "website",
+    images: [DEFAULT_OG_IMAGE],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: HOME_TITLE,
+    description: HOME_DESCRIPTION,
+    images: [DEFAULT_OG_IMAGE.url],
   },
 };
 
@@ -75,7 +72,7 @@ export default function RootLayout({
     // suppressHydrationWarning: the store's early script may switch lang/data-lang to Kannada before React loads.
     // data-theme / data-astryx-theme: what the Astryx Theme used to set from JavaScript, now static.
     <html
-      lang="en"
+      lang="en-IN"
       data-theme="light"
       data-astryx-theme="sanchari"
       className={`${fraunces.variable} ${plusJakarta.variable} ${notoKannada.variable}`}

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { breadcrumbJsonLd, clip, jsonLdText, searchName, tripSeoDescription, tripSeoTitle } from "@/lib/seo";
 
 const coorg = {
+  id: "coorg",
   title: "Kodagu Rainforest & Spice Drive",
   destination: "Kodagu (Coorg), Karnataka",
   durationDays: 3,
@@ -18,16 +19,16 @@ describe("search words for trips", () => {
     expect(searchName("")).toBe("");
   });
 
-  it("puts '<place> trip from Bangalore' in the title, without repeating the place", () => {
-    expect(tripSeoTitle(coorg)).toBe("Kodagu Rainforest & Spice Drive – 3-Day Coorg Trip from Bangalore");
+  it("puts '<place> Trip from Bangalore – nD/nN' in the title (SEO plan §3 row T)", () => {
+    expect(tripSeoTitle(coorg)).toBe("Coorg Trip from Bangalore – 3D/2N");
     expect(
-      tripSeoTitle({ title: "Chikmagalur Coffee & Mist Trails", destination: "Chikmagalur, Karnataka", durationDays: 3 })
-    ).toBe("Chikmagalur Coffee & Mist Trails – 3-Day Trip from Bangalore");
+      tripSeoTitle({ id: "ckm", title: "Chikmagalur Coffee & Mist Trails", destination: "Chikmagalur, Karnataka", durationDays: 3, durationNights: 2 })
+    ).toBe("Chikmagalur Trip from Bangalore – 3D/2N");
   });
 
-  it("starts the description with the facts and keeps it short enough for Google", () => {
-    const d = tripSeoDescription(coorg);
-    expect(d.startsWith("Coorg trip from Bangalore: 3 days, 2 nights, max 6 per car, from ₹12,400 per seat.")).toBe(true);
+  it("starts the description with the facts and the page's own From price, short enough for Google", () => {
+    const d = tripSeoDescription(coorg, 399900);
+    expect(d.startsWith("Coorg trip from Bangalore: 3 days, 2 nights, max 6 per car, from ₹3,999 per seat.")).toBe(true);
     expect(d.length).toBeLessThanOrEqual(158);
   });
 });

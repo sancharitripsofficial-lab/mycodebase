@@ -2,11 +2,12 @@
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { DomTranslator, type Dictionary } from "@/lib/i18n/dom-translator";
+import { LANG_COOKIE, asLang, langFromCookieString } from "@/lib/i18n/lang-cookie";
 
 export type Lang = "en" | "kn";
 
-/** Remembered on this phone / browser (and in a cookie, for the server later). */
-export const LANG_STORE_KEY = "sanchari-lang";
+/** Remembered on this phone / browser (and in a cookie of the same name, see lib/i18n/lang-cookie.ts). */
+export const LANG_STORE_KEY = LANG_COOKIE;
 
 interface LanguageState {
   lang: Lang;
@@ -23,8 +24,10 @@ export const useLanguage = () => useContext(LanguageContext);
  * Runs before the page paints (inline in the store layout): marks <html> as Kannada for a
  * returning Kannada visitor, so the CSS can hold the page back for a moment instead of
  * flashing English. Kept tiny and dependency-free on purpose.
+ * Order: ?lang= > the cookie (also set by the middleware when a ?lang= trip link redirects) >
+ * localStorage, the same order as the provider below.
  */
-export const EARLY_LANG_SCRIPT = `try{var q=new URLSearchParams(location.search).get("lang");var l=q==="kn"||q==="en"?q:localStorage.getItem("${LANG_STORE_KEY}");if(l==="kn"){document.documentElement.setAttribute("data-lang","kn");document.documentElement.lang="kn";}}catch(e){}`;
+export const EARLY_LANG_SCRIPT = `try{var q=new URLSearchParams(location.search).get("lang");var m=document.cookie.match(/(?:^|; *)${LANG_STORE_KEY}=(kn|en)(?:;|$)/);var l=q==="kn"||q==="en"?q:m?m[1]:localStorage.getItem("${LANG_STORE_KEY}");if(l==="kn"){document.documentElement.setAttribute("data-lang","kn");document.documentElement.lang="kn";}}catch(e){}`;
 
 let dictPromise: Promise<Dictionary> | null = null;
 
@@ -91,16 +94,17 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // The visitor's earlier choice (or ?lang=kn in a shared link).
+  // The visitor's earlier choice (or ?lang=kn in a shared link). Order: ?lang= > cookie >
+  // localStorage. The cookie is how ?lang= survives a trip-address redirect (middleware.ts).
   useEffect(() => {
     let stored: string | null = null;
     try {
-      const q = new URLSearchParams(window.location.search).get("lang");
-      if (q === "kn" || q === "en") {
+      const chosen = asLang(new URLSearchParams(window.location.search).get("lang")) ?? langFromCookieString(document.cookie);
+      if (chosen) {
         // A shared ?lang= link also sets the choice for the rest of the visit.
-        stored = q;
-        window.localStorage.setItem(LANG_STORE_KEY, q);
-        document.cookie = `${LANG_STORE_KEY}=${q}; path=/; max-age=31536000; samesite=lax`;
+        stored = chosen;
+        window.localStorage.setItem(LANG_STORE_KEY, chosen);
+        document.cookie = `${LANG_STORE_KEY}=${chosen}; path=/; max-age=31536000; samesite=lax`;
       } else {
         stored = window.localStorage.getItem(LANG_STORE_KEY);
       }
