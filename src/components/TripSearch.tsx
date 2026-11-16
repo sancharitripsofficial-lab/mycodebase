@@ -582,7 +582,7 @@ export function TripSearch({
           setActive(-1);
         }}
         onKeyDown={onKeyDown}
-        placeholder="Search Chikmagalur, Coorg, Gokarna, Hampi..."
+        placeholder="Search Chikmagalur, Coorg or any Karnataka place..."
         className="h-12 w-full rounded-xl border border-stone-300 bg-white pl-11 pr-12 text-base text-ink-900 placeholder:text-stone-600 focus:border-forest-700 focus:outline-none focus:ring-2 focus:ring-lagoon-500/30 sm:text-sm"
       />
       {text && (

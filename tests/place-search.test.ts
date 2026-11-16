@@ -403,7 +403,7 @@ describe("Kannada for the search words", () => {
   });
 
   it("puts the verb first in the Kannada placeholder, so a narrow box still shows it", () => {
-    expect(dict["Search Chikmagalur, Coorg, Gokarna, Hampi..."]).toMatch(/^ಹುಡುಕಿ/);
+    expect(dict["Search Chikmagalur, Coorg or any Karnataka place..."]).toMatch(/^ಹುಡುಕಿ/);
   });
 });
 
@@ -427,7 +427,7 @@ describe("TripSearch markup", () => {
     expect(html).toContain("aria-autocomplete=\"list\"");
     expect(html).toContain("role=\"listbox\"");
     expect(html).toMatch(/<label[^>]*>Search trips and places<\/label>/);
-    expect(html).toContain("Search Chikmagalur, Coorg, Gokarna, Hampi...");
+    expect(html).toContain("Search Chikmagalur, Coorg or any Karnataka place...");
   });
 
   it("renders the place banner and the no-trip panel with the plan link", () => {
