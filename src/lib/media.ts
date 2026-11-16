@@ -14,6 +14,17 @@ export function isOptimizableImage(url: string): boolean {
   }
 }
 
+/**
+ * A small copy of a picture, for soft blurred backgrounds. Offer pictures are uploaded as they come
+ * from the phone or the design app (5-8 MB each on 16 Nov): a blur must never download that file.
+ * Local files and uploads come back from the site's image service at 128 px (a few KB, and a blur
+ * hides the low detail); any other link stays as it is.
+ */
+export function softImageSrc(url: string): string {
+  if (!url || url.startsWith("/_next/") || !isOptimizableImage(url)) return url;
+  return `/_next/image?url=${encodeURIComponent(url)}&w=128&q=75`;
+}
+
 export type VideoKind =
   | { kind: "youtube"; embedUrl: string }
   | { kind: "instagram"; url: string }

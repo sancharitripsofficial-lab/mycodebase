@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useEffect, useRef, useState, type ReactNode, type RefObject, type SyntheticEvent } from "react";
 import { useHasAudio } from "@/lib/use-has-audio";
 import type { Promotion } from "@/lib/data/promotions";
-import { classifyVideoLink, isOptimizableImage } from "@/lib/media";
+import { classifyVideoLink, isOptimizableImage, softImageSrc } from "@/lib/media";
 import { THEME_BG } from "./track";
 
 function youtubeId(url: string): string | null {
@@ -189,9 +189,10 @@ export function PromoMedia({
     const optimise = isOptimizableImage(promo.mediaUrl);
     const backdrop =
       fit === "contain" ? (
+        // A small copy is enough for a blur: never the full upload (often 5-8 MB).
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={promo.mediaUrl}
+          src={softImageSrc(promo.mediaUrl)}
           alt=""
           aria-hidden="true"
           className="absolute inset-0 h-full w-full scale-110 object-cover opacity-70 blur-xl saturate-150"
@@ -226,7 +227,7 @@ export function PromoMedia({
         promo.posterUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={promo.posterUrl}
+            src={softImageSrc(promo.posterUrl)}
             alt=""
             aria-hidden="true"
             className="absolute inset-0 h-full w-full scale-110 object-cover opacity-70 blur-xl saturate-150"
