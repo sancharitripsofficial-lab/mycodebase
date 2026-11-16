@@ -4,7 +4,7 @@ import { X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import type { Promotion } from "@/lib/data/promotions";
-import { nextPopup } from "@/lib/popup-order";
+import { pickPopup, shownMark } from "@/lib/popup-order";
 import { PromoCta } from "./PromoBanner";
 import { PromoMedia } from "./PromoMedia";
 import { THEME_BG, trackPromo } from "./track";
@@ -14,13 +14,15 @@ const SEEN = (id: string) => `promo-popup:${id}`;
 const QUIET_PATHS = ["/booking-lookup"];
 
 /**
- * Offer pop-up: each offer shows at most once per visitor (remembered in that browser, so a phone
- * and a laptop each keep their own memory), one offer per page. The newest offer this browser has
- * not shown comes first (src/lib/popup-order.ts), so a new offer shows on every device at its next
- * page instead of waiting behind older offers.
+ * Offer pop-up (rules in src/lib/popup-order.ts). What a browser has shown is remembered in that
+ * browser only, so a phone and a laptop each keep their own memory.
+ * - `picked`: the offer the owner chose in Admin → Offers & ads ("Make this the pop-up"). Only it
+ *   pops up, once per visitor for each time the owner picks it; nothing else pops up.
+ * - no pick: one offer per page that this browser has not shown, the newest first, so a new offer
+ *   shows on every device at its next page instead of waiting behind older offers.
  * Appears after 8 s or when the visitor has scrolled a third of the page; bottom sheet on phones.
  */
-export function PromoPopup({ promotions }: { promotions: Promotion[] }) {
+export function PromoPopup({ promotions, picked = null }: { promotions: Promotion[]; picked?: { promo: Promotion; since: string } | null }) {
   const pathname = usePathname();
   const [promo, setPromo] = useState<Promotion | null>(null);
   const closeRef = useRef<HTMLButtonElement | null>(null);
@@ -28,15 +30,16 @@ export function PromoPopup({ promotions }: { promotions: Promotion[] }) {
   const returnFocus = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
-    if (promotions.length === 0 || QUIET_PATHS.some((p) => pathname.startsWith(p))) return;
-    let next: Promotion | undefined;
+    if ((promotions.length === 0 && !picked) || QUIET_PATHS.some((p) => pathname.startsWith(p))) return;
+    let next: { promo: Promotion; pickSince: string | null } | undefined;
     try {
-      next = nextPopup(promotions, (id) => Boolean(localStorage.getItem(SEEN(id))));
+      next = pickPopup(promotions, picked, (id) => localStorage.getItem(SEEN(id)));
     } catch {
       next = undefined; // storage blocked: don't risk showing it on every page
     }
     if (!next) return;
-    const chosen = next;
+    const chosen = next.promo;
+    const pickSince = next.pickSince;
     let done = false;
     let retry = 0;
     const show = () => {
@@ -54,7 +57,7 @@ export function PromoPopup({ promotions }: { promotions: Promotion[] }) {
       setPromo(chosen);
       trackPromo(chosen.id, "view");
       try {
-        localStorage.setItem(SEEN(chosen.id), new Date().toISOString());
+        localStorage.setItem(SEEN(chosen.id), shownMark(new Date(), pickSince));
       } catch {
         /* ignore */
       }
@@ -71,7 +74,7 @@ export function PromoPopup({ promotions }: { promotions: Promotion[] }) {
       window.clearTimeout(retry);
       window.removeEventListener("scroll", onScroll);
     };
-  }, [promotions, pathname]);
+  }, [promotions, pathname, picked]);
 
   // Going to another page (for example tapping the logo to go home) closes the offer.
   useEffect(() => {

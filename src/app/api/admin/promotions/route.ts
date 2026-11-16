@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireStaff } from "@/lib/auth";
-import { deletePromotion, listPromotionsAdmin, savePromotion } from "@/lib/data/promotions";
+import { deletePromotion, getPopupChoice, listPromotionsAdmin, savePromotion, setPopupChoice } from "@/lib/data/promotions";
 import { paymentErrorMessage } from "@/lib/payments/upi";
 import { refreshStorefront } from "@/lib/revalidate";
 import { promotionActionSchema } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 
-/** All offers (drafts, scheduled, ended) with view/click counts. */
+/** All offers (drafts, scheduled, ended) with view/click counts, and which offer is picked to pop up. */
 export async function GET() {
   try {
     await requireStaff(["owner", "ops", "support"]);
@@ -15,7 +15,8 @@ export async function GET() {
     return NextResponse.json({ error: "Admin sign-in required." }, { status: 403 });
   }
   try {
-    return NextResponse.json({ promotions: await listPromotionsAdmin() }, { headers: { "Cache-Control": "no-store" } });
+    const [promotions, popupChoice] = await Promise.all([listPromotionsAdmin(), getPopupChoice()]);
+    return NextResponse.json({ promotions, popupChoice }, { headers: { "Cache-Control": "no-store" } });
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : "Could not load offers." }, { status: 500 });
   }
@@ -41,6 +42,12 @@ export async function POST(request: NextRequest) {
       const promotion = await savePromotion(parsed.data.promotion, who);
       refreshStorefront();
       return NextResponse.json({ ok: true, promotion });
+    }
+    if (parsed.data.action === "popup_choice") {
+      // Which offer pops up: one offer, or null = automatic.
+      const popupChoice = await setPopupChoice(parsed.data.id, who);
+      refreshStorefront();
+      return NextResponse.json({ ok: true, popupChoice });
     }
     await deletePromotion(parsed.data.id, who);
     refreshStorefront();

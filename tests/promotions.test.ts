@@ -120,6 +120,35 @@ describe("offers & ads rules (real migrations)", () => {
     await expect(asAnon("SELECT public.promotion_track($1, 'view')", [live])).rejects.toThrow();
     await expect(asAnon("UPDATE public.promotions SET title = 'hacked'")).rejects.toThrow();
   });
+
+  it("the pop-up pick (site setting offer_popup): visitors can read it, only the server can change it", async () => {
+    // Supabase gives its visitor roles table rights by default and lets the row rules (RLS) decide;
+    // this test database has no such default, so grant it here the way Supabase does.
+    await db.exec("GRANT ALL ON public.site_settings TO anon, authenticated");
+    const id = await insert({ title: "Picked offer" });
+    const pick = { promotionId: id, since: "2026-11-16T12:00:00.000Z" };
+    // The server saves it exactly like this (upsert on the key).
+    const save = (value: unknown) =>
+      db.query("INSERT INTO public.site_settings (key, value) VALUES ('offer_popup', $1::jsonb) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()", [
+        JSON.stringify(value),
+      ]);
+    await save(pick);
+    const read = async () => (await asAnon<{ value: { promotionId: string | null; since: string } }>("SELECT value FROM public.site_settings WHERE key = 'offer_popup'"))[0]?.value;
+    expect(await read()).toEqual(pick);
+
+    // A visitor can never change, remove or add it (refused outright, or it changes nothing).
+    await asAnon("UPDATE public.site_settings SET value = '{\"promotionId\":null}'::jsonb WHERE key = 'offer_popup'").catch(() => undefined);
+    await asAnon("DELETE FROM public.site_settings WHERE key = 'offer_popup'").catch(() => undefined);
+    await expect(asAnon("INSERT INTO public.site_settings (key, value) VALUES ('offer_popup_by_visitor', '{}'::jsonb)")).rejects.toThrow();
+    expect(await read()).toEqual(pick);
+
+    // Picking again (new time) and going back to automatic both overwrite the same row.
+    await save({ promotionId: id, since: "2026-11-16T13:00:00.000Z" });
+    expect((await read())?.since).toBe("2026-11-16T13:00:00.000Z");
+    await save({ promotionId: null, since: "2026-11-16T14:00:00.000Z" });
+    expect((await read())?.promotionId).toBeNull();
+    expect((await db.query("SELECT count(*)::int AS n FROM public.site_settings WHERE key = 'offer_popup'")).rows[0]).toEqual({ n: 1 });
+  });
 });
 
 describe("offer buttons always go somewhere", async () => {

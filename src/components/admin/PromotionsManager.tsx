@@ -6,7 +6,7 @@ import { Selector } from "@astryxdesign/core/Selector";
 import { Switch } from "@astryxdesign/core/Switch";
 import { TextArea } from "@astryxdesign/core/TextArea";
 import { TextInput } from "@astryxdesign/core/TextInput";
-import { Copy, Eye, MousePointerClick, Pencil, Plus, Trash2, Upload } from "lucide-react";
+import { Copy, Eye, Megaphone, MousePointerClick, Pencil, Plus, Trash2, Upload } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DateTimeField, Notice, Panel } from "@/components/admin/kit";
 import { PromoBanner } from "@/components/promo/PromoBanner";
@@ -14,6 +14,7 @@ import { PromoMedia } from "@/components/promo/PromoMedia";
 import { getCached, setCached } from "@/lib/admin/memo-cache";
 import { uploadMedia } from "@/lib/admin/upload-media";
 import type { AdminPromotion, PromoMediaType, PromoPlacement, PromoTheme, Promotion } from "@/lib/data/promotions";
+import type { PopupChoice } from "@/lib/popup-order";
 import type { PublicDepartureAvailability, StaffRole, Trip } from "@/lib/types";
 import { isBookable } from "@/lib/departure-rules";
 
@@ -22,7 +23,7 @@ const PLACEMENTS: { key: PromoPlacement; label: string; hint: string }[] = [
   { key: "top_bar", label: "Top bar on every page", hint: "Thin rotating line above the menu" },
   { key: "trips_banner", label: "All trips page", hint: "Banner above the trip list" },
   { key: "trip_page", label: "Trip pages", hint: "On every trip page, or one trip you pick" },
-  { key: "popup", label: "Pop-up", hint: "Slides up from the bottom on phones (centre on computers), once per visitor, after 8 seconds. With several pop-up offers, the newest shows first." },
+  { key: "popup", label: "Pop-up", hint: "Slides up from the bottom on phones (centre on computers), once per visitor, after 8 seconds. With several pop-up offers the newest shows first, unless you pick one with “Make this the pop-up”." },
 ];
 
 const STATUS = {
@@ -31,6 +32,14 @@ const STATUS = {
   ended: { label: "Ended", variant: "neutral" },
   off: { label: "Off", variant: "neutral" },
 } as const;
+
+/** Why a picked pop-up offer is not showing, in the owner's words. */
+const NOT_LIVE: Record<keyof typeof STATUS, string> = {
+  live: "live",
+  scheduled: "not started yet",
+  ended: "over (its end date has passed)",
+  off: "switched off",
+};
 
 type Draft = Omit<Promotion, "id"> & { id: string | null; isActive: boolean };
 
@@ -74,6 +83,8 @@ type OfferDeparture = Pick<PublicDepartureAvailability, "departureId" | "tripId"
 export function PromotionsManager({ role, trips, departures = [] }: { role: StaffRole; trips: Trip[]; departures?: OfferDeparture[] }) {
   const canEdit = role === "owner" || role === "ops";
   const [rows, setRows] = useState<AdminPromotion[] | null>(() => getCached<AdminPromotion[]>("promotions") ?? null);
+  /** The offer picked to pop up: undefined = not loaded yet, null = automatic (newest first). */
+  const [choice, setChoice] = useState<PopupChoice | null | undefined>(() => getCached<PopupChoice | null>("popupChoice"));
   const [draft, setDraft] = useState<Draft | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
@@ -83,8 +94,11 @@ export function PromotionsManager({ role, trips, departures = [] }: { role: Staf
     const res = await fetch("/api/admin/promotions", { cache: "no-store" });
     const json = await res.json().catch(() => ({}));
     if (res.ok) {
+      const picked = (json.popupChoice as PopupChoice | null | undefined) ?? null;
       setRows(json.promotions as AdminPromotion[]);
+      setChoice(picked);
       setCached("promotions", json.promotions);
+      setCached("popupChoice", picked);
     } else setNotice({ kind: "error", text: json.error || "Could not load offers." });
   }, []);
 
@@ -145,6 +159,19 @@ export function PromotionsManager({ role, trips, departures = [] }: { role: Staf
 
   const live = (rows ?? []).filter((r) => statusOf(r) === "live").length;
 
+  // The offer picked to pop up. A pick only counts while that offer is live; otherwise the pop-up is automatic.
+  const pickedRow = choice ? ((rows ?? []).find((r) => r.id === choice.promotionId) ?? null) : null;
+  const pickedLive = pickedRow !== null && statusOf(pickedRow) === "live";
+  const pickPopupOffer = (p: AdminPromotion, again: boolean) =>
+    void send(
+      { action: "popup_choice", id: p.id },
+      again
+        ? `“${p.title}” will pop up once more for every visitor. The website updates within a minute.`
+        : `“${p.title}” is now the pop-up: only it pops up, once for each visitor. The website updates within a minute.`
+    );
+  const automaticPopup = () =>
+    void send({ action: "popup_choice", id: null }, "Pop-up is automatic again: the newest offer with “Pop-up” ticked shows first.");
+
   return (
     <div className="space-y-5">
       <Panel
@@ -153,11 +180,44 @@ export function PromotionsManager({ role, trips, departures = [] }: { role: Staf
         actions={canEdit ? <Button variant="primary" label="New offer" icon={<Plus className="h-4 w-4" />} onClick={() => setDraft(blank())} /> : undefined}
       >
         {notice && <Notice kind={notice.kind}>{notice.text}</Notice>}
+        <div className="space-y-2 rounded-xl border border-stone-200 bg-[#f7fbf9] px-3 py-3 text-xs text-stone-600" data-popup-pick>
+          <p className="text-sm font-semibold text-ink-900">Which offer pops up?</p>
+          {choice === undefined || rows === null ? (
+            <p>Checking…</p>
+          ) : pickedRow && pickedLive ? (
+            <>
+              <p>
+                <strong className="text-ink-900">“{pickedRow.title}”</strong> (you picked it on {when(choice?.since ?? null)}). Only this offer pops up, and
+                each visitor sees it once. The other offers stay in their banners.
+              </p>
+              {canEdit && (
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" label="Show it again to everyone" isDisabled={busy} onClick={() => pickPopupOffer(pickedRow, true)} />
+                  <Button size="sm" label="Back to automatic" isDisabled={busy} onClick={automaticPopup} />
+                </div>
+              )}
+            </>
+          ) : choice ? (
+            <>
+              {pickedRow ? (
+                <p>
+                  You picked <strong className="text-ink-900">“{pickedRow.title}”</strong>, but it is {NOT_LIVE[statusOf(pickedRow)]}. Until it is live
+                  the pop-up is automatic: the newest offer with “Pop-up” ticked shows first.
+                </p>
+              ) : (
+                <p>The offer you picked is no longer here, so the pop-up is automatic: the newest offer with “Pop-up” ticked shows first.</p>
+              )}
+              {canEdit && <Button size="sm" label="Back to automatic" isDisabled={busy} onClick={automaticPopup} />}
+            </>
+          ) : (
+            <p>
+              Automatic: the newest offer with “Pop-up” ticked shows first, one per page, and each visitor sees each one once. To choose one offer
+              yourself, press <strong className="text-ink-900">Make this the pop-up</strong> on it below.
+            </p>
+          )}
+        </div>
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-stone-200 bg-[#f7fbf9] px-3 py-2 text-xs text-stone-600">
-          <span>
-            Each visitor sees each pop-up once, newest offer first, one per page. A phone and a computer remember separately. Already seen it on this
-            phone or computer?
-          </span>
+          <span>A phone and a computer each remember what they have shown. Already seen a pop-up on this phone or computer?</span>
           <button
             type="button"
             onClick={() => {
@@ -196,8 +256,13 @@ export function PromotionsManager({ role, trips, departures = [] }: { role: Staf
                   <li key={p.id} className="overflow-hidden rounded-2xl border border-stone-200 bg-white">
                     <div className="relative aspect-[16/7] w-full">
                       <PromoMedia promo={p} sizes="(min-width: 768px) 40vw, 100vw" />
-                      <span className="absolute top-2 left-2">
+                      <span className="absolute top-2 left-2 flex flex-wrap gap-1.5">
                         <Badge variant={STATUS[st].variant} label={STATUS[st].label} />
+                        {choice?.promotionId === p.id && st === "live" && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-copper-600 px-2.5 py-0.5 text-[11px] font-bold text-white shadow-sm">
+                            <Megaphone className="h-3 w-3" aria-hidden="true" /> Pop-up now
+                          </span>
+                        )}
                       </span>
                     </div>
                     <div className="space-y-2 p-4 text-sm">
@@ -216,6 +281,15 @@ export function PromotionsManager({ role, trips, departures = [] }: { role: Staf
                       </p>
                       {canEdit && (
                         <div className="flex flex-wrap gap-2 pt-1">
+                          {st === "live" && (
+                            <Button
+                              size="sm"
+                              label={choice?.promotionId === p.id ? "Show again to everyone" : "Make this the pop-up"}
+                              icon={<Megaphone className="h-3.5 w-3.5" />}
+                              isDisabled={busy || choice === undefined}
+                              onClick={() => pickPopupOffer(p, choice?.promotionId === p.id)}
+                            />
+                          )}
                           <Button size="sm" label="Edit" icon={<Pencil className="h-3.5 w-3.5" />} onClick={() => setDraft({ ...p })} />
                           <Button
                             size="sm"
@@ -260,6 +334,7 @@ export function PromotionsManager({ role, trips, departures = [] }: { role: Staf
             trips={trips}
             departures={departures}
             busy={busy}
+            isPickedPopup={draft.id !== null && choice?.promotionId === draft.id}
             onSave={async () => {
               const ok = await send(
                 { action: "save", promotion: toInput(draft) },
@@ -286,6 +361,7 @@ function Editor({
   trips,
   departures,
   busy,
+  isPickedPopup,
   onSave,
 }: {
   draft: Draft;
@@ -293,6 +369,8 @@ function Editor({
   trips: Trip[];
   departures: OfferDeparture[];
   busy: boolean;
+  /** This offer is the one picked with "Make this the pop-up": it pops up whether or not "Pop-up" is ticked. */
+  isPickedPopup: boolean;
   onSave: () => Promise<void>;
 }) {
   const [uploading, setUploading] = useState<"media" | "poster" | "wide" | null>(null);
@@ -518,10 +596,16 @@ function Editor({
               );
             })}
           </div>
-          {!draft.placements.includes("popup") && (
-            <p role="status" className="rounded-xl bg-[#fff4e0] px-3 py-2 text-xs font-semibold text-[#8a4b00]">
-              “Pop-up” is not ticked: this offer will not slide up on phones. Tick it to show the offer to visitors after a few seconds.
+          {isPickedPopup ? (
+            <p role="status" className="rounded-xl bg-lagoon-100 px-3 py-2 text-xs font-semibold text-forest-900">
+              This offer is the picked pop-up (“Make this the pop-up”): while it is live, only it pops up, whether or not “Pop-up” is ticked here.
             </p>
+          ) : (
+            !draft.placements.includes("popup") && (
+              <p role="status" className="rounded-xl bg-[#fff4e0] px-3 py-2 text-xs font-semibold text-[#8a4b00]">
+                “Pop-up” is not ticked: this offer will not slide up on phones. Tick it to show the offer to visitors after a few seconds.
+              </p>
+            )
           )}
           {draft.placements.includes("trip_page") && (
             <p className="text-xs text-stone-600">

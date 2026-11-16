@@ -351,6 +351,8 @@ export const promotionSchema = z
 export const promotionActionSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("save"), promotion: promotionSchema }),
   z.object({ action: z.literal("delete"), id: z.string().uuid() }),
+  // Which offer pops up: one offer's id, or null = automatic (newest first).
+  z.object({ action: z.literal("popup_choice"), id: z.string().uuid().nullable() }),
 ]);
 
 // ---------------------------------------------------------------------------

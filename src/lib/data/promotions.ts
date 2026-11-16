@@ -5,6 +5,7 @@
  * Without a database (preview mode) offers live in memory so the screens can be tried.
  */
 import { isServiceRoleConfigured, isSupabaseConfigured } from "@/lib/env";
+import { cleanPopupChoice, type PopupChoice } from "@/lib/popup-order";
 import { createSupabaseAdminClient, createSupabasePublicClient } from "@/lib/supabase/server";
 import type { StaffRole } from "@/lib/types";
 
@@ -127,11 +128,41 @@ function byOrder(a: Promotion, b: Promotion): number {
 // Preview store (no database)
 // ---------------------------------------------------------------------------
 
-const preview: AdminPromotion[] = [];
+/**
+ * Kept on globalThis (like demo-store.ts): the dev server loads this file once for the admin API and
+ * once for the website pages, and both must see the same offers and the same pop-up pick.
+ */
+const globalForPreview = globalThis as unknown as {
+  __sanchariPreviewOffers?: { offers: AdminPromotion[]; popupChoice: PopupChoice | null };
+};
+const previewState = (globalForPreview.__sanchariPreviewOffers ??= { offers: [], popupChoice: null });
+const preview: AdminPromotion[] = previewState.offers;
+
+/** Site setting that holds the owner's pop-up pick (site_settings is key → JSON: no migration needed). */
+const POPUP_CHOICE_KEY = "offer_popup";
 
 // ---------------------------------------------------------------------------
 // Public
 // ---------------------------------------------------------------------------
+
+/**
+ * The offer the owner picked to pop up (Admin → Offers & ads → "Make this the pop-up"), or null when
+ * the pop-up is automatic. Never throws: if it cannot be read the pop-up is automatic.
+ */
+export async function getPopupChoice(): Promise<PopupChoice | null> {
+  if (!hasDatabase()) return previewState.popupChoice;
+  try {
+    const { data, error } = await createSupabasePublicClient().from("site_settings").select("value").eq("key", POPUP_CHOICE_KEY).maybeSingle();
+    if (error) {
+      console.error("[promotions] pop-up pick could not be read:", error.message);
+      return null;
+    }
+    return cleanPopupChoice(data?.value);
+  } catch (err) {
+    console.error("[promotions] pop-up pick could not be read:", err instanceof Error ? err.message : err);
+    return null;
+  }
+}
 
 /** Every offer live right now (the website filters by placement). Never throws. */
 export async function getLivePromotions(): Promise<Promotion[]> {
@@ -304,6 +335,7 @@ export async function deletePromotion(id: string, actor: Actor): Promise<void> {
   if (!hasDatabase()) {
     const i = preview.findIndex((p) => p.id === id);
     if (i >= 0) preview.splice(i, 1);
+    if (previewState.popupChoice?.promotionId === id) previewState.popupChoice = null;
     return;
   }
   const admin = createSupabaseAdminClient();
@@ -318,4 +350,50 @@ export async function deletePromotion(id: string, actor: Actor): Promise<void> {
     entity_id: id,
     reason: `Deleted: ${String(data.title)}`,
   });
+  // A deleted offer cannot stay the picked pop-up: back to automatic. (Even if this fails the website
+  // is fine: a pick whose offer is not live is ignored.)
+  try {
+    if ((await getPopupChoice())?.promotionId === id) await setPopupChoice(null, actor);
+  } catch (err) {
+    console.error("[promotions] could not clear the pop-up pick of a deleted offer:", err instanceof Error ? err.message : err);
+  }
+}
+
+/**
+ * Pick the one offer that pops up (its id), or go back to automatic (null). Picking the same offer
+ * again is allowed and useful: the new time makes it pop up once more for every visitor.
+ */
+export async function setPopupChoice(promotionId: string | null, actor: Actor): Promise<PopupChoice | null> {
+  const since = new Date().toISOString();
+  if (!hasDatabase()) {
+    if (promotionId && !preview.some((p) => p.id === promotionId)) throw new Error("NOT_FOUND: That offer no longer exists.");
+    previewState.popupChoice = promotionId ? { promotionId, since } : null;
+    return previewState.popupChoice;
+  }
+  const admin = createSupabaseAdminClient();
+  let title = "";
+  if (promotionId) {
+    const { data, error } = await admin.from("promotions").select("title").eq("id", promotionId).maybeSingle();
+    if (error) throw new Error("Could not read that offer.");
+    if (!data) throw new Error("NOT_FOUND: That offer no longer exists.");
+    title = String(data.title);
+  }
+  const { data: before } = await admin.from("site_settings").select("value").eq("key", POPUP_CHOICE_KEY).maybeSingle();
+  const value = { promotionId, since };
+  const { error } = await admin.from("site_settings").upsert({ key: POPUP_CHOICE_KEY, value, updated_by: actor.userId, updated_at: since });
+  if (error) {
+    console.error("[promotions] pop-up pick could not be saved:", error.message);
+    throw new Error("Could not save which offer pops up.");
+  }
+  await admin.from("audit_logs").insert({
+    actor_user_id: actor.userId,
+    actor_role: actor.staffRole,
+    action: promotionId ? "offer_popup_picked" : "offer_popup_automatic",
+    entity_type: "site_settings",
+    entity_id: POPUP_CHOICE_KEY,
+    reason: promotionId ? `Pop-up: ${title}` : "Pop-up back to automatic",
+    before_state: before?.value ?? null,
+    after_state: value,
+  });
+  return cleanPopupChoice(value);
 }

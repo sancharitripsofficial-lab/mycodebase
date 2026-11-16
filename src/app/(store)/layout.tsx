@@ -7,7 +7,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { WhatsAppFloat } from "@/components/WhatsAppFloat";
 import { displayPhone, mergeAssistantSettings } from "@/lib/assistant/settings";
-import { forPlacement, getLivePromotions } from "@/lib/data/promotions";
+import { forPlacement, getLivePromotions, getPopupChoice } from "@/lib/data/promotions";
 import { getSiteSettings } from "@/lib/data/repository";
 import { buildClickToWhatsAppUrl } from "@/lib/messaging/provider";
 
@@ -16,7 +16,11 @@ export const revalidate = 60;
 
 /** Customer-facing storefront chrome. The admin panel never uses this layout or links. */
 export default async function StoreLayout({ children }: { children: React.ReactNode }) {
-  const [{ isDemoFallback, settings }, promotions] = await Promise.all([getSiteSettings(), getLivePromotions()]);
+  const [{ isDemoFallback, settings }, promotions, popupChoice] = await Promise.all([getSiteSettings(), getLivePromotions(), getPopupChoice()]);
+  // The offer the owner picked to pop up (Admin → Offers & ads), only while that offer is live.
+  // With a pick, only that offer pops up; without one the pop-up is automatic (newest first).
+  const pickedOffer = popupChoice ? promotions.find((p) => p.id === popupChoice.promotionId) : undefined;
+  const pickedPopup = pickedOffer && popupChoice ? { promo: pickedOffer, since: popupChoice.since } : null;
   const message = "Hi Sanchari team, I have a question about an upcoming trip.";
   // Number set in Admin → Text & policies → Social & WhatsApp wins over the env fallback.
   const whatsappUrl = settings.socialLinks.whatsappNumber
@@ -59,7 +63,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
       <SiteFooter social={settings.socialLinks} brand={settings.brandIdentity} />
       {whatsappUrl && <WhatsAppFloat href={whatsappUrl} />}
       {chatConfig && <LazyChatAssistant config={chatConfig} />}
-      <PromoPopup promotions={forPlacement(promotions, "popup")} />
+      <PromoPopup promotions={forPlacement(promotions, "popup")} picked={pickedPopup} />
     </div>
     </LanguageProvider>
   );
