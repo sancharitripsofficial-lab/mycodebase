@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, CalendarDays, Car, IndianRupee, MapPin, Route, ShieldCheck, Users } from "lucide-react";
 import { PageBanner } from "@/components/banners/PageBanner";
+import { GuideLinks } from "@/components/guide/GuideParts";
 import { TripCard } from "@/components/TripCard";
+import { GUIDE_HUB, guidePagesOfKind } from "@/lib/places/guide";
 import { formatINR } from "@/lib/currency";
 import { getPublishedTripsWithDetails, getSiteSettings } from "@/lib/data/repository";
 import {
@@ -195,6 +197,21 @@ export default async function KarnatakaTourPackagesPage() {
                 <span>Pay by UPI straight to us; your booking shows in My Booking.</span>
               </li>
             </ul>
+          </section>
+
+          <section aria-labelledby="regions-heading" className="space-y-5">
+            <h2 id="regions-heading" className="font-display text-2xl font-semibold text-forest-900 sm:text-3xl">
+              Explore Karnataka by region
+            </h2>
+            <p className="max-w-3xl text-[1.02rem] leading-relaxed text-ink-900">
+              Our guide lists places to visit in every district of Karnataka. For a place without a listed trip, ask us for a custom trip.
+            </p>
+            <GuideLinks
+              links={[
+                ...guidePagesOfKind("region").map((r) => ({ href: r.path, label: r.name, count: r.places.length })),
+                { href: GUIDE_HUB.path, label: GUIDE_HUB.name },
+              ]}
+            />
           </section>
 
           {faqs.length > 0 && (

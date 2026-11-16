@@ -22,24 +22,29 @@ export function EnquiryForm({
   tripTitle,
   defaultKind = "private_date",
   compact = false,
+  defaultPlace,
 }: {
   tripId?: string | null;
   tripTitle?: string;
   defaultKind?: Kind;
   compact?: boolean;
+  /** A place this page is about (Karnataka guide pages): the form starts as "Custom trip" with "I'd like a trip to <place>." */
+  defaultPlace?: string;
 }) {
-  const [kind, setKind] = useState<Kind>(defaultKind);
+  const startPlace = tripId ? "" : cleanPlaceText(defaultPlace);
+  const startLine = startPlace ? planMessageFor(startPlace) : "";
+  const [kind, setKind] = useState<Kind>(startPlace ? "custom_trip" : defaultKind);
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [preferredDates, setPreferredDates] = useState("");
   const [groupSize, setGroupSize] = useState("");
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState(startLine);
   const [website, setWebsite] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
-  const lastPrefill = useRef("");
+  const lastPrefill = useRef(startLine);
 
   // "Ask us to plan <place>" from the trips search (same page) or a ?place= link (e.g. /?place=Hampi#plan):
   // switch to Custom trip and start the message with the place. Never overwrites what the visitor typed.

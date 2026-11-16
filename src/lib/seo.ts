@@ -95,6 +95,26 @@ export const PAGE_SEO = {
     description:
       "Travel creators with a real audience can earn discounts or free seats on Sanchari Trips road trips from Bengaluru. Apply, get verified, travel and share.",
   },
+  // The one page that is about weekends on purpose (people search "weekend trips from Bangalore").
+  // It says plainly that trips also run on other days: the brand itself is never "weekend-only".
+  weekend: {
+    path: "/weekend-trips-from-bangalore",
+    title: "Weekend Trips from Bangalore: Trip Planner",
+    description:
+      "Weekend trips from Bangalore planned by Sanchari Trips: one 6-seat car, max 6 travellers. Join a scheduled date or ask for a private car on your own dates.",
+  },
+  privateCar: {
+    path: "/private-car-trips",
+    title: "Private 6-Seat Car Trips from Bangalore",
+    description:
+      "Book the whole 6-seat car for your family or friends. Pick a listed date with all six seats open, or ask for a private or custom trip on your own dates.",
+  },
+  offers: {
+    path: "/offers",
+    title: "Current Trip Offers from Bangalore",
+    description:
+      "Current offers from Sanchari Trips on small-group road trips from Bengaluru in a 6-seat car, max 6 travellers. This page lists every offer running today.",
+  },
   trips: { path: "/trips", title: "Upcoming Road Trips from Bangalore" },
   packages: { path: "/karnataka-tour-packages", title: "Karnataka Tour Packages from Bangalore" },
   bookingLookup: {
@@ -555,6 +575,36 @@ export function tripListJsonLd(name: string, trips: readonly Pick<TripWithDetail
       position: i + 1,
       url: absoluteUrl(`/trips/${trip.slug}`),
       name: trip.title,
+    })),
+  };
+}
+
+/**
+ * The places of a Karnataka guide page (/karnataka/…) as a list of tourist attractions: the name,
+ * the one-line fact and the district, exactly as the page shows them. At most `max` are listed so
+ * the page stays light; numberOfItems is the number listed here.
+ */
+export function guideListJsonLd(
+  name: string,
+  places: readonly { name: string; blurb: string; district: string; categories: readonly string[] }[],
+  max = 60
+) {
+  const listed = places.slice(0, max);
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name,
+    numberOfItems: listed.length,
+    itemListElement: listed.map((p, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      item: {
+        // A town is a place, not an attraction.
+        "@type": p.categories[0] === "city_town" ? "Place" : "TouristAttraction",
+        name: p.name,
+        description: p.blurb,
+        containedInPlace: { "@type": "AdministrativeArea", name: `${p.district} district, Karnataka, India` },
+      },
     })),
   };
 }

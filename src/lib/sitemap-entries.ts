@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { visiblePosts } from "@/lib/blog";
+import { GUIDE_HUB, GUIDE_PAGES, GUIDE_UPDATED_ON } from "@/lib/places/guide";
 import type { TripWithDetails } from "@/lib/types";
 import type { BlogPost } from "@/lib/blog";
 
@@ -8,6 +9,9 @@ export const STATIC_SITEMAP_ROUTES = [
   "",
   "/trips",
   "/karnataka-tour-packages",
+  "/weekend-trips-from-bangalore",
+  "/private-car-trips",
+  "/offers",
   "/blog",
   "/about",
   "/safety",
@@ -29,7 +33,8 @@ const newest = (dates: (Date | null)[]): Date | null =>
 /**
  * The sitemap entries, from data already loaded (pure, so tests can check it):
  * only canonical 200 URLs, the CURRENT slug of each published trip (old slugs redirect and are
- * never listed), every visible blog post, and lastModified only from real dates.
+ * never listed), every visible blog post, the Karnataka guide pages, and lastModified only from
+ * real dates.
  */
 export function buildSitemap(input: {
   baseUrl: string;
@@ -66,6 +71,14 @@ export function buildSitemap(input: {
     priority: 0.9,
   }));
 
+  // The Karnataka guide: its facts change only when the place list does (GUIDE_UPDATED_ON, a real day).
+  const guideRoutes = [GUIDE_HUB.path, ...GUIDE_PAGES.map((p) => p.path)].map((path) => ({
+    url: `${baseUrl}${path}`,
+    lastModified: GUIDE_UPDATED_ON,
+    changeFrequency: "monthly" as const,
+    priority: path === GUIDE_HUB.path ? 0.8 : 0.7,
+  }));
+
   const blogRoutes = posts.map((p) => ({
     url: `${baseUrl}/blog/${p.id}`,
     lastModified: new Date(`${p.publishedOn}T12:00:00Z`),
@@ -73,5 +86,24 @@ export function buildSitemap(input: {
     priority: 0.6,
   }));
 
-  return [...staticRoutes, ...tripRoutes, ...blogRoutes];
+  return [...staticRoutes, ...tripRoutes, ...guideRoutes, ...blogRoutes];
+}
+
+const xmlEscape = (text: string) =>
+  text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
+
+/** The sitemap as XML (sitemaps.org 0.9). A date given as a plain day ("2026-11-16") is printed as that day. */
+export function sitemapXml(entries: MetadataRoute.Sitemap): string {
+  const rows = entries.map((e) => {
+    const lastmod = e.lastModified ? (typeof e.lastModified === "string" ? e.lastModified : e.lastModified.toISOString()) : "";
+    return [
+      "<url>",
+      `<loc>${xmlEscape(e.url)}</loc>`,
+      lastmod ? `<lastmod>${xmlEscape(lastmod)}</lastmod>` : "",
+      e.changeFrequency ? `<changefreq>${e.changeFrequency}</changefreq>` : "",
+      typeof e.priority === "number" ? `<priority>${e.priority}</priority>` : "",
+      "</url>",
+    ].join("");
+  });
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${rows.join("\n")}\n</urlset>\n`;
 }

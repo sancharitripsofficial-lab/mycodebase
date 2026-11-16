@@ -74,6 +74,10 @@ export function SiteFooter({
           <ul className="space-y-0.5 text-white/80 md:space-y-2">
             <li><Link href="/trips" className="inline-flex min-h-9 items-center hover:text-white md:min-h-0">All departures</Link></li>
             <li><Link href="/karnataka-tour-packages" className="inline-flex min-h-9 items-center hover:text-white md:min-h-0">Karnataka tour packages</Link></li>
+            <li><Link href="/karnataka" className="inline-flex min-h-9 items-center hover:text-white md:min-h-0">Places to visit in Karnataka</Link></li>
+            <li><Link href="/weekend-trips-from-bangalore" className="inline-flex min-h-9 items-center hover:text-white md:min-h-0">Weekend trips from Bangalore</Link></li>
+            <li><Link href="/private-car-trips" className="inline-flex min-h-9 items-center hover:text-white md:min-h-0">Private car trips</Link></li>
+            <li><Link href="/offers" className="inline-flex min-h-9 items-center hover:text-white md:min-h-0">Offers</Link></li>
             <li><Link href="/trips?mode=private" className="inline-flex min-h-9 items-center hover:text-white md:min-h-0">Book the whole car</Link></li>
             <li><Link href="/about" className="inline-flex min-h-9 items-center hover:text-white md:min-h-0">About Sanchari</Link></li>
             <li><Link href="/blog" className="inline-flex min-h-9 items-center hover:text-white md:min-h-0">Blog &amp; trip videos</Link></li>
