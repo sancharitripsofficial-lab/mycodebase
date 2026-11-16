@@ -43,6 +43,8 @@ export interface Promotion {
   startsAt: string | null;
   endsAt: string | null;
   sortOrder: number;
+  /** When staff made the offer. Only used to tell which pop-up offer is the newest (src/lib/popup-order.ts). */
+  createdAt?: string | null;
 }
 
 /** What staff see in the admin. */
@@ -87,6 +89,7 @@ function mapPromotion(r: Record<string, unknown>): Promotion {
     startsAt: (r.starts_at as string | null) ?? null,
     endsAt: (r.ends_at as string | null) ?? null,
     sortOrder: Number(r.sort_order ?? 0),
+    createdAt: typeof r.created_at === "string" ? r.created_at : null,
   };
 }
 
@@ -146,14 +149,33 @@ export async function getLivePromotions(): Promise<Promotion[]> {
       console.error("[promotions] live list failed:", error.message);
       return [];
     }
-    return (data ?? [])
+    const live = (data ?? [])
       .map((r) => mapPromotion(r as unknown as Record<string, unknown>))
       .filter((p) => isLiveNow({ ...p, isActive: true }))
       .sort(byOrder);
+    const made = await createdAtOf(live.map((p) => p.id));
+    return live.map((p) => ({ ...p, createdAt: made.get(p.id) ?? null }));
   } catch (err) {
     console.error("[promotions] live list failed:", err);
     return [];
   }
+}
+
+/**
+ * When each of these (live) offers was made. Visitors may read the display columns only, so this one
+ * value comes through the server key. If it cannot be read, offers are ordered by start time alone.
+ */
+async function createdAtOf(ids: string[]): Promise<Map<string, string>> {
+  const made = new Map<string, string>();
+  if (ids.length === 0) return made;
+  try {
+    const { data, error } = await createSupabaseAdminClient().from("promotions").select("id, created_at").in("id", ids);
+    if (error) throw new Error(error.message);
+    for (const r of data ?? []) if (typeof r.created_at === "string") made.set(String(r.id), r.created_at);
+  } catch (err) {
+    console.error("[promotions] made-on lookup failed:", err instanceof Error ? err.message : err);
+  }
+  return made;
 }
 
 export function forPlacement(list: Promotion[], placement: PromoPlacement, tripId?: string | null): Promotion[] {

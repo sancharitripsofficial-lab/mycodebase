@@ -22,7 +22,7 @@ const PLACEMENTS: { key: PromoPlacement; label: string; hint: string }[] = [
   { key: "top_bar", label: "Top bar on every page", hint: "Thin rotating line above the menu" },
   { key: "trips_banner", label: "All trips page", hint: "Banner above the trip list" },
   { key: "trip_page", label: "Trip pages", hint: "On every trip page, or one trip you pick" },
-  { key: "popup", label: "Pop-up", hint: "Slides up from the bottom on phones (centre on computers), once per visitor, after 8 seconds" },
+  { key: "popup", label: "Pop-up", hint: "Slides up from the bottom on phones (centre on computers), once per visitor, after 8 seconds. With several pop-up offers, the newest shows first." },
 ];
 
 const STATUS = {
@@ -154,7 +154,10 @@ export function PromotionsManager({ role, trips, departures = [] }: { role: Staf
       >
         {notice && <Notice kind={notice.kind}>{notice.text}</Notice>}
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-stone-200 bg-[#f7fbf9] px-3 py-2 text-xs text-stone-600">
-          <span>Each visitor sees each pop-up once. Already seen it on this phone or computer?</span>
+          <span>
+            Each visitor sees each pop-up once, newest offer first, one per page. A phone and a computer remember separately. Already seen it on this
+            phone or computer?
+          </span>
           <button
             type="button"
             onClick={() => {
@@ -316,6 +319,7 @@ function Editor({
     { value: "/trips", label: "All trips" },
     { value: "/trips?mode=private", label: "Private car page" },
     { value: "/trips#ask", label: "Ask us form" },
+    { value: "/blog", label: "Blog" },
     ...trips.filter((t) => t.id !== offerTrip?.id).map((t) => ({ value: tripBookingLink(t.slug), label: `Trip: ${t.title} (dates & booking)` })),
     { value: "custom", label: "Other link…" },
   ];
@@ -531,7 +535,7 @@ function Editor({
 
         <TextInput
           label="Order"
-          description="Lower numbers show first when several offers share a place."
+          description="Lower numbers show first when several offers share a place. Pop-ups show the newest offer first."
           value={String(draft.sortOrder)}
           onChange={(v) => set("sortOrder", Math.max(-1000, Math.min(1000, Math.round(Number(v.replace(/[^\d-]/g, "")) || 0))))}
         />

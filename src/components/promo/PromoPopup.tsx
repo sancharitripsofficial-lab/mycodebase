@@ -4,6 +4,7 @@ import { X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import type { Promotion } from "@/lib/data/promotions";
+import { nextPopup } from "@/lib/popup-order";
 import { PromoCta } from "./PromoBanner";
 import { PromoMedia } from "./PromoMedia";
 import { THEME_BG, trackPromo } from "./track";
@@ -13,7 +14,10 @@ const SEEN = (id: string) => `promo-popup:${id}`;
 const QUIET_PATHS = ["/booking-lookup"];
 
 /**
- * One offer pop-up per visit, at most once per offer per visitor (remembered in the browser).
+ * Offer pop-up: each offer shows at most once per visitor (remembered in that browser, so a phone
+ * and a laptop each keep their own memory), one offer per page. The newest offer this browser has
+ * not shown comes first (src/lib/popup-order.ts), so a new offer shows on every device at its next
+ * page instead of waiting behind older offers.
  * Appears after 8 s or when the visitor has scrolled a third of the page; bottom sheet on phones.
  */
 export function PromoPopup({ promotions }: { promotions: Promotion[] }) {
@@ -27,7 +31,7 @@ export function PromoPopup({ promotions }: { promotions: Promotion[] }) {
     if (promotions.length === 0 || QUIET_PATHS.some((p) => pathname.startsWith(p))) return;
     let next: Promotion | undefined;
     try {
-      next = promotions.find((p) => !localStorage.getItem(SEEN(p.id)));
+      next = nextPopup(promotions, (id) => Boolean(localStorage.getItem(SEEN(id))));
     } catch {
       next = undefined; // storage blocked: don't risk showing it on every page
     }
