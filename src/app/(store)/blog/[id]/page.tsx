@@ -9,7 +9,7 @@ import { PageCanvas } from "@/components/PageCanvas";
 import { getPublishedTripsWithDetails, getSiteSettings } from "@/lib/data/repository";
 import { blogPostingJsonLd, breadcrumbJsonLd, clip, jsonLdText, pageMetadata, sameTripSlug } from "@/lib/seo";
 
-export const revalidate = 60;
+export const revalidate = 300;
 
 const DATE = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
 

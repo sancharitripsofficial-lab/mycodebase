@@ -2,12 +2,17 @@
 
 import "@/styles/astryx-components.css";
 import { Badge } from "@astryxdesign/core/Badge";
-import { AlertCircle, Car, CheckCircle2, MessageCircle, Phone, Search, ShieldCheck } from "lucide-react";
-import { useEffect, useState } from "react";
+import { AlertCircle, Car, CheckCircle2, MessageCircle, Pencil, Phone, Search, ShieldCheck, UserRound } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { ErtigaSeatMap } from "@/components/booking/ErtigaSeatMap";
+import { TravellerDetailsForm } from "@/components/TravellerDetailsForm";
 import { UpiPayPanel } from "@/components/UpiPayPanel";
 import { WhatsAppChannelCta } from "@/components/WhatsAppChannelCta";
+import { rupees, trackOnce } from "@/lib/analytics";
 import { formatINR } from "@/lib/currency";
+import { travelerIsComplete } from "@/lib/traveler-details";
+import { formatTripDates, formatTripDay } from "@/lib/trip-dates";
+import { visibleDepartureCode } from "@/lib/trip-facts";
 import type { CustomerPaymentView } from "@/lib/payments/customer-view";
 import type { CustomerBookingView, CustomerPaymentSummary } from "@/lib/types";
 
@@ -24,9 +29,15 @@ const PAYMENT_STATUS: Record<
   refunded: { label: "Refunded", variant: "warning" },
 };
 
+const ROOM_LABEL: Record<string, string> = {
+  shared_same_gender: "Shared same-gender room",
+  private_room_request: "Private room, if available",
+  couple_friends_room_request: "Room with partner or friends",
+};
+
 const BOOKING_STATUS_LABEL: Record<string, string> = {
   pending_payment: "Waiting for payment",
-  deposit_paid: "Deposit paid",
+  deposit_paid: "Advance paid",
   confirmed: "Confirmed",
   cancel_requested: "Cancellation requested",
   cancelled: "Cancelled",
@@ -53,6 +64,19 @@ export function BookingLookupClient({
   const [requestType, setRequestType] = useState<"reschedule" | "cancel">("reschedule");
   const [requestReason, setRequestReason] = useState("");
   const [requestNotice, setRequestNotice] = useState<string | null>(null);
+  // Step 2 of booking: the traveller details form (open by itself until the details are complete).
+  const [editingTravellers, setEditingTravellers] = useState(false);
+  const [travellersSaved, setTravellersSaved] = useState(false);
+  const travellersRef = useRef<HTMLDivElement | null>(null);
+  const scrolledToTravellers = useRef(false);
+
+  // Links from the booking box end in #travellers: bring step 2 into view once the booking has loaded.
+  useEffect(() => {
+    if (!bookingView || scrolledToTravellers.current || window.location.hash !== "#travellers") return;
+    scrolledToTravellers.current = true;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.requestAnimationFrame(() => travellersRef.current?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" }));
+  }, [bookingView]);
 
   async function runLookup(ref: string, mail: string, token?: string) {
     setLoading(true);
@@ -187,9 +211,14 @@ export function BookingLookupClient({
               <h2 className="font-display text-2xl font-semibold text-forest-900">
                 {bookingView.trip.title}
               </h2>
-              <p className="text-xs text-stone-600">
-                {bookingView.departure.departureCode} • {bookingView.departure.startDate} to{" "}
-                {bookingView.departure.endDate}
+              <p className="text-sm text-stone-600">
+                {formatTripDates(bookingView.departure.startDate, bookingView.departure.endDate, { weekday: true })}
+                {visibleDepartureCode(bookingView.departure) && (
+                  <span className="text-xs" data-no-translate>
+                    {" "}
+                    • {visibleDepartureCode(bookingView.departure)}
+                  </span>
+                )}
               </p>
             </div>
             <span className="rounded-full bg-forest-900 px-3.5 py-1 text-xs font-semibold uppercase tracking-wide text-cream-50">
@@ -207,7 +236,7 @@ export function BookingLookupClient({
                       <p className="font-semibold text-ink-900">
                         {formatINR(p.amountPaise)}{" "}
                         <span className="font-normal text-stone-600">
-                          • {p.paymentType === "deposit" ? "Deposit" : p.paymentType === "balance" ? "Balance" : "Full payment"}
+                          • {p.paymentType === "deposit" ? "Advance" : p.paymentType === "balance" ? "Balance" : "Full payment"}
                           {p.utrMasked ? ` • UPI ref ${p.utrMasked}` : ""}
                         </span>
                       </p>
@@ -250,15 +279,24 @@ export function BookingLookupClient({
                     ? "Already paid?"
                     : "Complete payment by UPI"
               }
-              onSubmitted={() =>
-                void runLookup(bookingView.booking.bookingReference, bookingView.booking.customerEmail)
-              }
+              onSubmitted={(result) => {
+                if (bookingView.booking.amountPaidPaise === 0) {
+                  trackOnce(bookingView.booking.bookingReference, "purchase", {
+                    transaction_id: bookingView.booking.bookingReference,
+                    currency: "INR",
+                    value: rupees(result.amountPaise),
+                    booking_total: rupees(bookingView.booking.totalPaise),
+                    payment_status: "payment_sent",
+                  });
+                }
+                void runLookup(bookingView.booking.bookingReference, bookingView.booking.customerEmail);
+              }}
             />
           )}
 
           <dl className="grid gap-4 sm:grid-cols-4 text-sm">
             <div>
-              <dt className="text-xs text-stone-600">Seats Allocated</dt>
+              <dt className="text-xs text-stone-600">Your seats</dt>
               <dd className="font-semibold text-ink-900">
                 {bookingView.seatNumbers && bookingView.seatNumbers.length > 0
                   ? `Seat ${bookingView.seatNumbers.join(", ")}`
@@ -267,19 +305,23 @@ export function BookingLookupClient({
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-stone-600">Total Snapshot</dt>
+              <dt className="text-xs text-stone-600">Total</dt>
               <dd className="font-semibold text-ink-900">
                 {formatINR(bookingView.booking.totalPaise)}
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-stone-600">Amount Paid</dt>
+              <dt className="text-xs text-stone-600">Paid</dt>
               <dd className="font-semibold text-forest-700">
                 {formatINR(bookingView.booking.amountPaidPaise)}
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-stone-600">Balance Due</dt>
+              <dt className="text-xs text-stone-600">
+                {bookingView.booking.status === "deposit_paid" && bookingView.booking.balanceDueAt
+                  ? `Balance, by ${formatTripDay(bookingView.booking.balanceDueAt.slice(0, 10))}`
+                  : "Still to pay"}
+              </dt>
               <dd className="font-semibold text-ink-900">
                 {formatINR(bookingView.booking.amountDuePaise)}
               </dd>
@@ -355,41 +397,118 @@ export function BookingLookupClient({
           <div className="rounded-xl border border-stone-200 bg-white p-4 space-y-2 text-xs">
             <p className="flex items-center gap-1.5 font-semibold text-forest-900">
               <ShieldCheck className="h-4 w-4 text-forest-700" aria-hidden="true" />
-              Operational Comfort &amp; Pickup Summary
+              Pick-up and requests
             </p>
             <p className="text-stone-600">
-              <strong>Comfort Request Status:</strong> {bookingView.comfortSummaryLabel}
-            </p>
-            <p className="text-stone-600">
-              <strong>Pickup Hub:</strong>{" "}
+              <strong>Pick-up point:</strong>{" "}
               {bookingView.pickupPoint
                 ? `${bookingView.pickupPoint.name} (${bookingView.pickupPoint.pickupTimeLabel})`
-                : "To be assigned"}
+                : "Not chosen yet"}
+            </p>
+            <p className="text-stone-600">
+              <strong>Co-traveller request:</strong> {bookingView.comfortSummaryLabel}
             </p>
           </div>
 
-          <div className="space-y-2">
-            <h3 className="font-display text-lg font-semibold text-forest-900">
-              Your Traveler Roster (Private to Your Booking)
-            </h3>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {bookingView.travelers.map((t) => (
-                <div
-                  key={t.id}
-                  className="rounded-lg border border-stone-200 bg-white p-3 text-xs space-y-1"
-                >
-                  <p className="font-semibold text-ink-900">{t.fullName}</p>
-                  <p className="text-stone-600">
-                    Room request: {t.roomPreference.replace(/_/g, " ")} • Row:{" "}
-                    {t.seatRowRequest.replace(/_/g, " ")}
-                  </p>
-                  <p className="text-stone-600">
-                    Verification status: {t.verificationChecked ? "Checked" : "Pending check"}
-                  </p>
+          {(() => {
+            const open = ["pending_payment", "deposit_paid", "confirmed"].includes(bookingView.booking.status);
+            const complete = Boolean(bookingView.travelerDetailsComplete);
+            const lockedReason = bookingView.travelerDetailsLockedReason ?? null;
+            const canEdit = open && !lockedReason;
+            const showForm = canEdit && (!complete || editingTravellers);
+            // The co-traveller request is asked only where it means something and is still unanswered.
+            const comfort =
+              bookingView.comfortEditable && bookingView.booking.bookingMode === "batch_seats" && bookingView.departure.departureType !== "women_only"
+                ? { preference: bookingView.coTravelerPreference ?? "open_mixed" }
+                : null;
+            return (
+              <div id="travellers" ref={travellersRef} className="scroll-mt-24 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h3 className="flex items-center gap-2 font-display text-lg font-semibold text-forest-900">
+                    <UserRound className="h-5 w-5 text-copper-700" aria-hidden="true" /> Who is travelling
+                  </h3>
+                  {complete ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-[#dcf3e3] px-3 py-1 text-xs font-semibold text-[#12603e]">
+                      <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" /> Details complete
+                    </span>
+                  ) : (
+                    open && <span className="rounded-full bg-[#fff0cc] px-3 py-1 text-xs font-semibold text-[#8a5200]">Step 2: details needed</span>
+                  )}
                 </div>
-              ))}
-            </div>
-          </div>
+
+                {travellersSaved && complete && !showForm && (
+                  <p role="status" className="rounded-2xl bg-[#dcf3e3] px-4 py-3 text-sm text-[#12603e]">
+                    Saved. You are all set. We share the exact pick-up pin and time before the trip, and your driver and car details show here once
+                    our team assigns them.
+                  </p>
+                )}
+
+                {showForm ? (
+                  <>
+                    {!complete && (
+                      <p className="text-sm leading-relaxed text-ink-900/80">
+                        {bookingView.travelers.length === 1
+                          ? "Your seat is reserved. Tell us who is travelling so we can plan rooms, food and the pick-up. Only our team sees this."
+                          : "Your seats are reserved. Tell us who is travelling so we can plan rooms, food and the pick-up. Only our team sees this."}
+                      </p>
+                    )}
+                    <TravellerDetailsForm
+                      key={bookingView.travelers.map((t) => `${t.id}:${t.ageYears ?? ""}`).join("|")}
+                      bookingReference={bookingView.booking.bookingReference}
+                      email={bookingView.booking.customerEmail}
+                      travelers={bookingView.travelers}
+                      leadPhone={bookingView.booking.customerPhone}
+                      pickupOptions={bookingView.pickupOptions ?? []}
+                      pickupPointId={bookingView.booking.pickupPointId}
+                      comfort={comfort}
+                      onSaved={() => {
+                        setEditingTravellers(false);
+                        setTravellersSaved(true);
+                        // The long form closes: keep "Saved" and the traveller list on screen.
+                        void runLookup(bookingView.booking.bookingReference, bookingView.booking.customerEmail).then(() => {
+                          window.requestAnimationFrame(() => travellersRef.current?.scrollIntoView({ behavior: "auto", block: "start" }));
+                        });
+                      }}
+                      onCancel={complete ? () => setEditingTravellers(false) : undefined}
+                    />
+                  </>
+                ) : (
+                  <>
+                    <ul className="grid gap-2 sm:grid-cols-2">
+                      {bookingView.travelers.map((t, i) => (
+                        <li key={t.id} className="space-y-1 rounded-xl border border-stone-200 bg-white p-3 text-xs">
+                          <p className="text-sm font-semibold text-ink-900">
+                            {travelerIsComplete(t) ? t.fullName : `Traveller ${i + 1}: details needed`}
+                            {typeof t.ageYears === "number" && <span className="font-normal text-stone-600">, {t.ageYears}</span>}
+                          </p>
+                          {travelerIsComplete(t) && (
+                            <>
+                              <p className="text-stone-600">{ROOM_LABEL[t.roomPreference] ?? t.roomPreference.replace(/_/g, " ")}</p>
+                              {t.dietaryNotes && <p className="text-stone-600">Needs: {t.dietaryNotes}</p>}
+                              <p className="text-stone-600">ID check: {t.verificationChecked ? "Done" : "At pick-up"}</p>
+                            </>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                    {lockedReason && open && <p className="text-xs text-stone-600">{lockedReason}</p>}
+                    {canEdit && complete && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTravellersSaved(false);
+                          setEditingTravellers(true);
+                        }}
+                        className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-forest-900 px-4 text-xs font-semibold text-forest-900 hover:bg-forest-900 hover:text-cream-50"
+                      >
+                        <Pencil className="h-3.5 w-3.5" aria-hidden="true" /> Change traveller details
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
+            );
+          })()}
 
           <form
             onSubmit={handleRequestChange}
@@ -433,7 +552,7 @@ export function BookingLookupClient({
                   minLength={5}
                   value={requestReason}
                   onChange={(e) => setRequestReason(e.target.value)}
-                  placeholder="Share brief reason or preferred next weekend..."
+                  placeholder="A short reason, or the date you would prefer"
                   className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm"
                 />
               </label>

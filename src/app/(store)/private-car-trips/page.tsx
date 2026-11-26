@@ -10,7 +10,7 @@ import { GUIDE_HUB } from "@/lib/places/guide";
 import { BRAND_NAME, PAGE_SEO, jsonLdText, pageBreadcrumb, pageMetadata } from "@/lib/seo";
 
 // Which dates still have the whole car free changes with every booking.
-export const revalidate = 60;
+export const revalidate = 300;
 
 export const metadata: Metadata = pageMetadata({
   title: PAGE_SEO.privateCar.title,

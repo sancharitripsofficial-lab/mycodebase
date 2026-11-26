@@ -7,7 +7,7 @@ import { Switch } from "@astryxdesign/core/Switch";
 import { TextArea } from "@astryxdesign/core/TextArea";
 import { TextInput } from "@astryxdesign/core/TextInput";
 import { Copy, Eye, Megaphone, MousePointerClick, Pencil, Plus, Trash2, Upload } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DateTimeField, Notice, Panel } from "@/components/admin/kit";
 import { PromoBanner } from "@/components/promo/PromoBanner";
 import { PromoMedia } from "@/components/promo/PromoMedia";
@@ -17,6 +17,7 @@ import type { AdminPromotion, PromoMediaType, PromoPlacement, PromoTheme, Promot
 import type { PopupChoice } from "@/lib/popup-order";
 import type { PublicDepartureAvailability, StaffRole, Trip } from "@/lib/types";
 import { isBookable } from "@/lib/departure-rules";
+import { tripHasOpenDate } from "@/lib/offer-rules";
 
 const PLACEMENTS: { key: PromoPlacement; label: string; hint: string }[] = [
   { key: "home_banner", label: "Home page banner", hint: "Big banner under the opening video" },
@@ -82,6 +83,12 @@ type OfferDeparture = Pick<PublicDepartureAvailability, "departureId" | "tripId"
 
 export function PromotionsManager({ role, trips, departures = [] }: { role: StaffRole; trips: Trip[]; departures?: OfferDeparture[] }) {
   const canEdit = role === "owner" || role === "ops";
+  // Each trip with its dates, to tell which trip offers the website is hiding (lib/offer-rules).
+  // (An unpublished trip is not on the website at all, so it counts as having no open date.)
+  const tripDates = useMemo(
+    () => trips.map((t) => ({ trip: { id: t.id }, departures: t.isPublished ? departures.filter((d) => d.tripId === t.id) : [] })),
+    [trips, departures]
+  );
   const [rows, setRows] = useState<AdminPromotion[] | null>(() => getCached<AdminPromotion[]>("promotions") ?? null);
   /** The offer picked to pop up: undefined = not loaded yet, null = automatic (newest first). */
   const [choice, setChoice] = useState<PopupChoice | null | undefined>(() => getCached<PopupChoice | null>("popupChoice"));
@@ -258,6 +265,8 @@ export function PromotionsManager({ role, trips, departures = [] }: { role: Staf
                       <PromoMedia promo={p} sizes="(min-width: 768px) 40vw, 100vw" />
                       <span className="absolute top-2 left-2 flex flex-wrap gap-1.5">
                         <Badge variant={STATUS[st].variant} label={STATUS[st].label} />
+                        {/* Live, but made for a trip nobody can book right now: the website hides it by itself. */}
+                        {st === "live" && p.tripId && !tripHasOpenDate(p.tripId, tripDates) && <Badge variant="warning" label="Hidden: its trip has no open date" />}
                         {choice?.promotionId === p.id && st === "live" && (
                           <span className="inline-flex items-center gap-1 rounded-full bg-copper-600 px-2.5 py-0.5 text-[11px] font-bold text-white shadow-sm">
                             <Megaphone className="h-3 w-3" aria-hidden="true" /> Pop-up now

@@ -22,7 +22,7 @@ import {
 } from "@/lib/seo";
 
 // Same freshness as the trips page: live trips and prices, refreshed every 60 s.
-export const revalidate = 60;
+export const revalidate = 300;
 
 export async function generateMetadata(): Promise<Metadata> {
   const { trips } = await getPublishedTripsWithDetails();

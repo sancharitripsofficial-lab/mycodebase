@@ -6,6 +6,7 @@ import { isOptimizableImage } from "@/lib/media";
 import { whenScrollIdle } from "@/lib/scroll-idle";
 import type { LivingHandle } from "./engine";
 import { resolveScene } from "./scenes";
+import { useShownWeather } from "./useShownWeather";
 import { fetchLiveWeather, NEUTRAL_WEATHER, seedLiveWeather, watchLiveWeather, weatherTime, type LiveWeather } from "./weather";
 
 export type LivingPhotoProps = {
@@ -165,7 +166,9 @@ export function LivingPhoto({
     };
   }, [scene, variant]);
 
-  const showChip = variant === "hero" && weatherChip && weather?.live;
+  // Only a fresh reading is shown as "Live in …" (an old page's reading is hidden until today's arrives).
+  const shownWeather = useShownWeather(weather);
+  const showChip = variant === "hero" && weatherChip && shownWeather !== null;
 
   return (
     <>
@@ -189,7 +192,7 @@ export function LivingPhoto({
           transition: "opacity 1.2s ease, transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
         }}
       />
-      {showChip && weather && <WeatherChip weather={weather} />}
+      {showChip && shownWeather && <WeatherChip weather={shownWeather} />}
     </>
   );
 }

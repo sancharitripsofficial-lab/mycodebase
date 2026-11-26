@@ -1,7 +1,8 @@
 "use client";
 
 import { Button } from "@astryxdesign/core/Button";
-import { ExternalLink, Film, ImageIcon, Images, RotateCcw, Sparkles, Upload } from "lucide-react";
+import { TextInput } from "@astryxdesign/core/TextInput";
+import { ExternalLink, Film, ImageIcon, Images, Plus, RotateCcw, Sparkles, Trash2, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import { MediaLibrary } from "@/components/admin/MediaLibrary";
 import { Notice, Panel, useAdminContent } from "@/components/admin/kit";
@@ -11,6 +12,9 @@ import {
   BANNER_PAGES,
   BUILT_IN_JOURNEY,
   BUILT_IN_MEDIA,
+  MAX_TEAM,
+  MAX_TRIP_PHOTOS,
+  MAX_VEHICLE_PHOTOS,
   builtInBannerStill,
   readyBannerPicture,
   isVideoLink,
@@ -38,6 +42,8 @@ function MediaSlot({
   onChange,
   onNotice,
   preset,
+  emptyLabel = "Built-in",
+  clearLabel = "Use built-in",
 }: {
   label: string;
   hint?: string;
@@ -51,6 +57,9 @@ function MediaSlot({
   onNotice: (n: NoticeState) => void;
   /** A ready-made file the owner can pick with one tap. */
   preset?: { label: string; url: string };
+  /** For a slot with no built-in file (team photo, car photo): the tag when empty and the button that empties it. */
+  emptyLabel?: string;
+  clearLabel?: string;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [progress, setProgress] = useState<number | null>(null);
@@ -88,7 +97,7 @@ function MediaSlot({
         <span
           className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${value ? "bg-lagoon-100 text-forest-900" : "bg-stone-100 text-stone-600"}`}
         >
-          {value ? "Your file" : "Built-in"}
+          {value ? "Your file" : emptyLabel}
         </span>
       </div>
       <div className="relative aspect-video overflow-hidden rounded-xl bg-[#e8f1ee]">
@@ -133,7 +142,7 @@ function MediaSlot({
               }}
             />
           )}
-          {value && <Button size="sm" variant="ghost" label="Use built-in" icon={<RotateCcw className="h-4 w-4" />} onClick={() => onChange("")} />}
+          {value && <Button size="sm" variant="ghost" label={clearLabel} icon={<RotateCcw className="h-4 w-4" />} onClick={() => onChange("")} />}
           <input
             ref={fileRef}
             type="file"
@@ -202,7 +211,13 @@ export function SiteMediaManager({ editor, canEdit }: { editor: Editor; canEdit:
   async function save() {
     setBusy(true);
     setNotice(null);
-    const r = await editor.save("settings.save", { key: "site_media", value: m });
+    const value: SiteMedia = {
+      ...m,
+      team: m.team.map((t) => ({ ...t, name: t.name.trim(), role: t.role.trim() })).filter((t) => t.name.length > 1),
+      vehiclePhotos: m.vehiclePhotos.filter(Boolean),
+      tripPhotos: m.tripPhotos.filter(Boolean),
+    };
+    const r = await editor.save("settings.save", { key: "site_media", value });
     setBusy(false);
     if (r.ok) {
       setDirty(false);
@@ -413,6 +428,100 @@ export function SiteMediaManager({ editor, canEdit }: { editor: Editor; canEdit:
             />
           </div>
         </Section>
+
+        <Section
+          title="Team"
+          description="The people shown under “Meet Sanchari” on the home page and the About page. Use real names and real photos only (a square face photo works best). Without a photo the person's initials are shown. Remove everyone to hide the section."
+        >
+          <div className="grid gap-3 md:grid-cols-2">
+            {m.team.map((member, i) => (
+              <div key={i} className="space-y-3 rounded-2xl border border-stone-200 bg-white p-3">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <TextInput
+                    label="Name"
+                    value={member.name}
+                    isDisabled={!canEdit}
+                    onChange={(v) => set({ team: m.team.map((t, j) => (j === i ? { ...t, name: v.slice(0, 80) } : t)) })}
+                  />
+                  <TextInput
+                    label="Role"
+                    value={member.role}
+                    isDisabled={!canEdit}
+                    onChange={(v) => set({ team: m.team.map((t, j) => (j === i ? { ...t, role: v.slice(0, 80) } : t)) })}
+                  />
+                </div>
+                <MediaSlot
+                  {...slot}
+                  label={member.name ? `Photo of ${member.name}` : "Photo"}
+                  hint="Optional. Square, face in the middle."
+                  kind="image"
+                  value={member.photo}
+                  builtIn=""
+                  emptyNote="No photo: initials are shown"
+                  emptyLabel="No photo"
+                  clearLabel="Remove photo"
+                  onChange={(v) => set({ team: m.team.map((t, j) => (j === i ? { ...t, photo: v } : t)) })}
+                />
+                {canEdit && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    label="Remove this person"
+                    icon={<Trash2 className="h-4 w-4" />}
+                    onClick={() => set({ team: m.team.filter((_, j) => j !== i) })}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+          {canEdit && m.team.length < MAX_TEAM && (
+            <Button size="sm" label="Add a team member" icon={<Plus className="h-4 w-4" />} onClick={() => set({ team: [...m.team, { name: "", role: "", photo: "" }] })} />
+          )}
+        </Section>
+
+        {(
+          [
+            {
+              key: "vehiclePhotos",
+              max: MAX_VEHICLE_PHOTOS,
+              title: "Our car (real photos)",
+              description:
+                "Photos of the actual car travellers ride in: outside, seats, boot. The “Our car” section on the home page appears only when there is at least one photo here. Never use a stock or brochure picture.",
+              one: "Car photo",
+            },
+            {
+              key: "tripPhotos",
+              max: MAX_TRIP_PHOTOS,
+              title: "From our trips (real photos)",
+              description:
+                "Photos from trips that have run, with the travellers' permission. The “From our trips” section on the home page appears only when there is at least one photo here.",
+              one: "Trip photo",
+            },
+          ] as const
+        ).map((group) => (
+          <Section key={group.key} title={group.title} description={group.description}>
+            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+              {m[group.key].map((url, i) => (
+                <MediaSlot
+                  key={i}
+                  {...slot}
+                  label={`${group.one} ${i + 1}`}
+                  hint="Landscape (4:3)."
+                  kind="image"
+                  value={url}
+                  builtIn=""
+                  emptyNote="Upload a photo"
+                  emptyLabel="Empty"
+                  clearLabel="Remove photo"
+                  onChange={(v) => set({ [group.key]: v ? m[group.key].map((u, j) => (j === i ? v : u)) : m[group.key].filter((_, j) => j !== i) } as Partial<SiteMedia>)}
+                />
+              ))}
+            </div>
+            {canEdit && m[group.key].length < group.max && (
+              <Button size="sm" label="Add a photo" icon={<Plus className="h-4 w-4" />} onClick={() => set({ [group.key]: [...m[group.key], ""] } as Partial<SiteMedia>)} />
+            )}
+          </Section>
+        ))}
       </div>
 
       {canEdit && (

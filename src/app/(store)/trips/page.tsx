@@ -7,8 +7,9 @@ import { forPlacement, getLivePromotions } from "@/lib/data/promotions";
 import { getPublishedTripsWithDetails, getSiteSettings } from "@/lib/data/repository";
 import { PAGE_SEO, jsonLdText, liveDestinations, pageBreadcrumb, pageMetadata, tripListJsonLd, tripsPageDescription } from "@/lib/seo";
 
-// Served from the CDN; refreshed every 30 s and immediately after bookings / admin edits.
-export const revalidate = 30;
+// Served from the CDN; rebuilt at most every 5 minutes, and immediately after bookings / admin edits
+// (lib/revalidate.ts). Not more often: every rebuild is a paid write on the host and a database read.
+export const revalidate = 300;
 
 export async function generateMetadata(): Promise<Metadata> {
   const { trips } = await getPublishedTripsWithDetails();

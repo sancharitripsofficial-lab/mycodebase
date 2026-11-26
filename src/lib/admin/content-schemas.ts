@@ -2,7 +2,7 @@ import { GUIDE_EMOTIONS, type GuideEmotion } from "@/lib/assistant/types";
 import { isSafeMediaLink } from "@/lib/blog";
 import { DEFAULT_DEVELOPER_CREDIT, DEFAULT_DEVELOPER_CREDIT_URL, isHttpsUrl } from "@/lib/developer-credit";
 import { ICON_KEYS, JOURNEY_STEP_KEYS, THEME_KEYS, TILE_COLOURS } from "@/lib/home-content";
-import { BANNER_PAGES, isSiteMediaLink, isVideoLink, type BannerPage } from "@/lib/site-media";
+import { BANNER_PAGES, MAX_TEAM, MAX_TRIP_PHOTOS, MAX_VEHICLE_PHOTOS, isSiteMediaLink, isVideoLink, type BannerPage } from "@/lib/site-media";
 import { z } from "zod";
 
 /** Local file (/media/x.jpg) or an https link. Never http, javascript:, data: or protocol-relative. */
@@ -240,6 +240,8 @@ const homeCard = z.object({
 export const homePageSchema = z.object({
   kannadaLine: z.string().trim().max(80),
   heroChip: z.string().trim().max(90),
+  // Optional so a Home page form opened before these existed still saves (the page then uses the built-in text).
+  heroPoints: z.array(z.string().trim().min(2, "Each first-screen fact needs at least 2 characters").max(32, "First-screen facts: at most 32 characters each")).max(4).optional(),
   categoriesSection: sectionText,
   categories: z
     .array(
@@ -272,6 +274,11 @@ export const homePageSchema = z.object({
   howSection: sectionText,
   howCards: z.array(homeCard).max(8),
   routesSection: sectionText,
+  trustSection: sectionText.optional(),
+  trustCards: z.array(homeCard).max(6).optional(),
+  teamSection: sectionText.optional(),
+  vehicleSection: sectionText.optional(),
+  journeysSection: sectionText.optional(),
   safetySection: sectionText,
   reviewsSection: sectionText,
   planSection: sectionText,
@@ -403,6 +410,19 @@ export const siteMediaSchema = z.object({
   journeyVideo: siteVideo,
   journeyPhoneVideo: siteVideo,
   journeyPoster: sitePicture,
+  // Optional so a Pictures & videos form opened before these existed still saves.
+  team: z
+    .array(
+      z.object({
+        name: z.string().trim().min(2, "Team member: the name needs at least 2 characters").max(80),
+        role: z.string().trim().max(80),
+        photo: sitePicture,
+      })
+    )
+    .max(MAX_TEAM, `At most ${MAX_TEAM} team members`)
+    .optional(),
+  vehiclePhotos: z.array(sitePicture).max(MAX_VEHICLE_PHOTOS).optional(),
+  tripPhotos: z.array(sitePicture).max(MAX_TRIP_PHOTOS).optional(),
 });
 
 /** Footer "Designed & Developed by" badge: on by default, link must be https (empty = default link). */
@@ -417,6 +437,15 @@ export const developerCreditSchema = z.object({
     .refine(isHttpsUrl, "Credit link: use a full https:// address"),
 });
 
+/** Google Analytics 4: a measurement ID ("G-XXXXXXXXXX"), or empty to switch analytics off. */
+export const analyticsSettingsSchema = z.object({
+  gaMeasurementId: z
+    .string()
+    .trim()
+    .transform((v) => v.toUpperCase())
+    .refine((v) => v === "" || /^G-[A-Z0-9]{6,14}$/.test(v), "Measurement ID looks like G-XXXXXXXXXX (from Google Analytics → Admin → Data streams). Leave empty to switch analytics off."),
+});
+
 export const settingsSaveSchema = z.discriminatedUnion("key", [
   z.object({ key: z.literal("brand_identity"), value: brandIdentitySchema }),
   z.object({ key: z.literal("booking_policy"), value: bookingPolicySchema }),
@@ -429,6 +458,7 @@ export const settingsSaveSchema = z.discriminatedUnion("key", [
   z.object({ key: z.literal("blog_posts"), value: blogPostsSchema }),
   z.object({ key: z.literal("site_media"), value: siteMediaSchema }),
   z.object({ key: z.literal("developer_credit"), value: developerCreditSchema }),
+  z.object({ key: z.literal("analytics"), value: analyticsSettingsSchema }),
 ]);
 
 export const reviewSaveSchema = z

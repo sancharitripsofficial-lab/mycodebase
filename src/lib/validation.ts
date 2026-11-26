@@ -62,7 +62,9 @@ export const checkoutSchema = z
       .trim()
       .regex(/^[0-9+\-\s()]{8,20}$/, "Enter a valid phone number"),
     payDepositOnly: z.boolean().default(false),
-    travelers: z.array(travelerInputSchema).min(1).max(6),
+    // Step 1 of booking sends no traveller details (they are added from My Booking afterwards).
+    // A page opened before the two-step form existed still sends the full list, and that works too.
+    travelers: z.array(travelerInputSchema).max(6).optional(),
     coTravelerPreference: z
       .enum(["open_mixed", "prefer_same_gender", "request_women_only"])
       .default("open_mixed"),
@@ -104,12 +106,69 @@ export const checkoutSchema = z
         });
       }
     }
-    if (data.travelers.length !== data.seatsRequested) {
+    if (data.travelers && data.travelers.length > 0 && data.travelers.length !== data.seatsRequested) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["travelers"],
         message: `Please provide details for all ${data.seatsRequested} traveler(s).`,
       });
+    }
+  });
+
+/** Step 2 of booking: who is travelling, sent from My Booking after the seats are reserved. */
+export const travelerDetailsSchema = z
+  .object({
+    bookingReference: z
+      .string()
+      .trim()
+      .min(5, "Enter your booking reference")
+      .max(40)
+      .transform((v) => v.toUpperCase()),
+    email: z.string().trim().email("Enter the email used during booking").max(160),
+    pickupPointId: z.string().uuid("Please select a pickup point").nullable().optional(),
+    travelers: z
+      .array(
+        z
+          .object({
+            id: z.string().uuid("Traveller not recognised. Reload the page and try again."),
+            fullName: z.string().trim().min(2, "Enter each traveller's full name").max(120),
+            ageGroup: z.enum(["adult", "senior"]),
+            ageYears: z.preprocess(
+              (v) => (typeof v === "string" && v.trim() !== "" ? Number(v) : v),
+              z.number({ message: "Enter each traveller's age as a number" }).int("Enter the age in whole years").min(1).max(110)
+            ),
+            emergencyContact: z
+              .string()
+              .trim()
+              .regex(/^[0-9+\-\s()]{8,20}$/, "Enter a valid emergency contact phone number"),
+            dietaryNotes: z.string().trim().max(240).optional().default(""),
+            seatRowRequest: z.enum(["no_preference", "front_middle", "rear_window"]).default("no_preference"),
+            roomPreference: z
+              .enum(["shared_same_gender", "private_room_request", "couple_friends_room_request"])
+              .default("shared_same_gender"),
+          })
+          .superRefine((t, ctx) => {
+            const range = AGE_RANGES[t.ageGroup];
+            if (t.ageYears < range.min || t.ageYears > range.max) {
+              ctx.addIssue({
+                code: "custom",
+                path: ["ageYears"],
+                message:
+                  t.ageGroup === "adult"
+                    ? "Adult travellers must be 18 to 59 years old (choose Senior for 60+)."
+                    : "Senior travellers must be 60 or older (choose Adult for 18 to 59).",
+              });
+            }
+          })
+      )
+      .min(1, "Add the traveller details")
+      .max(6),
+    coTravelerPreference: z.enum(["open_mixed", "prefer_same_gender", "request_women_only"]).optional(),
+    preferenceNotes: z.string().trim().max(300).optional().default(""),
+  })
+  .superRefine((data, ctx) => {
+    if (new Set(data.travelers.map((t) => t.id)).size !== data.travelers.length) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["travelers"], message: "The same traveller was sent twice. Reload the page and try again." });
     }
   });
 

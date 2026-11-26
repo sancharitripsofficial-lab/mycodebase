@@ -8,7 +8,7 @@ import { blogPlainText } from "@/lib/blog-format";
 import { getSiteSettings } from "@/lib/data/repository";
 import { PAGE_SEO, jsonLdText, pageBreadcrumb, pageMetadata } from "@/lib/seo";
 
-export const revalidate = 60;
+export const revalidate = 300;
 
 export const metadata: Metadata = pageMetadata(PAGE_SEO.blog);
 

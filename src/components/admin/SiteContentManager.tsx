@@ -16,7 +16,7 @@ import { DEFAULT_DEVELOPER_CREDIT_URL, isHttpsUrl, mergeDeveloperCredit } from "
 import type { SiteSettings } from "@/lib/types";
 
 type Editor = ReturnType<typeof useAdminContent>;
-type Tab = "home" | "assistant" | "kannada" | "brand" | "social" | "policy" | "faqs" | "legal" | "credit";
+type Tab = "home" | "assistant" | "kannada" | "brand" | "social" | "policy" | "faqs" | "legal" | "credit" | "analytics";
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "home", label: "Home page" },
@@ -28,6 +28,7 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "faqs", label: "FAQs" },
   { key: "legal", label: "Legal pages" },
   { key: "credit", label: "Footer credit" },
+  { key: "analytics", label: "Analytics" },
 ];
 
 /** Website words, contact details, booking rules, FAQs and legal text. */
@@ -85,6 +86,7 @@ export function SiteContentManager({ editor }: { editor: Editor }) {
       {tab === "credit" && (
         <DeveloperCreditForm key="c" initial={mergeDeveloperCredit(content.settings.developerCredit)} editor={editor} canEdit={canEdit} />
       )}
+      {tab === "analytics" && <AnalyticsForm key="an" initial={content.settings.analytics ?? { gaMeasurementId: "" }} editor={editor} canEdit={canEdit} />}
     </Panel>
   );
 }
@@ -293,6 +295,36 @@ function FaqForm({ initial, editor, canEdit }: { initial: SiteSettings["faqs"]; 
         />
       )}
       <SaveBar editor={editor} keyName="faqs" value={items} canEdit={canEdit} />
+    </div>
+  );
+}
+
+function AnalyticsForm({ initial, editor, canEdit }: { initial: SiteSettings["analytics"]; editor: Editor; canEdit: boolean }) {
+  const [f, setF] = useState(initial);
+  const id = f.gaMeasurementId.trim().toUpperCase();
+  const ok = id === "" || /^G-[A-Z0-9]{6,14}$/.test(id);
+  return (
+    <div className="space-y-4">
+      <Banner
+        status="info"
+        title="See how many visitors become bookings"
+        description="With a Google Analytics 4 measurement ID saved here, the website reports five steps: view_trip (a trip page was opened), select_seats (date or seats chosen), begin_checkout (seats held), purchase (payment reference sent or booking confirmed) and click_whatsapp. No names, phone numbers or emails are ever sent."
+        collapsible={false}
+      />
+      <TextInput
+        label="GA4 measurement ID"
+        description="Google Analytics → Admin → Data streams → your website → Measurement ID. Leave empty to keep analytics off: then nothing is loaded and nothing is sent."
+        placeholder="G-XXXXXXXXXX"
+        value={f.gaMeasurementId}
+        isDisabled={!canEdit}
+        onChange={(v) => setF({ gaMeasurementId: v.trim() })}
+      />
+      {!ok && <Notice kind="error">A measurement ID starts with G- followed by letters and numbers, for example G-AB12CD34EF.</Notice>}
+      <p className="text-xs leading-relaxed text-stone-600">
+        Booking conversion rate = confirmed bookings ÷ visitors × 100. In Google Analytics, mark <strong>purchase</strong> as a key event to see it. While
+        an ID is saved, the Policies page tells visitors that anonymous usage statistics are collected.
+      </p>
+      <SaveBar editor={editor} keyName="analytics" value={{ gaMeasurementId: id }} canEdit={canEdit} />
     </div>
   );
 }

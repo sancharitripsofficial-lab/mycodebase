@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Promotion } from "@/lib/data/promotions";
 import { isOptimizableImage } from "@/lib/media";
 import { pickPopup, shownMark } from "@/lib/popup-order";
-import { PromoCta } from "./PromoBanner";
+import { OfferTerms, PromoCta } from "./PromoBanner";
 import { PromoMedia } from "./PromoMedia";
 import { THEME_BG, trackPromo } from "./track";
 
@@ -198,6 +198,7 @@ export function PromoPopup({ promotions, picked = null }: { promotions: Promotio
                 {promo.title}
               </h2>
               {promo.message && <p className="text-sm leading-relaxed text-white/90">{promo.message}</p>}
+              <OfferTerms promo={promo} className="text-xs font-semibold text-white/90" />
               <div className="flex flex-wrap items-center gap-3 pt-1 [text-shadow:none]">
                 <PromoCta promo={promo} className="btn-sunset inline-flex items-center gap-2 px-5 py-3 text-sm" onDone={() => setPromo(null)} />
                 <button type="button" onClick={() => setPromo(null)} className="rounded-full px-4 py-3 text-sm font-semibold text-white/85 hover:bg-white/15">
@@ -262,6 +263,7 @@ export function PromoPopup({ promotions, picked = null }: { promotions: Promotio
                 {promo.title}
               </h2>
               {promo.message && <p className="text-sm leading-relaxed text-white/90">{promo.message}</p>}
+              <OfferTerms promo={promo} className="text-xs font-semibold text-white/90" />
               <div className="flex flex-wrap items-center gap-3 pt-1 [text-shadow:none]">
                 <PromoCta promo={promo} className="btn-sunset inline-flex items-center gap-2 px-5 py-3 text-sm" onDone={() => setPromo(null)} />
                 <button type="button" onClick={() => setPromo(null)} className="rounded-full px-4 py-3 text-sm font-semibold text-white/85 hover:bg-white/15">

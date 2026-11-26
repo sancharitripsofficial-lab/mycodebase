@@ -26,9 +26,15 @@ import { WhatsAppChannelCta } from "@/components/WhatsAppChannelCta";
 import { PromoBanner } from "@/components/promo/PromoBanner";
 import { TripGallery } from "@/components/TripGallery";
 import { TripVideos } from "@/components/TripVideos";
-import { StickyBookBar } from "@/components/StickyBookBar";
+import { TripBookBar } from "@/components/MobileBar";
+import { NotifyMe } from "@/components/NotifyMe";
+import { TrackView } from "@/components/analytics/TrackView";
+import { rupees, tripItem } from "@/lib/analytics";
 import { forPlacement, getLivePromotions } from "@/lib/data/promotions";
-import { formatINR } from "@/lib/currency";
+import { advanceTerms, calculateBookingPricing, formatINR } from "@/lib/currency";
+import { buildClickToWhatsAppUrl } from "@/lib/messaging/provider";
+import { formatTripDates, formatTripDay, formatTripLength } from "@/lib/trip-dates";
+import { nextOpenDeparture, seatSummary, wholeCarOpen, wholeCarPricePaise } from "@/lib/trip-facts";
 import {
   getDepartureSeatMap,
   getPublishedTripBySlug,
@@ -37,7 +43,6 @@ import {
 } from "@/lib/data/repository";
 import { themeClass } from "@/lib/destination-theme";
 import { getDestinationWeather } from "@/lib/weather-server";
-import { isBookable } from "@/lib/departure-rules";
 import { isSupabaseConfigured } from "@/lib/env";
 import { decideMovedTrip, demoRenderWouldMislead } from "@/lib/trip-slugs";
 import {
@@ -55,8 +60,9 @@ import {
 } from "@/lib/seo";
 import { visiblePosts } from "@/lib/blog";
 
-// Served from the CDN; refreshed every 30 s and immediately after bookings / admin edits.
-export const revalidate = 30;
+// Served from the CDN; rebuilt at most every 5 minutes, and immediately after bookings / admin edits
+// (lib/revalidate.ts). Not more often: every rebuild is a paid write on the host and a database read.
+export const revalidate = 300;
 
 /** Live trips, plus the old/new form of a renamed trip's address (lib/trip-slugs.ts), so both resolve. */
 export async function generateStaticParams() {
@@ -153,7 +159,7 @@ export default async function TripDetailPage({
   const { trip, itinerary, pickupPoints, departures } = item;
   const theme = themeClass(trip.slug, trip.destination, trip.region);
 
-  // Built into the page (refreshed with it every 30 s and after each booking): the car seat map
+  // Built into the page (refreshed with it, at most every 5 minutes and after each booking): the car seat map
   // and the live weather are on screen at once, then re-checked quietly in the browser.
   const openDeps = departures.filter((d) => d.status !== "cancelled" && d.status !== "completed");
   const [seatPairs, weather] = await Promise.all([
@@ -162,16 +168,40 @@ export default async function TripDetailPage({
   ]);
   const initialSeatMaps = Object.fromEntries(seatPairs);
 
-  // Earliest date a visitor can still book (for the price box and the phone booking bar).
-  const nextOpen = [...openDeps]
-    .filter((d) => isBookable(d) && d.seatsRemaining > 0)
-    .sort((a, b) => a.startDate.localeCompare(b.startDate))[0];
+  // Earliest date a visitor can still book: the same one the trip cards, the home page and the
+  // booking box pick (lib/trip-facts), so the date, seats and price never differ between them.
+  const nextOpen = nextOpenDeparture(departures);
   // The lowest price of a date a visitor can book now (the trip price only when no date is open).
   // The same number goes into the search snippet, the structured data and the trip cards.
   const price = tripPriceInfo(trip, departures);
   const fromPaise = price.fromPaise;
-  const dayLabel = (iso: string) =>
-    new Date(`${iso.slice(0, 10)}T12:00:00+05:30`).toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "Asia/Kolkata" });
+  const nextDates = nextOpen ? formatTripDates(nextOpen.startDate, nextOpen.endDate, { weekday: true }) : null;
+  // The whole car on that date, priced exactly as the booking box and the server price it.
+  const wholeCarPaise = nextOpen && wholeCarOpen(nextOpen) ? wholeCarPricePaise(trip, nextOpen, settings.bookingPolicy) : null;
+  // What reserving one seat on that date costs now, when the date offers an advance.
+  const nextAdvance = (() => {
+    if (!nextOpen) return null;
+    const terms = advanceTerms({
+      tripDepositPercent: trip.depositPercent,
+      tripBalanceDueDaysBefore: trip.balanceDueDaysBefore,
+      bookingPolicy: settings.bookingPolicy,
+      startDate: nextOpen.startDate,
+    });
+    if (!terms.available || !terms.balanceDueDate) return null;
+    const one = calculateBookingPricing({
+      trip,
+      priceOverridePaise: nextOpen.priceOverridePaise,
+      bookingMode: "batch_seats",
+      seatsRequested: 1,
+      payDepositOnly: true,
+      bookingPolicy: settings.bookingPolicy,
+    });
+    return one.balanceLaterPaise > 0 ? { payNowPaise: one.payNowPaise, balancePaise: one.balanceLaterPaise, by: formatTripDay(terms.balanceDueDate) } : null;
+  })();
+  const chatText = `Hi Sanchari team, I have a question about the ${trip.title} trip.`;
+  const whatsappUrl = settings.socialLinks.whatsappNumber
+    ? `https://wa.me/${settings.socialLinks.whatsappNumber}?text=${encodeURIComponent(chatText)}`
+    : buildClickToWhatsAppUrl(chatText);
 
   const structuredData = tripJsonLd(item, price);
 
@@ -188,6 +218,15 @@ export default async function TripDetailPage({
     <div className={`${theme} mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12`}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdText(structuredData) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdText(breadcrumb) }} />
+      <TrackView
+        name="view_trip"
+        params={{
+          currency: "INR",
+          value: rupees(fromPaise),
+          has_open_date: Boolean(nextOpen),
+          items: [tripItem({ slug: trip.slug, title: trip.title, destination: trip.destination, pricePaise: fromPaise })],
+        }}
+      />
 
       <nav aria-label="Breadcrumb" className="mb-5 text-xs text-stone-600">
         <Link href="/trips" className="hover:text-forest-900 underline">
@@ -214,8 +253,7 @@ export default async function TripDetailPage({
             <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
               <span className="th-chip rounded-full px-3 py-1 tracking-wider uppercase">{trip.region}</span>
               <span className="inline-flex items-center gap-1 rounded-full bg-white/90 px-3 py-1 text-forest-900 ring-1 ring-stone-200">
-                <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" /> {trip.durationDays} {trip.durationDays === 1 ? "day" : "days"} ·{" "}
-                {trip.durationNights} {trip.durationNights === 1 ? "night" : "nights"}
+                <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" /> {formatTripLength(trip.durationDays, trip.durationNights)}
               </span>
               <span className="inline-flex items-center gap-1 rounded-full bg-white/90 px-3 py-1 text-forest-900 ring-1 ring-stone-200">
                 <Mountain className="h-3.5 w-3.5" aria-hidden="true" /> {trip.difficulty}
@@ -235,14 +273,28 @@ export default async function TripDetailPage({
                 <p className="font-display text-2xl font-semibold text-forest-900">
                   {formatINR(fromPaise)} <span className="text-sm font-normal text-stone-600">per seat</span>
                 </p>
-                <p className="mt-0.5 text-xs text-stone-600">
-                  {nextOpen ? `Next date: ${dayLabel(nextOpen.startDate)} – ${dayLabel(nextOpen.endDate)} · ${nextOpen.seatsRemaining} of ${nextOpen.maxCapacity} seats open` : "New dates coming soon"}
-                  {trip.privateGroupPricePaise ? ` · Whole car ${formatINR(trip.privateGroupPricePaise)}` : ""}
-                </p>
+                {nextOpen && nextDates ? (
+                  <ul className="mt-1 space-y-0.5 text-sm text-ink-900/80">
+                    <li className="flex flex-wrap items-baseline gap-x-2">
+                      <span className="font-semibold text-ink-900">{nextDates}</span>
+                      <span className={seatSummary(nextOpen).tone === "few" ? "font-semibold text-copper-700" : "text-forest-700"}>{seatSummary(nextOpen).label}</span>
+                    </li>
+                    {nextAdvance && <li>{`Reserve with ${formatINR(nextAdvance.payNowPaise)} now, balance ${formatINR(nextAdvance.balancePaise)} by ${nextAdvance.by}`}</li>}
+                    {wholeCarPaise !== null && <li>{`Whole car for your group: ${formatINR(wholeCarPaise)}`}</li>}
+                  </ul>
+                ) : (
+                  <p className="mt-1 text-sm text-ink-900/80">New dates are being planned. Ask to be told first.</p>
+                )}
               </div>
-              <a href="#book" className="btn-sunset inline-flex w-full items-center justify-center gap-2 px-5 py-3 text-sm sm:w-auto">
-                Pick your seat <ArrowRight className="h-4 w-4" aria-hidden="true" />
-              </a>
+              {nextOpen ? (
+                <a href="#book" className="btn-sunset inline-flex min-h-12 w-full items-center justify-center gap-2 px-5 text-sm sm:w-auto">
+                  Book your seat <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </a>
+              ) : (
+                <a href="#ask" className="btn-ocean inline-flex min-h-12 w-full items-center justify-center gap-2 px-5 text-sm sm:w-auto">
+                  Notify me of new dates <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </a>
+              )}
             </div>
           </header>
 
@@ -454,7 +506,6 @@ export default async function TripDetailPage({
             <BookingWidget
               trip={trip}
               departures={departures}
-              pickupPoints={pickupPoints}
               bookingPolicy={settings.bookingPolicy}
               initialSeatMaps={initialSeatMaps}
               termsAreDraft={settings.legalDrafts.ownerReviewRequired}
@@ -463,9 +514,11 @@ export default async function TripDetailPage({
         </aside>
       </div>
 
-      <StickyBookBar
-        priceLabel={`From ${formatINR(fromPaise)} / seat`}
-        nextDateLabel={nextOpen ? `${dayLabel(nextOpen.startDate)} – ${dayLabel(nextOpen.endDate)}` : null}
+      <TripBookBar
+        whatsappUrl={whatsappUrl ?? null}
+        priceLabel={`From ${formatINR(fromPaise)}`}
+        dateLabel={nextOpen ? formatTripDates(nextOpen.startDate, nextOpen.endDate) : null}
+        canBook={Boolean(nextOpen)}
       />
 
       {(otherTrips.length > 0 || stories.length > 0) && (
@@ -506,6 +559,14 @@ export default async function TripDetailPage({
       )}
 
       <div id="ask" className="mx-auto mt-14 max-w-2xl scroll-mt-24 space-y-4">
+        {/* No date open: two boxes to be told first, instead of a booking button that leads nowhere. */}
+        {!nextOpen && (
+          <div className="card-theme space-y-2 p-5 pt-6">
+            <h2 className="font-display text-xl font-semibold text-forest-900">Be the first to know the next date</h2>
+            <p className="text-sm text-ink-900/80">{`Leave your WhatsApp number and we message you when ${trip.title} gets a new date.`}</p>
+            <NotifyMe tripId={trip.id} tripTitle={trip.title} tripSlug={trip.slug} />
+          </div>
+        )}
         {settings.socialLinks.whatsappChannelUrl && (
           <WhatsAppChannelCta href={settings.socialLinks.whatsappChannelUrl} context="trip" />
         )}

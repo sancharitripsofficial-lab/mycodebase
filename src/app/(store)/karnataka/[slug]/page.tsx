@@ -9,7 +9,7 @@ import { GUIDE_HUB, GUIDE_PAGES, guidePage, guidePagesOfKind, tripsForPlaces, ty
 import { NOT_FOUND_METADATA, breadcrumbJsonLd, guideListJsonLd, jsonLdText, pageMetadata } from "@/lib/seo";
 
 // Live trips (and their prices) show on these pages: same freshness as the trips page.
-export const revalidate = 60;
+export const revalidate = 300;
 // Only the regions, districts and kinds of place in the guide exist; anything else is a real 404.
 export const dynamicParams = false;
 

@@ -701,7 +701,7 @@ export function knowledgeAsText(kb: KnowledgeBase): string {
     L.push(`- Price: ${formatINR(t.basePricePaise)} per seat. Whole car (all ${PRIVATE_SEATS} seats): ${formatINR(t.privateCarPricePaise)} (${privateRuleText(t)}).`);
     L.push(
       t.depositPercent !== null
-        ? `- Payment: ${t.depositPercent}% deposit allowed at checkout, balance due ${t.balanceDueDaysBefore} days before the trip.`
+        ? `- Payment: ${t.depositPercent}% deposit (advance) allowed at checkout, rounded up to a whole rupee; balance due ${t.balanceDueDaysBefore} days before the trip. When a date is ${t.balanceDueDaysBefore} days away or less, only full payment is taken.`
         : "- Payment: full amount at booking (no deposit option)."
     );
     if (t.tagline) L.push(`- Tagline: ${t.tagline}`);
@@ -746,7 +746,7 @@ export function knowledgeAsText(kb: KnowledgeBase): string {
   }
 
   L.push("BOOKING AND PAYMENT");
-  L.push(`- How to book: open the trip page, pick a date, choose seats on the live car map (or the whole car), add traveller details and pickup point, then pay. Direct link per date is listed above.`);
+  L.push(`- How to book: open the trip page, pick a date, choose seats on the live car map (or the whole car), enter name, WhatsApp number and email, then pay. Traveller details (names, ages, emergency contacts) and the pickup point are added afterwards in My Booking, any time before the trip. Direct link per date is listed above.`);
   L.push(`- Seats are held for ${p.holdMinutes} minutes while you pay; unpaid holds free up automatically.`);
   if (kb.payment.method === "upi") {
     L.push(

@@ -3,7 +3,7 @@ import { mergeHomeContent } from "@/lib/home-content";
 import { mergeSiteMedia, type SiteMedia } from "@/lib/site-media";
 import { cache } from "react";
 import crypto from "node:crypto";
-import { calculateBookingPricing } from "@/lib/currency";
+import { advanceTerms, assertAdvanceAvailable, calculateBookingPricing } from "@/lib/currency";
 import {
   adminBookingActionDemo,
   adminSeatOverrideDemo,
@@ -14,6 +14,7 @@ import {
   getDemoTripsWithDetails,
   lookupCustomerBookingDemo,
   reserveSeatsDemo,
+  saveTravelerDetailsDemo,
   type ReserveSeatsDemoInput,
 } from "@/lib/data/demo-store";
 import {
@@ -30,9 +31,11 @@ import { isServiceRoleConfigured, isSupabaseConfigured } from "@/lib/env";
 import { getSafeComfortCustomerLabel } from "@/lib/privacy";
 import { createSupabaseAdminClient, createSupabasePublicClient } from "@/lib/supabase/server";
 import { assertWomenOnlyConfirmed, preferenceForDeparture } from "@/lib/women-only";
-import { withoutStartedDepartures } from "@/lib/departure-rules";
+import { hasStarted, withoutStartedDepartures } from "@/lib/departure-rules";
+import { travelerDetailsComplete, travelerDetailsLock } from "@/lib/traveler-details";
 import { mergeBlogPosts } from "@/lib/blog";
 import { mergeDeveloperCredit } from "@/lib/developer-credit";
+import { mergeAnalyticsSettings } from "@/lib/analytics";
 import { cleanSettingsForVisitors, cleanTripForVisitors } from "@/lib/display-text";
 import { expandTripSlugs } from "@/lib/trip-slugs";
 import type {
@@ -53,6 +56,7 @@ import type {
   PickupPoint,
   PublicDepartureAvailability,
   SiteSettings,
+  TravelerDetailsInput,
   Trip,
   TripWithDetails,
   UpiPaymentSettings,
@@ -62,6 +66,14 @@ import type {
   VerifiedReview,
   WaitlistEntry,
 } from "@/lib/types";
+
+/**
+ * The booking's email, compared exactly (ignoring case and outer spaces). Never a database pattern
+ * match: there "_" and "%" in what a visitor types would stand for any characters.
+ */
+function sameEmail(saved: unknown, typed: string): boolean {
+  return typeof saved === "string" && saved.trim().toLowerCase() === typed.trim().toLowerCase();
+}
 
 /** True when the app runs on the built-in preview store instead of Supabase. */
 function usesLocalStore(): boolean {
@@ -131,6 +143,7 @@ export async function getRawSiteSettings(): Promise<{ settings: SiteSettings; is
         blogPosts: mergeBlogPosts(map.get("blog_posts")),
         siteMedia: mergeSiteMedia(map.get("site_media")),
         developerCredit: mergeDeveloperCredit(map.get("developer_credit")),
+        analytics: mergeAnalyticsSettings(map.get("analytics")),
       },
     };
   } catch {
@@ -372,6 +385,15 @@ export async function createAtomicBookingHold(
       throw new Error("Selected pickup hub does not belong to this trip.");
     }
   }
+  // The advance is offered only while its balance date is still ahead (lib/currency advanceTerms).
+  // Asking for it on any other date is refused, never silently charged as a different amount.
+  const advance = advanceTerms({
+    tripDepositPercent: tripRow.deposit_percent,
+    tripBalanceDueDaysBefore: tripRow.balance_due_days_before,
+    bookingPolicy: settings.bookingPolicy,
+    startDate: String(depRow.start_date),
+  });
+  assertAdvanceAvailable(input.payDepositOnly, advance);
   const priceInput = {
     trip: {
       basePricePaise: tripRow.base_price_paise,
@@ -400,13 +422,8 @@ export async function createAtomicBookingHold(
   }
 
   const bookingReference = `SAN-${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
-  const balanceDueAt =
-    pricing.balanceLaterPaise > 0
-      ? new Date(
-          Date.parse(depRow.start_date) -
-            settings.bookingPolicy.balanceDueDaysBefore * 86_400_000
-        ).toISOString()
-      : null;
+  // The same day the booking box showed ("Balance ₹3,499 by 27 Nov").
+  const balanceDueAt = pricing.balanceLaterPaise > 0 && advance.balanceDueDate ? `${advance.balanceDueDate}T00:00:00.000Z` : null;
 
   const { data, error } = await admin.rpc(couponCode ? "reserve_departure_seats_with_coupon" : "reserve_departure_seats", {
     ...(couponCode ? { p_coupon_code: couponCode, p_coupon_discount_paise: pricing.couponDiscountPaise } : {}),
@@ -537,17 +554,16 @@ export async function lookupCustomerBooking(
     .from("bookings")
     .select("*")
     .eq("booking_reference", bookingReference.trim().toUpperCase())
-    .ilike("customer_email", email.trim())
     .maybeSingle();
 
-  if (!b) return null;
+  if (!b || !sameEmail(b.customer_email, email)) return null;
 
   const [{ data: availRows }, { data: tripRow }, { data: pickupRow }, { data: travRows }, { data: comfortRow }] =
     await Promise.all([
       admin.rpc("get_departure_availability", { p_trip_id: null }),
       admin
         .from("departures")
-        .select("trip_id, trips(id, slug, title, destination, pickup_city, is_sample_demo)")
+        .select("trip_id, trips(id, slug, title, destination, pickup_city, is_sample_demo, pickup_points(*))")
         .eq("id", b.departure_id)
         .single(),
       b.pickup_point_id
@@ -567,7 +583,33 @@ export async function lookupCustomerBooking(
   const t = (tripRow as { trips?: Record<string, unknown> } | null)?.trips;
   if (!depAvail || !t) return null;
 
+  const travelers: BookingTraveler[] = (travRows ?? []).map((tr) => ({
+    id: tr.id,
+    bookingId: tr.booking_id,
+    fullName: tr.full_name,
+    ageGroup: tr.age_group,
+    ageYears: tr.age_years ?? null,
+    emergencyContact: tr.emergency_contact,
+    dietaryNotes: tr.dietary_notes ?? "",
+    seatRowRequest: tr.seat_row_request,
+    roomPreference: tr.room_preference,
+    verificationChecked: tr.verification_checked,
+  }));
+  const lock = travelerDetailsLock({
+    status: b.status,
+    tripHasStarted: hasStarted({ startDate: String(depAvail.start_date) }),
+    anyVerified: travelers.some((tr) => tr.verificationChecked),
+  });
+  const resolution = (comfortRow?.resolution_status as ComfortResolutionStatus) ?? "none_requested";
+
   return {
+    travelerDetailsComplete: travelerDetailsComplete(travelers),
+    travelerDetailsLockedReason: lock.locked ? lock.reason : null,
+    pickupOptions: (Array.isArray(t.pickup_points) ? (t.pickup_points as Record<string, unknown>[]) : [])
+      .map(mapPickupRow)
+      .sort((a, c) => a.sortOrder - c.sortOrder),
+    coTravelerPreference: (comfortRow?.co_traveler_preference as CoTravelerPreference) ?? "open_mixed",
+    comfortEditable: resolution === "none_requested" || resolution === "pending_review",
     booking: mapBookingRow(b),
     trip: {
       id: String(t.id),
@@ -606,26 +648,127 @@ export async function lookupCustomerBooking(
           sortOrder: pickupRow.sort_order,
         }
       : null,
-    travelers: (travRows ?? []).map((tr) => ({
-      id: tr.id,
-      bookingId: tr.booking_id,
-      fullName: tr.full_name,
-      ageGroup: tr.age_group,
-      ageYears: tr.age_years ?? null,
-      emergencyContact: tr.emergency_contact,
-      dietaryNotes: tr.dietary_notes ?? "",
-      seatRowRequest: tr.seat_row_request,
-      roomPreference: tr.room_preference,
-      verificationChecked: tr.verification_checked,
-    })),
+    travelers,
     comfortSummaryLabel: getSafeComfortCustomerLabel(
       (comfortRow?.co_traveler_preference as CoTravelerPreference) ?? "open_mixed",
-      (comfortRow?.resolution_status as ComfortResolutionStatus) ?? "none_requested"
+      resolution
     ),
-    comfortResolutionStatus:
-      (comfortRow?.resolution_status as ComfortResolutionStatus) ?? "none_requested",
+    comfortResolutionStatus: resolution,
     assignedSeatCount: b.seats_requested,
   };
+}
+
+function mapPickupRow(p: Record<string, unknown>): PickupPoint {
+  return {
+    id: String(p.id),
+    tripId: String(p.trip_id),
+    name: String(p.name),
+    area: String(p.area ?? ""),
+    pickupTimeLabel: String(p.pickup_time_label ?? ""),
+    mapsUrl: (p.maps_url as string | null) ?? null,
+    isConfirmed: Boolean(p.is_confirmed),
+    sortOrder: Number(p.sort_order ?? 0),
+  };
+}
+
+/**
+ * Step 2 of booking: the customer fills in who is travelling (names, ages, emergency contacts,
+ * food and room requests, pick-up point, co-traveller request) for a booking found by its
+ * reference and email. Only rows that already belong to that booking are changed; nothing can be
+ * added, removed or moved to another booking.
+ */
+export async function saveCustomerTravelerDetails(input: TravelerDetailsInput): Promise<{ saved: number }> {
+  if (usesLocalStore()) return saveTravelerDetailsDemo(input);
+
+  const admin = createSupabaseAdminClient();
+  const { data: b } = await admin
+    .from("bookings")
+    .select("id, status, departure_id, pickup_point_id, customer_email")
+    .eq("booking_reference", input.bookingReference.trim().toUpperCase())
+    .maybeSingle();
+  if (!b || !sameEmail(b.customer_email, input.email)) throw new Error("BOOKING_NOT_FOUND: No matching booking found for that reference and email.");
+
+  const [{ data: dep }, { data: rows }, { data: comfort }] = await Promise.all([
+    admin.from("departures").select("trip_id, start_date, departure_type").eq("id", b.departure_id).single(),
+    admin.from("booking_travelers").select("id, verification_checked").eq("booking_id", b.id),
+    admin.from("booking_comfort_preferences").select("resolution_status").eq("booking_id", b.id).maybeSingle(),
+  ]);
+  if (!dep || !rows) throw new Error("Booking details could not be loaded. Please try again.");
+
+  const lock = travelerDetailsLock({
+    status: b.status,
+    tripHasStarted: hasStarted({ startDate: String(dep.start_date) }),
+    anyVerified: rows.some((r) => r.verification_checked),
+  });
+  if (lock.locked) throw new Error(`DETAILS_LOCKED: ${lock.reason}`);
+
+  const own = new Set(rows.map((r) => String(r.id)));
+  if (input.travelers.length !== own.size || input.travelers.some((t) => !own.has(t.id))) {
+    throw new Error("TRAVELERS_MISMATCH: These traveller details do not match the seats on this booking. Reload the page and try again.");
+  }
+
+  if (input.pickupPointId) {
+    const { data: pickupMatch } = await admin
+      .from("pickup_points")
+      .select("id")
+      .eq("id", input.pickupPointId)
+      .eq("trip_id", dep.trip_id)
+      .maybeSingle();
+    if (!pickupMatch) throw new Error("PICKUP_INVALID: That pick-up point does not belong to this trip.");
+  }
+
+  // One statement for every traveller row: they are all saved, or none are.
+  const { error: travErr } = await admin.from("booking_travelers").upsert(
+    input.travelers.map((t) => ({
+      id: t.id,
+      booking_id: b.id,
+      full_name: t.fullName,
+      age_group: t.ageGroup,
+      age_years: t.ageYears,
+      emergency_contact: t.emergencyContact,
+      dietary_notes: t.dietaryNotes ? t.dietaryNotes : null,
+      seat_row_request: t.seatRowRequest,
+      room_preference: t.roomPreference,
+    })),
+    { onConflict: "id" }
+  );
+  if (travErr) throw new Error(travErr.message || "Could not save the traveller details.");
+
+  if (input.pickupPointId !== undefined && input.pickupPointId !== b.pickup_point_id) {
+    const { error: pickErr } = await admin
+      .from("bookings")
+      .update({ pickup_point_id: input.pickupPointId, updated_at: new Date().toISOString() })
+      .eq("id", b.id);
+    if (pickErr) throw new Error(pickErr.message || "Could not save the pick-up point.");
+  }
+
+  // The co-traveller request can be changed until the team has answered it.
+  const resolution = (comfort?.resolution_status as ComfortResolutionStatus | undefined) ?? "none_requested";
+  if (input.coTravelerPreference && (resolution === "none_requested" || resolution === "pending_review")) {
+    const preference = preferenceForDeparture(dep.departure_type, input.coTravelerPreference);
+    const { error: comfortErr } = await admin.from("booking_comfort_preferences").upsert(
+      {
+        booking_id: b.id,
+        co_traveler_preference: preference,
+        preference_notes: input.preferenceNotes ? input.preferenceNotes : null,
+        resolution_status: preference === "open_mixed" ? "none_requested" : "pending_review",
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "booking_id" }
+    );
+    if (comfortErr) throw new Error(comfortErr.message || "Could not save the co-traveller request.");
+  }
+
+  // The log says that details were filled in, never the details themselves.
+  await admin.from("audit_logs").insert({
+    actor_role: "customer",
+    action: "customer_traveler_details",
+    entity_type: "booking",
+    entity_id: b.id,
+    reason: `Traveller details saved for ${input.travelers.length} seat(s)`,
+  });
+
+  return { saved: input.travelers.length };
 }
 
 export async function addWaitlistEntry(input: {
@@ -739,12 +882,11 @@ export async function requestCustomerBookingChange(params: {
   const admin = createSupabaseAdminClient();
   const { data: booking } = await admin
     .from("bookings")
-    .select("id, status")
+    .select("id, status, customer_email")
     .eq("booking_reference", params.bookingReference.trim().toUpperCase())
-    .ilike("customer_email", params.email.trim())
     .maybeSingle();
 
-  if (!booking) throw new Error("Booking not found.");
+  if (!booking || !sameEmail(booking.customer_email, params.email)) throw new Error("Booking not found.");
   if (["cancelled", "refunded", "expired"].includes(booking.status)) {
     throw new Error(`Cannot request change on a ${booking.status} booking.`);
   }
@@ -1303,9 +1445,8 @@ export async function findBookingByReferenceAndEmail(
     .from("bookings")
     .select("*")
     .eq("booking_reference", ref)
-    .ilike("customer_email", mail)
     .maybeSingle();
-  return data ? mapBookingRow(data) : null;
+  return data && sameEmail(data.customer_email, mail) ? mapBookingRow(data) : null;
 }
 
 export async function submitUpiPayment(bookingId: string, utr: string): Promise<UpiSubmitResult> {
@@ -1515,7 +1656,15 @@ export async function quoteCoupon(input: {
     priceOverridePaise: depRow.price_override_paise,
     bookingMode: input.bookingMode,
     seatsRequested: input.seatsRequested,
-    payDepositOnly: input.payDepositOnly,
+    // A preview only: where the advance is not offered it shows the full amount (the hold refuses it).
+    payDepositOnly:
+      input.payDepositOnly &&
+      advanceTerms({
+        tripDepositPercent: tripRow.deposit_percent,
+        tripBalanceDueDaysBefore: tripRow.balance_due_days_before,
+        bookingPolicy: settings.bookingPolicy,
+        startDate: String(depRow.start_date),
+      }).available,
     bookingPolicy: settings.bookingPolicy,
   };
   const before = calculateBookingPricing(priceInput);

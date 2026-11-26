@@ -47,7 +47,31 @@ export interface SiteMedia {
   journeyVideo: string;
   journeyPhoneVideo: string;
   journeyPoster: string;
+  /** The people behind Sanchari (home page and About page). A photo is optional: initials show without one. */
+  team: TeamMember[];
+  /** Real photos of the car travellers ride in. The "Our car" section shows only when there is at least one. */
+  vehiclePhotos: string[];
+  /** Real photos from trips that have run. The "From our trips" section shows only when there is at least one. */
+  tripPhotos: string[];
 }
+
+export interface TeamMember {
+  name: string;
+  role: string;
+  photo: string;
+}
+
+export const MAX_TEAM = 8;
+export const MAX_VEHICLE_PHOTOS = 6;
+export const MAX_TRIP_PHOTOS = 12;
+
+/** The team as Sanchari itself announced it ("Meet the Team", November 2026). Edit in Admin → Pictures & videos. */
+export const DEFAULT_TEAM: TeamMember[] = [
+  { name: "Dr. Basavaraj Ullatti", role: "Founder & Executive Head", photo: "" },
+  { name: "K S Indra Kumar", role: "Co-Founder & Technical Head", photo: "" },
+  { name: "Navya P", role: "Trip Operations Executive", photo: "" },
+  { name: "Sandeepa A (Sandy)", role: "Customer Support & Trip Guide", photo: "" },
+];
 
 /** The files that ship with the site. */
 export const BUILT_IN_MEDIA = {
@@ -87,6 +111,9 @@ export const EMPTY_SITE_MEDIA: SiteMedia = {
   journeyVideo: "",
   journeyPhoneVideo: "",
   journeyPoster: "",
+  team: DEFAULT_TEAM,
+  vehiclePhotos: [],
+  tripPhotos: [],
 };
 
 export const isVideoLink = (url: string) => /\.(mp4|webm)(\?|#|$)/i.test(url);
@@ -129,7 +156,43 @@ export function mergeSiteMedia(saved: unknown): SiteMedia {
     journeyVideo: videoStr(saved.journeyVideo),
     journeyPhoneVideo: videoStr(saved.journeyPhoneVideo),
     journeyPoster: imageStr(saved.journeyPoster),
+    // A saved list (even an empty one: the owner removed everyone) wins over the built-in team.
+    team: Array.isArray(saved.team) ? cleanTeam(saved.team) : DEFAULT_TEAM,
+    vehiclePhotos: photoList(saved.vehiclePhotos, MAX_VEHICLE_PHOTOS),
+    tripPhotos: photoList(saved.tripPhotos, MAX_TRIP_PHOTOS),
   };
+}
+
+function photoList(value: unknown, max: number): string[] {
+  if (!Array.isArray(value)) return [];
+  return Array.from(new Set(value.map(imageStr).filter(Boolean))).slice(0, max);
+}
+
+function cleanTeam(value: unknown[]): TeamMember[] {
+  return value
+    .filter(isObj)
+    .map((m) => ({
+      name: typeof m.name === "string" ? m.name.trim().slice(0, 80) : "",
+      role: typeof m.role === "string" ? m.role.trim().slice(0, 80) : "",
+      photo: imageStr(m.photo),
+    }))
+    .filter((m) => m.name.length > 1)
+    .slice(0, MAX_TEAM);
+}
+
+/**
+ * Two letters for a team member without a photo: "Navya P" → "NP", "Dr. Basavaraj Ullatti" → "BU",
+ * "K S Indra Kumar" → "IK" (the name itself, not the initials written before it).
+ */
+export function teamInitials(name: string): string {
+  const words = name
+    .replace(/\([^)]*\)/g, " ")
+    .split(/\s+/)
+    .filter((w) => w && !/^(dr|mr|mrs|ms|shri|smt)\.?$/i.test(w));
+  const fullWords = words.filter((w) => w.replace(/\./g, "").length > 1);
+  const pick = fullWords.length >= 2 ? fullWords : words;
+  const letters = (pick.length > 1 ? [pick[0], pick[pick.length - 1]] : pick).map((w) => w[0]?.toUpperCase() ?? "");
+  return letters.join("") || "S";
 }
 
 /**

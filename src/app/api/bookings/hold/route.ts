@@ -8,6 +8,7 @@ import { paymentErrorMessage } from "@/lib/payments/upi";
 import { buildUpiInstructions } from "@/lib/payments/upi-qr";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { refreshStorefront } from "@/lib/revalidate";
+import { reservedSeatTravelers } from "@/lib/traveler-details";
 import { checkoutSchema } from "@/lib/validation";
 
 export async function POST(request: NextRequest) {
@@ -66,7 +67,12 @@ export async function POST(request: NextRequest) {
       pickupPointId: parsed.data.pickupPointId,
       payDepositOnly: parsed.data.payDepositOnly,
       paymentProvider: method,
-      travelers: parsed.data.travelers,
+      // Step 1 of booking sends no traveller details: each seat is saved for now in the name of
+      // the person booking ("Traveller 2", … for the rest) and completed later from My Booking.
+      travelers:
+        parsed.data.travelers && parsed.data.travelers.length > 0
+          ? parsed.data.travelers
+          : reservedSeatTravelers(parsed.data.customerName, parsed.data.customerPhone, parsed.data.seatsRequested),
       coTravelerPreference: parsed.data.coTravelerPreference,
       preferenceNotes: parsed.data.preferenceNotes ?? "",
       whatsappOptIn: parsed.data.whatsappOptIn,
@@ -117,6 +123,10 @@ export async function POST(request: NextRequest) {
     const seatTaken = Boolean(raw && raw.startsWith("SEAT_TAKEN"));
     if (raw && raw.startsWith("WOMEN_ONLY")) {
       return NextResponse.json({ error: message, code: "WOMEN_ONLY" }, { status: 400 });
+    }
+    // The advance was asked for on a date that no longer offers it: the page shows the full amount again.
+    if (raw && raw.startsWith("ADVANCE_CLOSED")) {
+      return NextResponse.json({ error: message, code: "ADVANCE_CLOSED" }, { status: 409 });
     }
     return NextResponse.json({ error: message, code: seatTaken ? "SEAT_TAKEN" : undefined }, { status: 409 });
   }

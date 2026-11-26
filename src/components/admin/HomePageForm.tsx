@@ -48,6 +48,8 @@ const ICON_LABELS: Record<IconKey, string> = {
   utensils: "Food",
   bed: "Bed / hotel room",
   route: "Route / pick-up to drop",
+  message: "Chat / WhatsApp",
+  tag: "Price tag",
 };
 
 function move<T>(list: T[], i: number, d: number): T[] {
@@ -261,6 +263,44 @@ export function HomePageForm({ initial, trips, save, canEdit }: { initial: HomeP
           <TextInput label="Kannada line (orange, above the headline)" value={f.kannadaLine} isDisabled={!canEdit} onChange={(v) => set("kannadaLine", v)} />
           <TextInput label="Small label at the top" value={f.heroChip} isDisabled={!canEdit} onChange={(v) => set("heroChip", v)} />
         </div>
+        <fieldset className="space-y-2">
+          <legend className="text-sm font-semibold text-forest-900">Four short facts under the first-screen buttons</legend>
+          <p className="text-xs text-stone-600">
+            Only what every trip really offers, in two or three words each. The next trip, its date, price and open seats on the first screen are
+            filled in live from Dates &amp; seats.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {[0, 1, 2, 3].map((i) => (
+              <TextInput
+                key={i}
+                label={`Fact ${i + 1}`}
+                value={f.heroPoints[i] ?? ""}
+                isDisabled={!canEdit}
+                onChange={(v) => {
+                  const next = [0, 1, 2, 3].map((j) => (j === i ? v.slice(0, 32) : f.heroPoints[j] ?? ""));
+                  set("heroPoints", next);
+                }}
+              />
+            ))}
+          </div>
+        </fieldset>
+      </Group>
+
+      <Group
+        title="Travel with confidence"
+        hint="The promises every trip keeps. Write only what the team delivers every time; link each card to the page where it is written down."
+      >
+        <SectionEditor label="Travel with confidence" value={f.trustSection} onChange={(v) => set("trustSection", v)} canEdit={canEdit} />
+        <CardsEditor cards={f.trustCards} onChange={(v) => set("trustCards", v)} canEdit={canEdit} max={6} linkHint="/safety, /policies#refunds, /contact, /trips…" />
+      </Group>
+
+      <Group
+        title="Team, car and trip photos"
+        hint="The names, roles and photos themselves are in Website → Pictures & videos. The car and trip-photo sections stay hidden until real photos are added there."
+      >
+        <SectionEditor label="Meet the team" value={f.teamSection} onChange={(v) => set("teamSection", v)} canEdit={canEdit} />
+        <SectionEditor label="Our car" value={f.vehicleSection} onChange={(v) => set("vehicleSection", v)} canEdit={canEdit} />
+        <SectionEditor label="From our trips" value={f.journeysSection} onChange={(v) => set("journeysSection", v)} canEdit={canEdit} />
       </Group>
 
       <Group title="Trip categories" hint="Each category gets its own colourful card with a photo, description, trips, starting price, next date and live weather. The Trips page shows them as filter buttons.">
@@ -369,7 +409,7 @@ export function HomePageForm({ initial, trips, save, canEdit }: { initial: HomeP
             isLoading={busy}
             onClick={async () => {
               setBusy(true);
-              const r = await save("settings.save", { key: "home_page", value: f });
+              const r = await save("settings.save", { key: "home_page", value: { ...f, heroPoints: f.heroPoints.map((p) => p.trim()).filter(Boolean) } });
               setBusy(false);
               setNotice(r.ok ? { kind: "ok", text: r.message } : { kind: "error", text: r.error });
             }}

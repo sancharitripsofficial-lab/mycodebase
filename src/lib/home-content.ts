@@ -46,6 +46,8 @@ export const ICON_KEYS = [
   "utensils",
   "bed",
   "route",
+  "message",
+  "tag",
 ] as const;
 export type IconKey = (typeof ICON_KEYS)[number];
 
@@ -82,6 +84,8 @@ export interface SectionText {
 export interface HomePageContent {
   kannadaLine: string;
   heroChip: string;
+  /** Short facts under the first-screen buttons ("Max 6 travellers", …). Only what every trip really offers. */
+  heroPoints: string[];
   categoriesSection: SectionText;
   categories: HomeCategory[];
   travellerCards: HomeCard[];
@@ -95,6 +99,15 @@ export interface HomePageContent {
   howSection: SectionText;
   howCards: HomeCard[];
   routesSection: SectionText;
+  /** "Travel with confidence": the promises every trip keeps, each linked to where it is written down. */
+  trustSection: SectionText;
+  trustCards: HomeCard[];
+  /** The people behind Sanchari (names, roles and photos: Admin → Pictures & videos → Team). */
+  teamSection: SectionText;
+  /** Real photos of the car, shown only once the owner has added some (Admin → Pictures & videos). */
+  vehicleSection: SectionText;
+  /** Real photos from past trips, shown only once the owner has added some. */
+  journeysSection: SectionText;
   safetySection: SectionText;
   reviewsSection: SectionText;
   planSection: SectionText;
@@ -104,6 +117,7 @@ export interface HomePageContent {
 export const DEFAULT_HOME_CONTENT: HomePageContent = {
   kannadaLine: "ಬನ್ನಿ, ಕರ್ನಾಟಕ ಸುತ್ತೋಣ",
   heroChip: "Sanchari Trips • Small-group road trips from Bengaluru • Max 6 per car",
+  heroPoints: ["Max 6 travellers", "Ertiga-class MPV", "Bengaluru pick-up", "Price shown upfront"],
   categoriesSection: {
     show: true,
     eyebrow: "Pick your trip",
@@ -209,7 +223,22 @@ export const DEFAULT_HOME_CONTENT: HomePageContent = {
       href: "",
     },
   ],
-  routesSection: { show: true, eyebrow: "Curated routes", title: "Karnataka micro-expeditions", body: "" },
+  routesSection: { show: true, eyebrow: "Upcoming trips", title: "Pick a date and reserve your seat", body: "" },
+  trustSection: {
+    show: true,
+    eyebrow: "Travel with confidence",
+    title: "What you can count on, every trip",
+    body: "",
+  },
+  trustCards: [
+    { title: "Six travellers, never more", body: "Every car is capped at six seats. You see the open seats before you book.", colour: "lagoon", icon: "users", href: "/trips" },
+    { title: "The price you see is the price", body: "Each trip page lists what is included and what is not, before you pay anything.", colour: "sunset", icon: "tag", href: "/trips" },
+    { title: "Safety and refunds, in writing", body: "Our safety standards and cancellation rules are published for you to read first.", colour: "leaf", icon: "shield", href: "/policies#refunds" },
+    { title: "A person on WhatsApp", body: "Message our team before or after you book. A real person replies.", colour: "amber", icon: "message", href: "/contact" },
+  ],
+  teamSection: { show: true, eyebrow: "Meet Sanchari", title: "The people who plan and run your trip", body: "" },
+  vehicleSection: { show: true, eyebrow: "Our car", title: "The car you travel in", body: "" },
+  journeysSection: { show: true, eyebrow: "From our trips", title: "Moments from the road", body: "" },
   safetySection: {
     show: true,
     eyebrow: "Safety, respect & privacy",
@@ -239,6 +268,9 @@ function mergeSection<T extends SectionText>(def: T, v: unknown): T {
  * new default; anything the owner wrote themselves is never touched (SEO plan §8.2).
  */
 export const OLD_HOME_DEFAULTS = {
+  // The trip cards moved up to sit right under the first screen: their heading now says what to do.
+  routesEyebrow: "Curated routes",
+  routesTitle: "Karnataka micro-expeditions",
   heroChip: "Weekend trips from Bengaluru • Max 6 per car",
   categoriesEyebrow: "Pick your weekend",
   // Named a coast and ruins, but only hill and coffee trips run (no Gokarna or Hampi trip).
@@ -274,6 +306,7 @@ export function mergeHomeContent(saved: unknown): HomePageContent {
   return {
     kannadaLine: typeof s.kannadaLine === "string" ? s.kannadaLine : d.kannadaLine,
     heroChip: typeof savedHero === "string" && savedHero.trim() ? savedHero : d.heroChip,
+    heroPoints: Array.isArray(s.heroPoints) ? s.heroPoints.filter((p): p is string => typeof p === "string" && p.trim().length > 0).slice(0, 4) : d.heroPoints,
     categoriesSection: mergeSection(
       d.categoriesSection,
       upgradeSection(s.categoriesSection, {
@@ -290,7 +323,18 @@ export function mergeHomeContent(saved: unknown): HomePageContent {
     compareRows: Array.isArray(s.compareRows) ? s.compareRows : d.compareRows,
     howSection: mergeSection(d.howSection, s.howSection),
     howCards,
-    routesSection: mergeSection(d.routesSection, s.routesSection),
+    routesSection: mergeSection(
+      d.routesSection,
+      upgradeSection(s.routesSection, {
+        eyebrow: [old.routesEyebrow, d.routesSection.eyebrow],
+        title: [old.routesTitle, d.routesSection.title],
+      })
+    ),
+    trustSection: mergeSection(d.trustSection, s.trustSection),
+    trustCards: Array.isArray(s.trustCards) ? s.trustCards : d.trustCards,
+    teamSection: mergeSection(d.teamSection, s.teamSection),
+    vehicleSection: mergeSection(d.vehicleSection, s.vehicleSection),
+    journeysSection: mergeSection(d.journeysSection, s.journeysSection),
     safetySection: mergeSection(d.safetySection, s.safetySection),
     reviewsSection: mergeSection(d.reviewsSection, s.reviewsSection),
     planSection: mergeSection(d.planSection, s.planSection),

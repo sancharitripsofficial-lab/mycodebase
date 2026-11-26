@@ -1,9 +1,9 @@
 import { revalidatePath } from "next/cache";
 
 /**
- * Storefront pages are cached on the CDN (revalidate = 30 s). Call this after anything that
+ * Storefront pages are cached on the CDN (rebuilt at most every 5 minutes). Call this after anything that
  * changes what customers see — seats held/confirmed/released, trips, dates, prices, site text —
- * so the next visitor gets fresh pages immediately instead of waiting up to 30 s.
+ * so the next visitor gets fresh pages immediately instead of waiting up to 5 minutes.
  * Bookings themselves are always decided by the database, never by a cached page.
  */
 export function refreshStorefront(): void {

@@ -10,7 +10,7 @@ import { GUIDE_HUB, guidePagesOfKind } from "@/lib/places/guide";
 import { ANY_DAY_LINE, BRAND_NAME, PAGE_SEO, jsonLdText, pageBreadcrumb, pageMetadata, tripListJsonLd } from "@/lib/seo";
 
 // Live trips and dates: same freshness as the trips page.
-export const revalidate = 60;
+export const revalidate = 300;
 
 export const metadata: Metadata = pageMetadata({
   title: PAGE_SEO.weekend.title,

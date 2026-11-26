@@ -4,6 +4,7 @@ import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Promotion } from "@/lib/data/promotions";
+import { offerEndLabel } from "@/lib/offer-rules";
 import { PromoMedia } from "./PromoMedia";
 import { THEME_BG, trackPromo, useTrackView } from "./track";
 
@@ -33,6 +34,25 @@ export function scrollIfSamePage(e: { preventDefault: () => void }, href: string
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   el.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
   if (window.location.hash !== url.hash) window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
+}
+
+/**
+ * The facts the site knows about an offer besides the owner's own words: the trip it is for and
+ * the day it ends. Shown wherever the offer is, so nobody has to guess whether it still runs.
+ */
+export function OfferTerms({ promo, className = "" }: { promo: Pick<Promotion, "endsAt" | "tripTitle">; className?: string }) {
+  const ends = offerEndLabel(promo.endsAt);
+  if (!ends && !promo.tripTitle) return null;
+  return (
+    <p className={className}>
+      {promo.tripTitle && (
+        <span>
+          Only on <span data-no-translate>{promo.tripTitle}</span>.{" "}
+        </span>
+      )}
+      {ends && <span>{ends}.</span>}
+    </p>
+  );
 }
 
 export function PromoCta({ promo, className, onDone }: { promo: Promotion; className: string; onDone?: () => void }) {
@@ -125,6 +145,7 @@ export function PromoBanner({ promotions, className = "", preview = false }: { p
           )}
           <p className="font-display text-2xl leading-tight font-semibold sm:text-3xl">{current.title}</p>
           {current.message && <p className="text-sm leading-relaxed text-white/90 sm:text-base">{current.message}</p>}
+          <OfferTerms promo={current} className="text-xs font-semibold text-white/85" />
           <PromoCta
             promo={current}
             className="mt-1 inline-flex w-fit items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-forest-900 shadow-md transition hover:-translate-y-0.5 hover:shadow-lg"

@@ -36,6 +36,22 @@ export type LiveWeather = {
 /** How often the weather is re-checked while a page stays open. */
 export const WEATHER_REFRESH_MS = 10 * 60 * 1000;
 
+/** A reading older than this is no longer "now": it is hidden until a fresh one arrives. */
+export const WEATHER_MAX_AGE_MS = 60 * 60 * 1000;
+
+/** How old a reading is, or null when it carries no time. */
+export function weatherAgeMs(w: Pick<LiveWeather, "updatedAt">, now: number = Date.now()): number | null {
+  const at = w.updatedAt ? Date.parse(w.updatedAt) : NaN;
+  return Number.isFinite(at) ? Math.max(0, now - at) : null;
+}
+
+/** Live, and recent enough to be shown as the weather "now". */
+export function isWeatherFresh(w: LiveWeather | null | undefined, now: number = Date.now()): w is LiveWeather {
+  if (!w?.live) return false;
+  const age = weatherAgeMs(w, now);
+  return age === null ? !w.stale : age <= WEATHER_MAX_AGE_MS;
+}
+
 const TIME = new Intl.DateTimeFormat("en-IN", { hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" });
 /** "2:05 pm" (IST) for the reading time, or "" when unknown. */
 export const weatherTime = (w: LiveWeather) => (w.updatedAt ? TIME.format(new Date(w.updatedAt)) : "");
@@ -98,6 +114,8 @@ function isLiveWeather(v: unknown): v is LiveWeather {
 }
 
 const cache = new Map<string, { at: number; p: Promise<LiveWeather> }>();
+/** Readings come in 15-minute steps and pages are cached briefly: up to this age is normal for a new page. */
+const SEED_GRACE_MS = 20 * 60 * 1000;
 
 function cacheKey(key: { slug?: string; region?: string }): string {
   return key.slug ? `slug=${encodeURIComponent(key.slug)}` : `region=${encodeURIComponent(key.region ?? "")}`;
@@ -107,7 +125,12 @@ function cacheKey(key: { slug?: string; region?: string }): string {
 export function seedLiveWeather(key: { slug?: string; region?: string } | null, weather: LiveWeather): void {
   if (!key || (!key.slug && !key.region) || !weather.live) return;
   const qs = cacheKey(key);
-  if (!cache.has(qs)) cache.set(qs, { at: Date.now(), p: Promise.resolve(weather) });
+  if (cache.has(qs)) return;
+  // The page's own reading counts as fresh only for as long as it really is. A page served from
+  // the CDN hours after it was built carries an old reading: that one is re-checked straight away
+  // instead of after ten minutes.
+  const olderThanGrace = Math.max(0, (weatherAgeMs(weather) ?? 0) - SEED_GRACE_MS);
+  cache.set(qs, { at: Date.now() - olderThanGrace, p: Promise.resolve(weather) });
 }
 
 /** Browser: one request per destination per page view, shared by every photo of that trip. */

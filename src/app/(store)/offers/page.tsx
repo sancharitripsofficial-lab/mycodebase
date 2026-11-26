@@ -3,14 +3,14 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { PageBanner } from "@/components/banners/PageBanner";
 import { guideH2 } from "@/components/guide/GuideParts";
-import { PromoCta } from "@/components/promo/PromoBanner";
+import { OfferTerms, PromoCta } from "@/components/promo/PromoBanner";
 import { TripCard } from "@/components/TripCard";
 import { getLivePromotions } from "@/lib/data/promotions";
 import { getPublishedTripsWithDetails } from "@/lib/data/repository";
 import { BRAND_NAME, PAGE_SEO, jsonLdText, pageBreadcrumb, pageMetadata } from "@/lib/seo";
 
 // Offers start and end on a schedule (Admin → Offers & ads): refresh at least once a minute.
-export const revalidate = 60;
+export const revalidate = 300;
 
 export const metadata: Metadata = pageMetadata({
   title: PAGE_SEO.offers.title,
@@ -52,6 +52,7 @@ export default async function OffersPage() {
                     {offer.badge && <p className="eyebrow text-copper-700">{offer.badge}</p>}
                     <h3 className="font-display text-xl font-semibold text-forest-900">{offer.title}</h3>
                     {offer.message && <p className="mt-2 text-sm leading-relaxed text-ink-900/85">{offer.message}</p>}
+                    <OfferTerms promo={offer} className="mt-2 text-xs font-semibold text-stone-600" />
                     <PromoCta promo={offer} className="mt-3 inline-flex min-h-10 items-center gap-1.5 text-sm font-semibold text-forest-900 hover:text-copper-700" />
                   </li>
                 ))}

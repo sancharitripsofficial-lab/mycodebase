@@ -4,7 +4,9 @@ import { DEFAULT_DEVELOPER_CREDIT } from "@/lib/developer-credit";
 import { DEFAULT_HOME_CONTENT } from "@/lib/home-content";
 import { EMPTY_SITE_MEDIA } from "@/lib/site-media";
 import crypto from "node:crypto";
-import { calculateBookingPricing } from "@/lib/currency";
+import { advanceTerms, assertAdvanceAvailable, calculateBookingPricing } from "@/lib/currency";
+import { hasStarted } from "@/lib/departure-rules";
+import { travelerDetailsComplete, travelerDetailsLock } from "@/lib/traveler-details";
 import { getSafeComfortCustomerLabel } from "@/lib/privacy";
 import { assertWomenOnlyConfirmed, preferenceForDeparture } from "@/lib/women-only";
 import type {
@@ -23,6 +25,7 @@ import type {
   PickupPoint,
   PublicDepartureAvailability,
   SiteSettings,
+  TravelerDetailsInput,
   Trip,
   TripWithDetails,
   UpiPaymentSettings,
@@ -722,6 +725,7 @@ function createInitialDemoState(): DemoDatabaseState {
     blogPosts: DEFAULT_BLOG_POSTS,
     siteMedia: EMPTY_SITE_MEDIA,
     developerCredit: DEFAULT_DEVELOPER_CREDIT,
+    analytics: { gaMeasurementId: "" },
     legalDrafts: {
       ownerReviewRequired: true,
       termsSummary:
@@ -1009,6 +1013,13 @@ export function reserveSeatsDemo(
     throw new Error("Unable to allocate requested seats.");
   }
 
+  const advance = advanceTerms({
+    tripDepositPercent: trip.depositPercent,
+    tripBalanceDueDaysBefore: trip.balanceDueDaysBefore,
+    bookingPolicy: state.settings.bookingPolicy,
+    startDate: dep.startDate,
+  });
+  assertAdvanceAvailable(input.payDepositOnly, advance);
   const pricing = calculateBookingPricing({
     trip,
     priceOverridePaise: dep.priceOverridePaise,
@@ -1043,13 +1054,7 @@ export function reserveSeatsDemo(
     totalPaise: pricing.totalPaise,
     amountPaidPaise: 0,
     amountDuePaise: pricing.payNowPaise,
-    balanceDueAt:
-      pricing.balanceLaterPaise > 0
-        ? new Date(
-            Date.parse(dep.startDate) -
-              state.settings.bookingPolicy.balanceDueDaysBefore * 86_400_000
-          ).toISOString()
-        : null,
+    balanceDueAt: pricing.balanceLaterPaise > 0 && advance.balanceDueDate ? `${advance.balanceDueDate}T00:00:00.000Z` : null,
     holdExpiresAt,
     termsSnapshot: {
       policyVersion: state.settings.bookingPolicy.policyVersion,
@@ -1212,6 +1217,77 @@ export function confirmPaymentDemo(
   return { bookingStatus: booking.status, alreadyProcessed: false };
 }
 
+/** Step 2 of booking in the preview store: same checks, in the same order, as the database path. */
+export function saveTravelerDetailsDemo(input: TravelerDetailsInput, stateOverride?: DemoDatabaseState): { saved: number } {
+  const state = stateOverride ?? getDemoState();
+  const booking = state.bookings.find(
+    (b) =>
+      b.bookingReference.toUpperCase() === input.bookingReference.trim().toUpperCase() &&
+      b.customerEmail.toLowerCase() === input.email.trim().toLowerCase()
+  );
+  if (!booking) throw new Error("BOOKING_NOT_FOUND: No matching booking found for that reference and email.");
+  const dep = state.departures.find((d) => d.id === booking.departureId);
+  if (!dep) throw new Error("Booking details could not be loaded. Please try again.");
+
+  const rows = state.travelers.filter((t) => t.bookingId === booking.id);
+  const lock = travelerDetailsLock({
+    status: booking.status,
+    tripHasStarted: hasStarted({ startDate: dep.startDate }),
+    anyVerified: rows.some((t) => t.verificationChecked),
+  });
+  if (lock.locked) throw new Error(`DETAILS_LOCKED: ${lock.reason}`);
+
+  const own = new Set(rows.map((t) => t.id));
+  if (input.travelers.length !== own.size || input.travelers.some((t) => !own.has(t.id))) {
+    throw new Error("TRAVELERS_MISMATCH: These traveller details do not match the seats on this booking. Reload the page and try again.");
+  }
+  if (input.pickupPointId && !state.pickupPoints.some((p) => p.id === input.pickupPointId && p.tripId === dep.tripId)) {
+    throw new Error("PICKUP_INVALID: That pick-up point does not belong to this trip.");
+  }
+
+  for (const t of input.travelers) {
+    const row = rows.find((r) => r.id === t.id);
+    if (!row) continue;
+    row.fullName = t.fullName;
+    row.ageGroup = t.ageGroup;
+    row.ageYears = t.ageYears;
+    row.emergencyContact = t.emergencyContact;
+    row.dietaryNotes = t.dietaryNotes || "";
+    row.seatRowRequest = t.seatRowRequest;
+    row.roomPreference = t.roomPreference;
+  }
+  if (input.pickupPointId !== undefined) booking.pickupPointId = input.pickupPointId;
+
+  const comfort = state.comfortPreferences.find((c) => c.bookingId === booking.id);
+  const resolution = comfort?.resolutionStatus ?? "none_requested";
+  if (input.coTravelerPreference && (resolution === "none_requested" || resolution === "pending_review")) {
+    const preference = preferenceForDeparture(dep.departureType, input.coTravelerPreference);
+    const next = {
+      coTravelerPreference: preference,
+      preferenceNotes: input.preferenceNotes || null,
+      resolutionStatus: preference === "open_mixed" ? ("none_requested" as const) : ("pending_review" as const),
+    };
+    if (comfort) Object.assign(comfort, next);
+    else
+      state.comfortPreferences.push({ bookingId: booking.id, ...next, resolvedBy: null, resolvedAt: null, consentRecordedAt: new Date().toISOString() });
+  }
+
+  booking.updatedAt = new Date().toISOString();
+  state.auditLogs.unshift({
+    id: crypto.randomUUID(),
+    actorUserId: null,
+    actorRole: "customer",
+    action: "customer_traveler_details",
+    entityType: "booking",
+    entityId: booking.id,
+    reason: `Traveller details saved for ${input.travelers.length} seat(s)`,
+    beforeState: null,
+    afterState: null,
+    createdAt: new Date().toISOString(),
+  });
+  return { saved: input.travelers.length };
+}
+
 export function lookupCustomerBookingDemo(
   bookingReference: string,
   email: string
@@ -1238,8 +1314,19 @@ export function lookupCustomerBookingDemo(
   const pickupPoint = state.pickupPoints.find((p) => p.id === booking.pickupPointId) ?? null;
   const travelers = state.travelers.filter((t) => t.bookingId === booking.id);
   const comfort = state.comfortPreferences.find((c) => c.bookingId === booking.id);
+  const lock = travelerDetailsLock({
+    status: booking.status,
+    tripHasStarted: hasStarted({ startDate: availability.startDate }),
+    anyVerified: travelers.some((t) => t.verificationChecked),
+  });
+  const resolution = comfort?.resolutionStatus ?? "none_requested";
 
   return {
+    travelerDetailsComplete: travelerDetailsComplete(travelers),
+    travelerDetailsLockedReason: lock.locked ? lock.reason : null,
+    pickupOptions: state.pickupPoints.filter((p) => p.tripId === trip.id).sort((a, b) => a.sortOrder - b.sortOrder),
+    coTravelerPreference: comfort?.coTravelerPreference ?? "open_mixed",
+    comfortEditable: resolution === "none_requested" || resolution === "pending_review",
     booking,
     trip: {
       id: trip.id,

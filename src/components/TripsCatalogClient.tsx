@@ -9,13 +9,34 @@ import type { KarnatakaDistrict, KarnatakaPlace } from "@/lib/places/types";
 import { readTripQuery, tripIdsForQuery, withoutTripQuery } from "@/lib/trip-query";
 import type { TripWithDetails } from "@/lib/types";
 import { isBookable } from "@/lib/departure-rules";
+import { tripPriceInfo } from "@/lib/trip-price";
+
+/** Budget per person, by the trip's "From" price (the same price its card shows). */
+const BUDGETS = [
+  { value: "all", label: "Any budget", min: 0, max: Infinity },
+  { value: "under-3000", label: "Up to ₹3,000", min: 0, max: 300_000 },
+  { value: "3000-5000", label: "₹3,000 to ₹5,000", min: 300_001, max: 500_000 },
+  { value: "over-5000", label: "Above ₹5,000", min: 500_001, max: Infinity },
+] as const;
+
+const DURATIONS = [
+  { value: "all", label: "Any length" },
+  { value: "1", label: "1 day" },
+  { value: "2", label: "2 days" },
+  { value: "3", label: "3 days or more" },
+] as const;
+
+const placeOf = (destination: string) => destination.split(",")[0].trim();
+const SELECT = "h-12 w-full rounded-xl border border-stone-300 bg-white px-3 text-base text-ink-900 sm:text-sm";
 
 export function TripsCatalogClient({ trips, categories = [] }: { trips: TripWithDetails[]; categories?: HomeCategory[] }) {
   // Smart search (places + free text). Changing the key clears the box.
   const [search, setSearch] = useState<TripSearchFilter>({ kind: "none" });
   const [searchKey, setSearchKey] = useState(0);
   const [category, setCategory] = useState("all");
-  const [region, setRegion] = useState("all");
+  const [destination, setDestination] = useState("all");
+  const [budget, setBudget] = useState<(typeof BUDGETS)[number]["value"]>("all");
+  const [duration, setDuration] = useState<(typeof DURATIONS)[number]["value"]>("all");
   const [difficulty, setDifficulty] = useState("all");
   const [onlyPrivateEligible, setOnlyPrivateEligible] = useState(false);
   const [onlyWomenBatch, setOnlyWomenBatch] = useState(false);
@@ -70,10 +91,25 @@ export function TripsCatalogClient({ trips, categories = [] }: { trips: TripWith
     [categories, trips]
   );
 
-  const regions = useMemo(
-    () => ["all", ...Array.from(new Set(trips.map((t) => t.trip.region)))],
+  const destinations = useMemo(() => Array.from(new Set(trips.map((t) => placeOf(t.trip.destination)))).sort((a, b) => a.localeCompare(b)), [trips]);
+  // Only the choices that match at least one trip are offered, so no single filter empties the page.
+  const budgets = useMemo(
+    () =>
+      BUDGETS.filter(
+        (b) =>
+          b.value === "all" ||
+          trips.some((t) => {
+            const from = tripPriceInfo(t.trip, t.departures).fromPaise;
+            return from >= b.min && from <= b.max;
+          })
+      ),
     [trips]
   );
+  const durations = useMemo(
+    () => DURATIONS.filter((d) => d.value === "all" || trips.some((t) => (d.value === "3" ? t.trip.durationDays >= 3 : t.trip.durationDays === Number(d.value)))),
+    [trips]
+  );
+  const difficulties = useMemo(() => (["Easy", "Moderate", "Active"] as const).filter((d) => trips.some((t) => t.trip.difficulty === d)), [trips]);
 
   // The button that cleared the search (in the place banner, the no-trip card or the empty box)
   // goes away, so focus moves on purpose: back to the search box on a mouse/keyboard device, or
@@ -106,8 +142,14 @@ export function TripsCatalogClient({ trips, categories = [] }: { trips: TripWith
     const cat = liveCategories.find((c) => c.id === category);
     return trips.filter((item) => {
       if (cat && !cat.tripSlugs.includes(item.trip.slug)) return false;
-      if (region !== "all" && item.trip.region !== region) return false;
+      if (destination !== "all" && placeOf(item.trip.destination) !== destination) return false;
       if (difficulty !== "all" && item.trip.difficulty !== difficulty) return false;
+      if (duration !== "all" && (duration === "3" ? item.trip.durationDays < 3 : item.trip.durationDays !== Number(duration))) return false;
+      if (budget !== "all") {
+        const range = BUDGETS.find((b) => b.value === budget);
+        const from = tripPriceInfo(item.trip, item.departures).fromPaise;
+        if (range && (from < range.min || from > range.max)) return false;
+      }
       if (
         onlyPrivateEligible &&
         !item.departures.some((d) => d.seatsTaken === 0 && isBookable(d))
@@ -124,7 +166,18 @@ export function TripsCatalogClient({ trips, categories = [] }: { trips: TripWith
       if (searchIds && !searchIds.has(item.trip.id)) return false;
       return true;
     });
-  }, [trips, searchIds, region, difficulty, onlyPrivateEligible, onlyWomenBatch, category, liveCategories]);
+  }, [trips, searchIds, destination, budget, duration, difficulty, onlyPrivateEligible, onlyWomenBatch, category, liveCategories]);
+
+  const filtersOn = destination !== "all" || budget !== "all" || duration !== "all" || difficulty !== "all" || onlyPrivateEligible || onlyWomenBatch || category !== "all";
+  const resetFilters = () => {
+    setCategory("all");
+    setDestination("all");
+    setBudget("all");
+    setDuration("all");
+    setDifficulty("all");
+    setOnlyPrivateEligible(false);
+    setOnlyWomenBatch(false);
+  };
 
   // "2 trips go to Abbey Falls" / "No trip to Hampi yet" (Kannada in patterns.ts).
   const placeResult =
@@ -168,59 +221,72 @@ export function TripsCatalogClient({ trips, categories = [] }: { trips: TripWith
         </div>
       )}
       <div className="sec-route rounded-2xl border border-stone-200 p-4 shadow-[var(--shadow-soft)] sm:p-5">
-        <div className="grid gap-3 md:grid-cols-4">
-          <TripSearch key={searchKey} trips={trips} onFilterChange={onSearchChange} autoFocus={focusSearchBox} className="md:col-span-2" />
+        <TripSearch key={searchKey} trips={trips} onFilterChange={onSearchChange} autoFocus={focusSearchBox} />
 
+        <div className="mt-3 grid grid-cols-2 gap-2.5 md:grid-cols-4">
           <label className="block">
-            <span className="sr-only">Filter by region</span>
-            <select
-              value={region}
-              onChange={(e) => setRegion(e.target.value)}
-              className="h-12 w-full rounded-xl border border-stone-300 bg-white px-3 text-sm text-ink-900"
-            >
-              {regions.map((r) => (
-                <option key={r} value={r}>
-                  {r === "all" ? "All Karnataka Regions" : r}
+            <span className="mb-1 block text-xs font-semibold text-stone-600">Destination</span>
+            <select value={destination} onChange={(e) => setDestination(e.target.value)} className={SELECT}>
+              <option value="all">Anywhere</option>
+              {destinations.map((d) => (
+                <option key={d} value={d}>
+                  {d}
                 </option>
               ))}
             </select>
           </label>
 
           <label className="block">
-            <span className="sr-only">Filter by pace / difficulty</span>
-            <select
-              value={difficulty}
-              onChange={(e) => setDifficulty(e.target.value)}
-              className="h-12 w-full rounded-xl border border-stone-300 bg-white px-3 text-sm text-ink-900"
-            >
-              <option value="all">Any Pace / Difficulty</option>
-              <option value="Easy">Easy</option>
-              <option value="Moderate">Moderate</option>
-              <option value="Active">Active</option>
+            <span className="mb-1 block text-xs font-semibold text-stone-600">Budget per person</span>
+            <select value={budget} onChange={(e) => setBudget(e.target.value as typeof budget)} className={SELECT}>
+              {budgets.map((b) => (
+                <option key={b.value} value={b.value}>
+                  {b.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block">
+            <span className="mb-1 block text-xs font-semibold text-stone-600">Duration</span>
+            <select value={duration} onChange={(e) => setDuration(e.target.value as typeof duration)} className={SELECT}>
+              {durations.map((d) => (
+                <option key={d.value} value={d.value}>
+                  {d.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block">
+            <span className="mb-1 block text-xs font-semibold text-stone-600">Difficulty</span>
+            <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)} className={SELECT}>
+              <option value="all">Any difficulty</option>
+              {difficulties.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
             </select>
           </label>
         </div>
 
-        <div className="mt-3 flex flex-wrap gap-4 text-xs font-medium text-forest-900">
-          <label className="inline-flex cursor-pointer items-center gap-2">
-            <input
-              type="checkbox"
-              checked={onlyPrivateEligible}
-              onChange={(e) => setOnlyPrivateEligible(e.target.checked)}
-              className="h-4 w-4 accent-forest-900"
-            />
-            Private 6-seat vehicle available (all 6 seats open)
+        <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-sm font-medium text-forest-900">
+          <label className="inline-flex min-h-11 cursor-pointer items-center gap-2.5">
+            <input type="checkbox" checked={onlyPrivateEligible} onChange={(e) => setOnlyPrivateEligible(e.target.checked)} className="h-5 w-5 accent-forest-900" />
+            Whole car can be booked
           </label>
 
-          <label className="inline-flex cursor-pointer items-center gap-2">
-            <input
-              type="checkbox"
-              checked={onlyWomenBatch}
-              onChange={(e) => setOnlyWomenBatch(e.target.checked)}
-              className="h-4 w-4 accent-forest-900"
-            />
-            Explicitly scheduled women-only departures
+          <label className="inline-flex min-h-11 cursor-pointer items-center gap-2.5">
+            <input type="checkbox" checked={onlyWomenBatch} onChange={(e) => setOnlyWomenBatch(e.target.checked)} className="h-5 w-5 accent-forest-900" />
+            Women-only dates
           </label>
+
+          {filtersOn && (
+            <button type="button" onClick={resetFilters} className="ml-auto inline-flex min-h-11 items-center gap-1.5 rounded-full border border-stone-300 bg-white px-3.5 text-xs font-semibold text-forest-900">
+              <X className="h-3.5 w-3.5" aria-hidden="true" /> Clear filters
+            </button>
+          )}
         </div>
       </div>
 
@@ -250,30 +316,28 @@ export function TripsCatalogClient({ trips, categories = [] }: { trips: TripWith
         </div>
       )}
 
+      {filtered.length > 0 && !(search.kind === "place" && search.tripIds.length === 0) && (
+        <p className="text-sm font-semibold text-stone-600" aria-live="polite">
+          {filtered.length === trips.length ? `All ${trips.length} trips` : `${filtered.length} of ${trips.length} trips`}
+        </p>
+      )}
+
       <div ref={resultsRef} tabIndex={-1} role="region" aria-label="Trip results" className="scroll-mt-24 rounded-2xl outline-none">
       {search.kind === "place" && search.tripIds.length === 0 ? (
         <NoTripForPlace place={search.place} onClear={clearSearch} planHref="#ask" />
       ) : filtered.length === 0 ? (
         <div className="sec-kolam rounded-2xl border border-dashed border-stone-300 p-10 text-center">
-          <p className="font-display text-lg font-semibold text-forest-900">
-            No matching departures found
-          </p>
-          <p className="mt-1 text-sm text-stone-600">
-            Try clearing one of the filters or viewing all Karnataka road trips.
-          </p>
+          <p className="font-display text-lg font-semibold text-forest-900">No trip matches these filters</p>
+          <p className="mt-1 text-sm text-stone-600">Clear a filter, or ask us below for the trip you have in mind.</p>
           <button
             type="button"
             onClick={() => {
               clearSearch();
-              setCategory("all");
-              setRegion("all");
-              setDifficulty("all");
-              setOnlyPrivateEligible(false);
-              setOnlyWomenBatch(false);
+              resetFilters();
             }}
-            className="mt-4 rounded-full bg-forest-900 px-4 py-2 text-xs font-semibold text-cream-50"
+            className="mt-4 inline-flex min-h-11 items-center rounded-full bg-forest-900 px-5 text-sm font-semibold text-cream-50"
           >
-            Reset Filters
+            Show all trips
           </button>
         </div>
       ) : (

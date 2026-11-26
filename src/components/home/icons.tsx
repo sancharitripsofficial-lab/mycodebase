@@ -7,11 +7,13 @@ import {
   HeartHandshake,
   Landmark,
   Map,
+  MessageCircle,
   Mountain,
   Route,
   ShieldCheck,
   Star,
   Sun,
+  Tag,
   UserRound,
   Users,
   UsersRound,
@@ -41,6 +43,8 @@ export const HOME_ICONS: Record<IconKey, LucideIcon> = {
   utensils: UtensilsCrossed,
   bed: BedDouble,
   route: Route,
+  message: MessageCircle,
+  tag: Tag,
 };
 
 export function HomeIcon({ name, className }: { name: IconKey; className?: string }) {

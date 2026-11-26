@@ -9,7 +9,7 @@ import { GUIDE_HUB, guidePagesOfKind } from "@/lib/places/guide";
 import { ANY_DAY_LINE, BRAND_NAME, jsonLdText, pageBreadcrumb, pageMetadata } from "@/lib/seo";
 
 // Live trips show at the foot of the page: same freshness as the trips page.
-export const revalidate = 60;
+export const revalidate = 300;
 
 export const metadata: Metadata = pageMetadata({ title: GUIDE_HUB.title, description: GUIDE_HUB.description, path: GUIDE_HUB.path });
 

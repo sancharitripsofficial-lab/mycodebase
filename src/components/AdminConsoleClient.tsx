@@ -50,6 +50,7 @@ import { TripSheets } from "@/components/admin/TripSheets";
 import { TripsManager } from "@/components/admin/TripsManager";
 import { AdminPaymentsPanel } from "@/components/AdminPaymentsPanel";
 import { AdminUpiSettings } from "@/components/AdminUpiSettings";
+import { travelerDetailsComplete } from "@/lib/traveler-details";
 import { formatINR } from "@/lib/currency";
 import { clearCached, warmAdminCache } from "@/lib/admin/memo-cache";
 import type { DepartureCrew, Enquiry } from "@/lib/data/owner-ops";
@@ -789,6 +790,10 @@ function BookingsSection({
               {row.travelers.length > 0 && (
                 <p className="text-xs text-stone-600">
                   Travellers: {row.travelers.map((t) => `${t.fullName}${t.verificationChecked ? " ✓" : ""}`).join(", ")}
+                  {/* Booked in step 1 only: names, ages and emergency contacts come from the customer in My Booking. */}
+                  {!travelerDetailsComplete(row.travelers) && ["pending_payment", "deposit_paid", "confirmed"].includes(row.booking.status) && (
+                    <span className="ml-1.5 rounded-full bg-[#fff0cc] px-1.5 py-0.5 text-[11px] font-semibold text-[#8a5200]">traveller details pending</span>
+                  )}
                 </p>
               )}
               <BookingMoney row={row} canMutate={canMutate} upiId={upiId} siteUrl={siteUrl} onDone={onMoney} />

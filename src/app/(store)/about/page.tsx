@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { TeamSection } from "@/components/home/TrustSections";
 import { LivingPhoto } from "@/components/living/LivingPhoto";
 import { PageCanvas } from "@/components/PageCanvas";
 import { getSiteSettings } from "@/lib/data/repository";
@@ -16,9 +17,7 @@ export default async function AboutPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdText(pageBreadcrumb("About us", "/about")) }} />
       <PageCanvas theme="about" />
       <div className="space-y-3">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-copper-700">
-          About Sanchari
-        </p>
+        <p className="eyebrow">About Sanchari</p>
         <h1 className="font-display text-3xl font-semibold text-forest-900 sm:text-4xl">
           Road trips paced for real conversation, not crowded buses.
         </h1>
@@ -40,6 +39,9 @@ export default async function AboutPage() {
           className="object-cover"
         />
       </div>
+
+      {/* The people behind Sanchari (Admin → Pictures & videos → Team; words in Admin → Home page). */}
+      <TeamSection text={{ ...settings.homePage.teamSection, show: true }} team={settings.siteMedia.team} className="!px-0 !py-0" />
 
       {/* Owner checklist: shown only while Admin → Brand identity still marks the copy as a draft. */}
       {settings.brandIdentity.isCopyDraft && (
@@ -63,18 +65,12 @@ export default async function AboutPage() {
       </div>
       )}
 
-      <div className="flex gap-3">
-        <Link
-          href="/trips"
-          className="rounded-full bg-forest-900 px-5 py-2.5 text-sm font-semibold text-cream-50"
-        >
-          Browse Departures
+      <div className="flex flex-wrap gap-3">
+        <Link href="/trips" className="btn-ocean min-h-12 px-5 text-sm">
+          Explore trips
         </Link>
-        <Link
-          href="/safety"
-          className="rounded-full border border-forest-900 px-5 py-2.5 text-sm font-semibold text-forest-900"
-        >
-          Safety &amp; Comfort Model
+        <Link href="/safety" className="inline-flex min-h-12 items-center rounded-full border border-forest-900 px-5 text-sm font-semibold text-forest-900">
+          Safety &amp; comfort standards
         </Link>
       </div>
     </div>

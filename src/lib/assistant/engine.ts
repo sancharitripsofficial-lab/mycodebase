@@ -2786,7 +2786,7 @@ function answerPayment(c: Ctx): Draft {
   const balanceDays = t ? t.balanceDueDaysBefore : pol.balanceDueDaysBefore;
   lines.push(
     dep !== null
-      ? `You can pay a **${dep}% deposit** now and the balance ${balanceDays} days before the trip.`
+      ? `You can pay a **${dep}% deposit** now and the balance ${balanceDays} days before the trip. A trip that leaves sooner than that is paid in full at booking.`
       : `Full payment is taken at booking${t ? ` for ${t.shortName}` : ""} (no deposit option).`
   );
   lines.push(pol.taxRatePercent > 0 ? `Checkout adds ${pol.taxRatePercent}% tax.` : "No tax is added on top of the listed price.");
@@ -2863,9 +2863,9 @@ function answerHowToBook(c: Ctx): Draft {
   lines.push("How to book:");
   lines.push(`1. Open ${t ? `[${t.title}](${t.url})` : "a trip on the [Trips page](/trips)"} and pick a date.`);
   lines.push(`2. Choose seats on the live car map (1–${kb.policy.maxSeatsPerBooking}), or the whole car when all ${PRIVATE_SEATS} are free.`);
-  lines.push("3. Add traveller details and your pickup point.");
+  lines.push("3. Enter your name, WhatsApp number and email, then continue to reservation.");
   lines.push(`4. Pay within ${kb.policy.holdMinutes} minutes — your seats are held meanwhile.`);
-  lines.push("5. Track it any time in [My Booking](/booking-lookup).");
+  lines.push("5. Add traveller details and your pickup point in [My Booking](/booking-lookup), any time before the trip.");
   if (!t) actions.push({ kind: "link", label: "See all trips", href: "/trips" });
   else actions.push({ kind: "link", label: "Open trip page", href: t.url });
   return {

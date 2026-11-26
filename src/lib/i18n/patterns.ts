@@ -38,6 +38,40 @@ const tr = (t: Lookup, s: string) => t(s) ?? s;
 const AMOUNT = "(₹\\s?[\\d,]+(?:\\.\\d+)?)";
 
 const RULES: Rule[] = [
+  // Booking in two steps, advance and balance, trip cards, filters, offers (November 2026)
+  [/^Scheduled trip\. Join with 1 to (\d+) seats\.$/, (m) => `ನಿಗದಿತ ಪ್ರವಾಸ. 1 ರಿಂದ ${m[1]} ಸೀಟುಗಳೊಂದಿಗೆ ಸೇರಿ.`],
+  [/^\+(\d+) more included$/, (m) => `+${m[1]} ಇನ್ನಷ್ಟು ಸೇರಿವೆ`],
+  [/^All (\d+) trips$/, (m) => `ಎಲ್ಲಾ ${m[1]} ಪ್ರವಾಸಗಳು`],
+  [/^(\d+) of (\d+) trips$/, (m) => `${m[2]} ರಲ್ಲಿ ${m[1]} ಪ್ರವಾಸಗಳು`],
+  [/^This date runs once at least (\d+) travellers have booked\.$/, (m) => `ಕನಿಷ್ಠ ${m[1]} ಪ್ರಯಾಣಿಕರು ಬುಕ್ ಮಾಡಿದರೆ ಈ ದಿನಾಂಕದ ಪ್ರವಾಸ ನಡೆಯುತ್ತದೆ.`],
+  [/^(\d+)% advance$/, (m) => `${m[1]}% ಮುಂಗಡ`],
+  [new RegExp(`^Balance ${AMOUNT} by (.+)$`), (m) => `ಬಾಕಿ ${m[1]}, ${dateIn(m[2])} ಒಳಗೆ`],
+  [new RegExp(`^Then ${AMOUNT} by (.+), from My Booking\\.$`), (m) => `ನಂತರ ${m[1]} ಅನ್ನು ${dateIn(m[2])} ಒಳಗೆ 'ನನ್ನ ಬುಕಿಂಗ್'ನಿಂದ ಪಾವತಿಸಿ.`],
+  [/^Your seat is held for (\d+) minutes while you pay by UPI\.$/, (m) => `ನೀವು UPI ಮೂಲಕ ಪಾವತಿಸುವಾಗ ನಿಮ್ಮ ಸೀಟನ್ನು ${m[1]} ನಿಮಿಷ ಹಿಡಿದಿಡುತ್ತೇವೆ.`],
+  [/^Your seats are held for (\d+) minutes while you pay by UPI\.$/, (m) => `ನೀವು UPI ಮೂಲಕ ಪಾವತಿಸುವಾಗ ನಿಮ್ಮ ಸೀಟುಗಳನ್ನು ${m[1]} ನಿಮಿಷ ಹಿಡಿದಿಡುತ್ತೇವೆ.`],
+  [
+    /^Add the name, age and emergency contact for all (\d+) travellers, then choose your pick-up point\. It takes about two minutes and can be done any time before the trip\.$/,
+    (m) => `ಎಲ್ಲಾ ${m[1]} ಪ್ರಯಾಣಿಕರ ಹೆಸರು, ವಯಸ್ಸು ಮತ್ತು ತುರ್ತು ಸಂಪರ್ಕ ಸಂಖ್ಯೆ ಸೇರಿಸಿ, ನಂತರ ನಿಮ್ಮ ಪಿಕಪ್ ಸ್ಥಳ ಆಯ್ಕೆಮಾಡಿ. ಇದಕ್ಕೆ ಸುಮಾರು ಎರಡು ನಿಮಿಷ ಸಾಕು, ಪ್ರವಾಸಕ್ಕೂ ಮೊದಲು ಯಾವಾಗ ಬೇಕಾದರೂ ಮಾಡಬಹುದು.`,
+  ],
+  [
+    /^The full amount is paid now: this trip leaves within (\d+) days, so there is no time left for a balance\.$/,
+    (m) => `ಪೂರ್ತಿ ಮೊತ್ತವನ್ನು ಈಗಲೇ ಪಾವತಿಸಬೇಕು: ಈ ಪ್ರವಾಸ ${m[1]} ದಿನಗಳೊಳಗೆ ಹೊರಡುತ್ತದೆ, ಹಾಗಾಗಿ ಬಾಕಿ ಮೊತ್ತಕ್ಕೆ ಸಮಯ ಉಳಿದಿಲ್ಲ.`,
+  ],
+  [/^Traveller (\d+): details needed$/, (m) => `ಪ್ರಯಾಣಿಕ ${m[1]}: ವಿವರಗಳು ಬೇಕು`],
+  [/^Traveller (\d+): enter an age from (\d+) to (\d+)\. Trips are for adults\.$/, (m) => `ಪ್ರಯಾಣಿಕ ${m[1]}: ${m[2]} ರಿಂದ ${m[3]} ಒಳಗಿನ ವಯಸ್ಸು ನಮೂದಿಸಿ. ಪ್ರವಾಸಗಳು ವಯಸ್ಕರಿಗೆ ಮಾತ್ರ.`],
+  [/^Balance, by (.+)$/, (m) => `ಬಾಕಿ ಮೊತ್ತ, ${dateIn(m[1])} ಒಳಗೆ`],
+  [new RegExp(`^From ${AMOUNT}$`), (m) => `ಆರಂಭಿಕ ಬೆಲೆ ${m[1]}`],
+  [new RegExp(`^From ${AMOUNT}, (.+)$`), (m) => `ಆರಂಭಿಕ ಬೆಲೆ ${m[1]}, ${dateIn(m[2])}`],
+  [new RegExp(`^Reserve with ${AMOUNT} now$`), (m) => `ಈಗ ${m[1]} ಕೊಟ್ಟು ಕಾಯ್ದಿರಿಸಿ`],
+  [new RegExp(`^Reserve with ${AMOUNT} now, balance ${AMOUNT} by (.+)$`), (m) => `ಈಗ ${m[1]} ಕೊಟ್ಟು ಕಾಯ್ದಿರಿಸಿ, ಬಾಕಿ ${m[2]} ಅನ್ನು ${dateIn(m[3])} ಒಳಗೆ ಪಾವತಿಸಿ`],
+  [new RegExp(`^Whole car for your group: ${AMOUNT}$`), (m) => `ನಿಮ್ಮ ಗುಂಪಿಗೆ ಸಂಪೂರ್ಣ ಕಾರು: ${m[1]}`],
+  [/^Leave your WhatsApp number and we message you when (.+) gets a new date\.$/, (m, t) => `ನಿಮ್ಮ WhatsApp ಸಂಖ್ಯೆ ಕೊಡಿ. ${tr(t, m[1])} ಪ್ರವಾಸಕ್ಕೆ ಹೊಸ ದಿನಾಂಕ ಬಂದಾಗ ನಿಮಗೆ ಮೆಸೇಜ್ ಮಾಡುತ್ತೇವೆ.`],
+  [/^Offer ends (.+)$/, (m) => `ಆಫರ್ ಕೊನೆಯ ದಿನ: ${dateIn(m[1])}`],
+  [/^(\d+) seats? open on (\d+) dates? right now$/, (m) => `ಈಗ ${m[2]} ${m[2] === "1" ? "ದಿನಾಂಕದಲ್ಲಿ" : "ದಿನಾಂಕಗಳಲ್ಲಿ"} ${m[1]} ${m[1] === "1" ? "ಸೀಟು ಖಾಲಿ ಇದೆ" : "ಸೀಟುಗಳು ಖಾಲಿ ಇವೆ"}`],
+  [/^(.+), (\d+) days?$/, (m, t) => `${tr(t, m[1])}, ${m[2]} ${m[2] === "1" ? "ದಿನ" : "ದಿನಗಳು"}`],
+  [/^(\d+) open, (.+)$/, (m) => `${m[1]} ಲಭ್ಯ, ${dateIn(m[2])}`],
+  [/^Next trip from (.+)$/, (m, t) => `ಮುಂದಿನ ಪ್ರವಾಸ, ಹೊರಡುವ ಸ್ಥಳ: ${tr(t, m[1])}`],
+  [/^Open seats: ([\d, ]+) of (\d+)$/, (m) => `ಖಾಲಿ ಸೀಟುಗಳು: ${m[2]} ರಲ್ಲಿ ${m[1]}`],
   // Seats
   [/^(\d+) of (\d+) seats? left$/, (m) => `${m[2]} ರಲ್ಲಿ ${m[1]} ${seatWord(m[1])} ಉಳಿದಿವೆ`],
   [/^(\d+) of (\d+) seats? open$/, (m) => `${m[2]} ರಲ್ಲಿ ${m[1]} ${seatWord(m[1])} ಖಾಲಿ`],

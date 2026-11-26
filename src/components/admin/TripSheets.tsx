@@ -11,6 +11,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Notice, Panel, rupees } from "@/components/admin/kit";
 import { ErtigaSeatMap } from "@/components/booking/ErtigaSeatMap";
 import { myBookingUrl, tripDetailsText, waLink } from "@/lib/admin/whatsapp";
+import { travelerIsComplete } from "@/lib/traveler-details";
 import type { DepartureCrew } from "@/lib/data/owner-ops";
 import { localISODate } from "@/lib/dates";
 import type { AdminBookingRow, PublicDepartureAvailability, StaffRole } from "@/lib/types";
@@ -264,6 +265,10 @@ export function TripSheets({
                             (t) => (
                               <p key={t.id} className="leading-snug">
                                 <strong className="text-ink-900">{t.fullName}</strong>
+                                {/* Booked in step 1 only: the customer still has to fill in this traveller (My Booking). */}
+                                {people.length > 0 && !travelerIsComplete({ fullName: t.fullName, ageYears: "ageYears" in t ? t.ageYears : null }) && (
+                                  <span className="ml-1.5 rounded-full bg-[#fff0cc] px-1.5 py-0.5 text-[11px] font-semibold text-[#8a5200]">details pending</span>
+                                )}
                                 <span className="text-xs text-stone-600">
                                   {"ageYears" in t && t.ageYears ? ` • ${t.ageYears} yrs` : ""}
                                   {t.ageGroup === "senior" ? " • senior" : ""}

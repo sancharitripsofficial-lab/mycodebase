@@ -11,6 +11,7 @@ import { Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { DateTimeField, MoneyField, Notice, Panel, rupees, useAdminContent } from "@/components/admin/kit";
 import type { AdminDepartureRow } from "@/lib/data/admin-content";
+import { departureCodeAgrees, suggestedDepartureCode } from "@/lib/trip-facts";
 import { addDaysISO, istInstant, localISODate, tripEndDate } from "@/lib/dates";
 import type { DepartureType } from "@/lib/types";
 
@@ -236,6 +237,13 @@ function DepartureRowView({
             {fmt(d.startDate)} – {fmt(d.endDate)}
           </p>
           <p className="font-mono text-xs text-stone-600">{d.departureCode}</p>
+          {/* A code that names another day than the trip's own date confuses customers and staff. */}
+          {departureCodeAgrees(d.departureCode, d.startDate) === false && (
+            <p className="mt-1 max-w-[15rem] rounded-lg bg-[#fff0cc] px-2 py-1 text-xs leading-snug font-semibold text-[#8a5200]">
+              Code names another day. Rename it to {suggestedDepartureCode(d.departureCode, d.startDate) ?? "match the start date"} (Edit). Until then the
+              website hides this code.
+            </p>
+          )}
           {!d.isPublished && <Badge variant="neutral" label="Hidden" />}
         </td>
         <td className="px-3 py-3">
@@ -346,7 +354,26 @@ function DepartureForm({
             }));
           }}
         />
-        <TextInput label="Code" description="Shown to customers and on receipts." value={f.departureCode} onChange={(v) => set("departureCode", v.toUpperCase())} />
+        <div className="space-y-2">
+          <TextInput
+            label="Code"
+            description="Shown to customers and on receipts. Keep its month and day the same as the start date."
+            value={f.departureCode}
+            onChange={(v) => set("departureCode", v.toUpperCase())}
+          />
+          {departureCodeAgrees(f.departureCode, f.startDate) === false && (
+            <div className="space-y-1.5 rounded-xl bg-[#fff0cc] p-2.5 text-xs font-semibold text-[#8a5200]">
+              <p>This code names another day than the start date.</p>
+              {suggestedDepartureCode(f.departureCode, f.startDate) && (
+                <Button
+                  size="sm"
+                  label={`Use ${suggestedDepartureCode(f.departureCode, f.startDate)}`}
+                  onClick={() => set("departureCode", suggestedDepartureCode(f.departureCode, f.startDate) ?? f.departureCode)}
+                />
+              )}
+            </div>
+          )}
+        </div>
         <Selector
           label="Type"
           value={f.departureType}

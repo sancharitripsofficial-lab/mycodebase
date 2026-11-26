@@ -204,6 +204,26 @@ export interface CustomerBookingView {
   crew?: import("@/lib/data/owner-ops").CustomerTripCrew | null;
   /** Sanchari's public WhatsApp Channel, when the owner has set it. */
   whatsappChannelUrl?: string;
+  /** Step 2 of booking is done: every seat has a named traveller with an age. */
+  travelerDetailsComplete?: boolean;
+  /** Why the customer can no longer change traveller details themselves (null = they still can). */
+  travelerDetailsLockedReason?: string | null;
+  /** The trip's pick-up points, to choose from in step 2. */
+  pickupOptions?: PickupPoint[];
+  /** The customer's own co-traveller request, to show their choice back to them in step 2. */
+  coTravelerPreference?: CoTravelerPreference;
+  /** The team has not answered that request yet, so the customer may still change it. */
+  comfortEditable?: boolean;
+}
+
+/** Step 2 of booking: what the customer sends from My Booking. */
+export interface TravelerDetailsInput {
+  bookingReference: string;
+  email: string;
+  pickupPointId?: string | null;
+  travelers: (TravelerInput & { id: string; ageYears: number })[];
+  coTravelerPreference?: CoTravelerPreference;
+  preferenceNotes?: string;
 }
 
 export interface WaitlistEntry {
@@ -253,6 +273,12 @@ export interface DeveloperCreditSettings {
   url: string;
 }
 
+/** Booking-funnel analytics. Nothing is loaded or sent until a measurement ID is saved. */
+export interface AnalyticsSettings {
+  /** GA4 measurement ID, "G-XXXXXXXXXX". */
+  gaMeasurementId: string;
+}
+
 export interface SiteSettings {
   brandIdentity: {
     brandName: string;
@@ -294,6 +320,8 @@ export interface SiteSettings {
   siteMedia: SiteMedia;
   /** Footer developer credit: on by default (missing setting = shown). */
   developerCredit: DeveloperCreditSettings;
+  /** Google Analytics 4 for the booking funnel (Admin → Website text → Analytics). Empty ID = nothing loaded. */
+  analytics: AnalyticsSettings;
   legalDrafts: {
     ownerReviewRequired: boolean;
     termsSummary: string;

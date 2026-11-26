@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { PageBanner } from "@/components/banners/PageBanner";
+import { cleanMeasurementId } from "@/lib/analytics";
 import { getSiteSettings } from "@/lib/data/repository";
 import { PAGE_SEO, jsonLdText, pageBreadcrumb, pageMetadata } from "@/lib/seo";
 
@@ -11,6 +12,8 @@ export default async function PoliciesPage() {
   // lawyer review" switched on.
   const draft = settings.legalDrafts.ownerReviewRequired;
   const d = draft ? " (Draft)" : "";
+  // Said on this page exactly while analytics is switched on (Admin → Website text → Analytics).
+  const analyticsOn = Boolean(cleanMeasurementId(settings.analytics.gaMeasurementId) || cleanMeasurementId(process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID));
 
   return (
     <>
@@ -50,6 +53,12 @@ export default async function PoliciesPage() {
           <p className="text-sm leading-relaxed text-stone-600">
             {settings.legalDrafts.privacySummary}
           </p>
+          {analyticsOn && (
+            <p className="text-xs leading-relaxed text-stone-600">
+              <strong>Website statistics:</strong> this website uses Google Analytics to count visits and the steps of a booking (a trip opened, seats
+              chosen, a reservation started, a booking completed, a WhatsApp link tapped). These counts carry no name, phone number or email.
+            </p>
+          )}
         </section>
 
         <section id="refunds" className="tile tile-sunset p-6 space-y-3">
@@ -58,6 +67,11 @@ export default async function PoliciesPage() {
           </h2>
           <p className="text-sm leading-relaxed text-stone-600">
             {settings.legalDrafts.refundSummary}
+          </p>
+          <p className="text-xs leading-relaxed text-ink-900">
+            <strong>Advance and balance:</strong>{" "}
+            where a trip offers an advance, its booking form shows the exact amount to pay now, the balance and the day the balance is due. A trip that
+            leaves too soon for a balance is paid in full when you book.
           </p>
           <ul className="list-disc pl-5 text-xs space-y-1 text-ink-900">
             {settings.bookingPolicy.cancellationSlabs.map((slab) => (

@@ -4,7 +4,9 @@
  * 202611130003_promotions.sql); visitors read through RLS and never see the counters.
  * Without a database (preview mode) offers live in memory so the screens can be tried.
  */
+import { getPublishedTripsWithDetails } from "@/lib/data/repository";
 import { isServiceRoleConfigured, isSupabaseConfigured } from "@/lib/env";
+import { offersWithOpenTrips } from "@/lib/offer-rules";
 import { cleanPopupChoice, type PopupChoice } from "@/lib/popup-order";
 import { createSupabaseAdminClient, createSupabasePublicClient } from "@/lib/supabase/server";
 import type { StaffRole } from "@/lib/types";
@@ -40,6 +42,8 @@ export interface Promotion {
   tripId: string | null;
   /** That trip's page address, filled in when loading (never saved). */
   tripSlug?: string | null;
+  /** That trip's name, filled in when loading (never saved): shown as "Only on <trip>". */
+  tripTitle?: string | null;
   theme: PromoTheme;
   startsAt: string | null;
   endsAt: string | null;
@@ -86,6 +90,7 @@ function mapPromotion(r: Record<string, unknown>): Promotion {
     placements: (Array.isArray(r.placements) ? r.placements : []) as PromoPlacement[],
     tripId: (r.trip_id as string | null) ?? null,
     tripSlug: ((r.trips as { slug?: unknown } | null)?.slug as string | undefined) ?? null,
+    tripTitle: ((r.trips as { title?: unknown } | null)?.title as string | undefined) ?? null,
     theme: ((r.theme as PromoTheme) ?? "sunset") as PromoTheme,
     startsAt: (r.starts_at as string | null) ?? null,
     endsAt: (r.ends_at as string | null) ?? null,
@@ -164,15 +169,31 @@ export async function getPopupChoice(): Promise<PopupChoice | null> {
   }
 }
 
-/** Every offer live right now (the website filters by placement). Never throws. */
+/**
+ * Every offer live right now (the website filters by placement). Never throws.
+ * An offer made for one trip steps aside while that trip has no date open to book (lib/offer-rules).
+ */
 export async function getLivePromotions(): Promise<Promotion[]> {
+  const live = await loadLivePromotions();
+  if (!live.some((p) => p.tripId)) return live;
+  try {
+    const { trips, isDemoFallback } = await getPublishedTripsWithDetails();
+    // With a database, sample trips mean the trips could not be read: leave the offers as they are.
+    if (isDemoFallback && hasDatabase()) return live;
+    return offersWithOpenTrips(live, trips);
+  } catch {
+    return live;
+  }
+}
+
+async function loadLivePromotions(): Promise<Promotion[]> {
   if (!hasDatabase()) {
     return preview.filter((p) => isLiveNow(p)).sort(byOrder);
   }
   try {
     const supabase = createSupabasePublicClient();
     const list = (columns: string) =>
-      supabase.from("promotions").select(`${columns}, trips(slug)`).order("sort_order", { ascending: true }).limit(40);
+      supabase.from("promotions").select(`${columns}, trips(slug, title)`).order("sort_order", { ascending: true }).limit(40);
     let { data, error } = await list(PUBLIC_COLUMNS);
     // Until migration 202611150001 (wide video) is applied, read the offers without that column.
     if (error && /wide_media_url/.test(error.message)) ({ data, error } = await list(PUBLIC_COLUMNS.replace(" wide_media_url,", "")));

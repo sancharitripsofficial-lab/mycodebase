@@ -1,4 +1,6 @@
+import { GoogleAnalytics } from "@/components/analytics/GoogleAnalytics";
 import { LazyChatAssistant } from "@/components/assistant/LazyChatAssistant";
+import { MobileBar } from "@/components/MobileBar";
 import { EARLY_LANG_SCRIPT, LanguageProvider } from "@/components/i18n/LanguageProvider";
 import type { ChatAssistantConfig } from "@/components/assistant/chat-config";
 import { PromoPopup } from "@/components/promo/PromoPopup";
@@ -11,8 +13,9 @@ import { forPlacement, getLivePromotions, getPopupChoice } from "@/lib/data/prom
 import { getSiteSettings } from "@/lib/data/repository";
 import { buildClickToWhatsAppUrl } from "@/lib/messaging/provider";
 
-// Offers can start/end on a schedule: refresh every store page at least once a minute.
-export const revalidate = 60;
+// Offers can start/end on a schedule: every store page is rebuilt at least every 5 minutes (and at
+// once after bookings / admin edits). Not more often: each rebuild is a paid write on the host.
+export const revalidate = 300;
 
 /** Customer-facing storefront chrome. The admin panel never uses this layout or links. */
 export default async function StoreLayout({ children }: { children: React.ReactNode }) {
@@ -46,7 +49,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
 
   return (
     <LanguageProvider>
-    <div className="flex min-h-screen flex-col">
+    <div className="store-shell flex min-h-screen flex-col">
       {/* Kannada visitors: mark the page before it paints, so English never flashes. */}
       <script dangerouslySetInnerHTML={{ __html: EARLY_LANG_SCRIPT }} />
       <a
@@ -63,6 +66,10 @@ export default async function StoreLayout({ children }: { children: React.ReactN
       <SiteFooter social={settings.socialLinks} brand={settings.brandIdentity} />
       {whatsappUrl && <WhatsAppFloat href={whatsappUrl} />}
       {chatConfig && <LazyChatAssistant config={chatConfig} />}
+      {/* Phones and tablets: Explore, WhatsApp and My Booking at the bottom of every page. */}
+      <MobileBar whatsappUrl={whatsappUrl ?? null} />
+      {/* Booking-funnel events for Google Analytics 4, only when the owner has set a measurement ID. */}
+      <GoogleAnalytics measurementId={settings.analytics.gaMeasurementId} />
       <PromoPopup promotions={forPlacement(promotions, "popup")} picked={pickedPopup} />
     </div>
     </LanguageProvider>
