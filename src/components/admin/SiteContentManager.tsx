@@ -15,6 +15,7 @@ import { KannadaForm } from "@/components/admin/KannadaForm";
 import { Notice, Panel, useAdminContent } from "@/components/admin/kit";
 import { DEFAULT_DEVELOPER_CREDIT_URL, isHttpsUrl, mergeDeveloperCredit } from "@/lib/developer-credit";
 import { MAX_TICKER_LINES, MAX_TICKER_TEXT, mergeAdTicker } from "@/lib/ad-ticker";
+import { cleanVerificationCode, mergeAnalyticsSettings } from "@/lib/analytics";
 import type { SiteSettings } from "@/lib/types";
 
 type Editor = ReturnType<typeof useAdminContent>;
@@ -90,7 +91,7 @@ export function SiteContentManager({ editor }: { editor: Editor }) {
         <DeveloperCreditForm key="c" initial={mergeDeveloperCredit(content.settings.developerCredit)} editor={editor} canEdit={canEdit} />
       )}
       {tab === "ticker" && <AdTickerForm key="tk" initial={mergeAdTicker(content.settings.adTicker)} editor={editor} canEdit={canEdit} />}
-      {tab === "analytics" && <AnalyticsForm key="an" initial={content.settings.analytics ?? { gaMeasurementId: "" }} editor={editor} canEdit={canEdit} />}
+      {tab === "analytics" && <AnalyticsForm key="an" initial={mergeAnalyticsSettings(content.settings.analytics)} editor={editor} canEdit={canEdit} />}
     </Panel>
   );
 }
@@ -361,14 +362,43 @@ function AnalyticsForm({ initial, editor, canEdit }: { initial: SiteSettings["an
         placeholder="G-XXXXXXXXXX"
         value={f.gaMeasurementId}
         isDisabled={!canEdit}
-        onChange={(v) => setF({ gaMeasurementId: v.trim() })}
+        onChange={(v) => setF({ ...f, gaMeasurementId: v.trim() })}
       />
       {!ok && <Notice kind="error">A measurement ID starts with G- followed by letters and numbers, for example G-AB12CD34EF.</Notice>}
       <p className="text-xs leading-relaxed text-stone-600">
         Booking conversion rate = confirmed bookings ÷ visitors × 100. In Google Analytics, mark <strong>purchase</strong> as a key event to see it. While
         an ID is saved, the Policies page tells visitors that anonymous usage statistics are collected.
       </p>
-      <SaveBar editor={editor} keyName="analytics" value={{ gaMeasurementId: id }} canEdit={canEdit} />
+      <div className="space-y-3 rounded-xl border border-stone-200 bg-white p-4">
+        <p className="text-sm font-semibold text-forest-900">Search engine ownership</p>
+        <p className="text-xs leading-relaxed text-stone-600">
+          Proves to Google and Bing that this website is yours, so you can send them the sitemap and see which searches bring visitors. In Google Search
+          Console, add the property <strong>https://www.sancharitrips.com</strong>, choose <strong>HTML tag</strong>, paste the tag or its code here, save,
+          wait 5 minutes, then press Verify. Bing Webmaster Tools works the same way (HTML Meta Tag), or can import the site straight from Search Console.
+        </p>
+        <TextInput
+          label="Google Search Console code"
+          placeholder='<meta name="google-site-verification" content="…" />'
+          value={f.googleSiteVerification}
+          isDisabled={!canEdit}
+          onChange={(v) => setF({ ...f, googleSiteVerification: v })}
+        />
+        {f.googleSiteVerification.trim() !== "" && !cleanVerificationCode(f.googleSiteVerification) && <Notice kind="error">That does not look like a Search Console code.</Notice>}
+        <TextInput
+          label="Bing Webmaster code"
+          placeholder='<meta name="msvalidate.01" content="…" />'
+          value={f.bingSiteVerification}
+          isDisabled={!canEdit}
+          onChange={(v) => setF({ ...f, bingSiteVerification: v })}
+        />
+        {f.bingSiteVerification.trim() !== "" && !cleanVerificationCode(f.bingSiteVerification) && <Notice kind="error">That does not look like a Bing code.</Notice>}
+      </div>
+      <SaveBar
+        editor={editor}
+        keyName="analytics"
+        value={{ gaMeasurementId: id, googleSiteVerification: cleanVerificationCode(f.googleSiteVerification), bingSiteVerification: cleanVerificationCode(f.bingSiteVerification) }}
+        canEdit={canEdit}
+      />
     </div>
   );
 }

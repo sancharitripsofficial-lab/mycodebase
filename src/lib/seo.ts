@@ -503,6 +503,9 @@ export function businessJsonLd(settings: SiteSettings, opts: { searchAction?: bo
     image: absoluteUrl(DEFAULT_OG_IMAGE.url),
     description: BUSINESS_DESCRIPTION,
     areaServed: { "@type": "State", name: "Karnataka" },
+    // The website and the team speak both (the whole site switches to Kannada).
+    knowsLanguage: ["en-IN", "kn-IN"],
+    currenciesAccepted: "INR",
     address: {
       "@type": "PostalAddress",
       addressLocality: cityOnly(brand?.baseCity) || "Bengaluru",

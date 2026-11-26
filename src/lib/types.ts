@@ -277,6 +277,10 @@ export interface DeveloperCreditSettings {
 export interface AnalyticsSettings {
   /** GA4 measurement ID, "G-XXXXXXXXXX". */
   gaMeasurementId: string;
+  /** Google Search Console ownership code (HTML-tag method); "" when not set. */
+  googleSiteVerification: string;
+  /** Bing Webmaster Tools ownership code (msvalidate.01); "" when not set. */
+  bingSiteVerification: string;
 }
 
 export interface SiteSettings {

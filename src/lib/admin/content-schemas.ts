@@ -4,6 +4,7 @@ import { DEFAULT_DEVELOPER_CREDIT, DEFAULT_DEVELOPER_CREDIT_URL, isHttpsUrl } fr
 import { ICON_KEYS, JOURNEY_STEP_KEYS, THEME_KEYS, TILE_COLOURS } from "@/lib/home-content";
 import { BANNER_PAGES, MAX_TEAM, MAX_TRIP_PHOTOS, MAX_VEHICLE_PHOTOS, isSiteMediaLink, isVideoLink, type BannerPage } from "@/lib/site-media";
 import { MAX_TICKER_LINES, MAX_TICKER_TEXT, TICKER_SPEEDS, isTickerLink } from "@/lib/ad-ticker";
+import { cleanVerificationCode } from "@/lib/analytics";
 import { z } from "zod";
 
 /** Local file (/media/x.jpg) or an https link. Never http, javascript:, data: or protocol-relative. */
@@ -445,6 +446,18 @@ export const analyticsSettingsSchema = z.object({
     .trim()
     .transform((v) => v.toUpperCase())
     .refine((v) => v === "" || /^G-[A-Z0-9]{6,14}$/.test(v), "Measurement ID looks like G-XXXXXXXXXX (from Google Analytics → Admin → Data streams). Leave empty to switch analytics off."),
+  googleSiteVerification: z
+    .string()
+    .trim()
+    .default("")
+    .refine((v) => v === "" || cleanVerificationCode(v) !== "", "Paste the code (or the whole <meta …> tag) from Google Search Console → HTML tag.")
+    .transform((v) => cleanVerificationCode(v)),
+  bingSiteVerification: z
+    .string()
+    .trim()
+    .default("")
+    .refine((v) => v === "" || cleanVerificationCode(v) !== "", "Paste the code (or the whole <meta …> tag) from Bing Webmaster Tools → HTML Meta Tag.")
+    .transform((v) => cleanVerificationCode(v)),
 });
 
 /** The moving advertisement strip above the menu: on/off, speed and the owner's own lines. */

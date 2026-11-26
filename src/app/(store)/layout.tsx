@@ -1,4 +1,6 @@
+import type { Metadata } from "next";
 import { GoogleAnalytics } from "@/components/analytics/GoogleAnalytics";
+import { cleanVerificationCode, mergeAnalyticsSettings } from "@/lib/analytics";
 import { LazyChatAssistant } from "@/components/assistant/LazyChatAssistant";
 import { MobileBar } from "@/components/MobileBar";
 import { EARLY_LANG_SCRIPT, LanguageProvider } from "@/components/i18n/LanguageProvider";
@@ -12,6 +14,19 @@ import { displayPhone, mergeAssistantSettings } from "@/lib/assistant/settings";
 import { forPlacement, getLivePromotions, getPopupChoice } from "@/lib/data/promotions";
 import { getSiteSettings } from "@/lib/data/repository";
 import { buildClickToWhatsAppUrl } from "@/lib/messaging/provider";
+
+/**
+ * Search-engine ownership tags (Admin → Website text → Analytics, or the GOOGLE_SITE_VERIFICATION /
+ * BING_SITE_VERIFICATION environment variables). Only on store pages, never on the admin panel.
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const { settings } = await getSiteSettings();
+  const a = mergeAnalyticsSettings(settings.analytics);
+  const google = a.googleSiteVerification || cleanVerificationCode(process.env.GOOGLE_SITE_VERIFICATION);
+  const bing = a.bingSiteVerification || cleanVerificationCode(process.env.BING_SITE_VERIFICATION);
+  if (!google && !bing) return {};
+  return { verification: { ...(google ? { google } : {}), ...(bing ? { other: { "msvalidate.01": bing } } : {}) } };
+}
 
 // Offers can start/end on a schedule: every store page is rebuilt at least every 5 minutes (and at
 // once after bookings / admin edits). Not more often: each rebuild is a paid write on the host.

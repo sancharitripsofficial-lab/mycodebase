@@ -14,6 +14,8 @@
  * (The booking reference is the transaction id GA4 needs for `purchase`; it names no one.)
  */
 
+import type { AnalyticsSettings } from "@/lib/types";
+
 export type FunnelEvent = "view_trip" | "select_seats" | "begin_checkout" | "purchase" | "click_whatsapp" | "notify_me";
 
 export type EventParams = Record<string, string | number | boolean | null | undefined | AnalyticsItem[]>;
@@ -43,10 +45,25 @@ export function cleanMeasurementId(value: unknown): string {
   return /^G-[A-Z0-9]{6,14}$/.test(id) ? id : "";
 }
 
-/** Saved "analytics" row → settings. Anything that is not a GA4 ID means "off". */
-export function mergeAnalyticsSettings(raw: unknown): { gaMeasurementId: string } {
+/**
+ * A search-engine ownership code (Google Search Console "HTML tag", Bing Webmaster "meta tag"), or
+ * "" for anything else. The owner may paste the whole <meta …> tag: only its content is kept.
+ */
+export function cleanVerificationCode(value: unknown): string {
+  let v = typeof value === "string" ? value.trim() : "";
+  const fromTag = /content\s*=\s*["']([^"']+)["']/i.exec(v);
+  if (fromTag) v = fromTag[1].trim();
+  return /^[A-Za-z0-9_-]{8,120}$/.test(v) ? v : "";
+}
+
+/** Saved "analytics" row → settings. Anything that is not a valid ID or code means "off". */
+export function mergeAnalyticsSettings(raw: unknown): AnalyticsSettings {
   const r = raw && typeof raw === "object" && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
-  return { gaMeasurementId: cleanMeasurementId(r.gaMeasurementId) };
+  return {
+    gaMeasurementId: cleanMeasurementId(r.gaMeasurementId),
+    googleSiteVerification: cleanVerificationCode(r.googleSiteVerification),
+    bingSiteVerification: cleanVerificationCode(r.bingSiteVerification),
+  };
 }
 
 /** Paise → rupees for GA4 "value" / "price" (GA4 wants the currency's main unit). */
