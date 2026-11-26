@@ -6,6 +6,8 @@ import { EnquiryForm } from "@/components/EnquiryForm";
 import { HomeIcon } from "@/components/home/icons";
 import { NextTripTicket, NoTripTicket } from "@/components/home/NextTripTicket";
 import { PhotoSection, TeamSection, TrustPromises } from "@/components/home/TrustSections";
+import { TripReels } from "@/components/home/TripReels";
+import { TRIP_REELS, tripReelsJsonLd } from "@/lib/trip-reels";
 import { LivingPhoto } from "@/components/living/LivingPhoto";
 import type { LiveWeather } from "@/components/living/weather";
 import { PromoBanner } from "@/components/promo/PromoBanner";
@@ -601,6 +603,18 @@ export default async function HomePage() {
 
       {/* Real photos from trips that ran, shown once the owner has added some. */}
       <PhotoSection text={home.journeysSection} photos={settings.siteMedia.tripPhotos} id="from-our-trips" altPrefix="A Sanchari trip" />
+
+      {/* Short reels from real trips: phone-feed style, play while on screen. */}
+      <section id="reels" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-14 sm:px-6" aria-labelledby="reels-heading">
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdText(tripReelsJsonLd()) }} />
+        <div className="mb-6 space-y-2">
+          <h2 id="reels-heading" className="font-display text-2xl font-semibold text-forest-900 sm:text-3xl">
+            Watch: a Sanchari weekend in 15 seconds
+          </h2>
+          <p className="max-w-2xl text-sm text-stone-600">Short reels of our routes, with photos from our own trips.</p>
+        </div>
+        <TripReels reels={TRIP_REELS} />
+      </section>
 
       {/* Verified reviews: shown once there are real, moderated ones. Until then the promises, the
           team and the published policies above carry the trust; no empty box, no stand-in quotes. */}
