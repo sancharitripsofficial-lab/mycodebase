@@ -93,7 +93,16 @@ async function redirectMovedTrip(slug: string): Promise<void> {
   if (next.kind === "data-unavailable") throw new TripDataUnavailableError(slug);
   if (next.kind === "permanent") permanentRedirect(`/trips/${next.to}`);
   if (next.kind === "temporary") redirect(`/trips/${next.to}`);
+  // A trip taken off the site whose address Google still shows: send visitors to the guide page
+  // for that place instead of a 404. Reached only while no live trip has this slug.
+  const retiredTo = next.kind === "missing" ? RETIRED_TRIP_PAGES[slug] : undefined;
+  if (retiredTo) permanentRedirect(retiredTo);
 }
+
+/** Old trip addresses that still get Google clicks (Search Console, 26 Nov 2026) → closest guide page. */
+const RETIRED_TRIP_PAGES: Readonly<Record<string, string>> = {
+  "hampi-boulders-and-ruins": "/karnataka/vijayanagara",
+};
 
 /** A renamed trip's address is never rendered from demo data (it would cache a 200 there). */
 function refuseMisleadingDemo(slug: string, isDemoFallback: boolean): void {
