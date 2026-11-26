@@ -35,7 +35,7 @@ export function SiteHeader({ isDemoMode }: { isDemoMode: boolean }) {
       )}
 
       {/* Fits a 320 px phone without sideways scrolling (tighter gaps and padding below 640 px). */}
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-3 py-2.5 sm:gap-4 sm:px-6">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-3 py-2.5 sm:gap-4 sm:px-6 xl:max-w-7xl xl:gap-3">
         {/* The logo always goes to the home page; on the home page itself it glides back to the top. */}
         <Link
           href="/"
@@ -70,15 +70,16 @@ export function SiteHeader({ isDemoMode }: { isDemoMode: boolean }) {
           />
         </Link>
 
-        <nav aria-label="Primary navigation" className="hidden min-w-0 items-center gap-1 xl:flex">
-          {NAV_LINKS.map((item) => {
+        <nav aria-label="Primary navigation" className="hidden shrink-0 items-center gap-0.5 xl:flex 2xl:gap-1">
+          {NAV_LINKS.map((item, i) => {
             const active = pathname === item.href.split("?")[0] && !item.href.includes("?");
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 aria-current={active ? "page" : undefined}
-                className={`whitespace-nowrap rounded-full px-3 py-2 text-sm font-medium transition-colors ${
+                style={{ ["--i" as string]: i }}
+                className={`nav-link whitespace-nowrap rounded-full px-2.5 py-2 text-[13px] font-medium transition-colors 2xl:px-3 2xl:text-sm ${
                   active
                     ? "bg-forest-900/8 text-forest-900"
                     : "text-ink-900/80 hover:bg-lagoon-100 hover:text-forest-900"
@@ -90,9 +91,9 @@ export function SiteHeader({ isDemoMode }: { isDemoMode: boolean }) {
           })}
         </nav>
 
-        <div className="hidden items-center gap-2 xl:flex">
+        <div className="hidden shrink-0 items-center gap-2 xl:flex">
           <LanguageToggle />
-          <Link href="/trips" className="btn-sunset whitespace-nowrap px-5 py-2.5 text-sm">
+          <Link href="/trips" className="btn-sunset nav-cta whitespace-nowrap px-5 py-2.5 text-sm">
             Grab your seat
           </Link>
         </div>
