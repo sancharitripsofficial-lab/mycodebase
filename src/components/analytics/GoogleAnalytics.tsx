@@ -1,5 +1,5 @@
 import Script from "next/script";
-import { cleanMeasurementId } from "@/lib/analytics";
+import { cleanAdsId, cleanAdsLabel, cleanMeasurementId } from "@/lib/analytics";
 import { WhatsAppClickTracker } from "./WhatsAppClickTracker";
 
 /**
@@ -10,18 +10,35 @@ import { WhatsAppClickTracker } from "./WhatsAppClickTracker";
  * hydration are queued in order; the Google library itself loads when the browser is idle and then
  * sends what is queued. The ID is checked against the "G-XXXXXXXXXX" shape before it is written.
  */
-export function GoogleAnalytics({ measurementId }: { measurementId: string }) {
+export function GoogleAnalytics({
+  measurementId,
+  adsId = "",
+  adsPurchaseLabel = "",
+}: {
+  measurementId: string;
+  /** Google Ads tag ID ("AW-…"): Admin → Website text → Analytics. */
+  adsId?: string;
+  /** Conversion label of the Google Ads "Purchase" action. */
+  adsPurchaseLabel?: string;
+}) {
   const id = cleanMeasurementId(measurementId) || cleanMeasurementId(process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID);
+  const aw = cleanAdsId(adsId);
+  const label = aw ? cleanAdsLabel(adsPurchaseLabel) : "";
+  const first = id || aw;
+  // Both IDs were checked against strict patterns above, so they are safe to write into the script.
+  const config = [id && `gtag('config','${id}');`, aw && `gtag('config','${aw}');`, label && `window.__sanchariAdsPurchase='${aw}/${label}';`]
+    .filter(Boolean)
+    .join("");
   return (
     <>
-      {id && (
+      {first && (
         <>
           <script
             dangerouslySetInnerHTML={{
-              __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}window.gtag=gtag;gtag('js',new Date());gtag('config','${id}');`,
+              __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}window.gtag=gtag;gtag('js',new Date());${config}`,
             }}
           />
-          <Script src={`https://www.googletagmanager.com/gtag/js?id=${id}`} strategy="lazyOnload" />
+          <Script src={`https://www.googletagmanager.com/gtag/js?id=${first}`} strategy="lazyOnload" />
         </>
       )}
       <WhatsAppClickTracker />

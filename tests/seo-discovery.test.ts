@@ -17,7 +17,7 @@ describe("search engine ownership codes", () => {
   });
 
   it("old saved rows without codes still load, and the admin form stores only the code", () => {
-    expect(mergeAnalyticsSettings({ gaMeasurementId: "G-AB12CD34EF" })).toEqual({ gaMeasurementId: "G-AB12CD34EF", googleSiteVerification: "", bingSiteVerification: "" });
+    expect(mergeAnalyticsSettings({ gaMeasurementId: "G-AB12CD34EF" })).toEqual({ gaMeasurementId: "G-AB12CD34EF", googleSiteVerification: "", bingSiteVerification: "", googleAdsId: "", googleAdsPurchaseLabel: "" });
     const saved = analyticsSettingsSchema.parse({
       gaMeasurementId: "",
       googleSiteVerification: '<meta name="google-site-verification" content="Zx9_kLmN0pQrStUvWxYz12345" />',
@@ -104,5 +104,32 @@ describe("llms.txt for AI search", () => {
     const txt = buildLlmsTxt({ baseUrl: "https://www.sancharitrips.com", trips: [trip({})], isDemoFallback: true, settings, now: NOW });
     expect(txt).not.toContain("/trips/chikmagalur");
     expect(txt).toContain("(https://www.sancharitrips.com/trips)");
+  });
+});
+
+describe("Google Ads booking tracking", () => {
+  it("keeps only a real AW- tag ID and a conversion label", async () => {
+    const { cleanAdsId, cleanAdsLabel } = await import("@/lib/analytics");
+    expect(cleanAdsId(" aw-123456789 ")).toBe("AW-123456789");
+    expect(cleanAdsLabel("AW-123456789/AbC-D_efG12")).toBe("AbC-D_efG12");
+    expect(cleanAdsLabel("AbC-D_efG12")).toBe("AbC-D_efG12");
+    for (const bad of ["", "G-ABC123DEF", "AW-12", "AW-123');alert(1)//", null]) expect(cleanAdsId(bad)).toBe("");
+    for (const bad of ["", "x", "a b c d e f", "');alert(1)//"]) expect(cleanAdsLabel(bad)).toBe("");
+  });
+
+  it("a finished booking is also sent to Google Ads once a target is set", async () => {
+    const { trackEvent } = await import("@/lib/analytics");
+    const calls: unknown[][] = [];
+    const w = globalThis as unknown as Record<string, unknown>;
+    w.window = w;
+    w.gtag = (...a: unknown[]) => calls.push(a);
+    w.__sanchariAdsPurchase = "AW-123456789/AbC-D_efG12";
+    trackEvent("purchase", { value: 1500, currency: "INR", transaction_id: "SAN-1" });
+    expect(calls).toContainEqual(["event", "conversion", { send_to: "AW-123456789/AbC-D_efG12", value: 1500, currency: "INR", transaction_id: "SAN-1" }]);
+    trackEvent("view_trip", {});
+    expect(calls.filter((c) => c[1] === "conversion")).toHaveLength(1);
+    delete w.window;
+    delete w.gtag;
+    delete w.__sanchariAdsPurchase;
   });
 });

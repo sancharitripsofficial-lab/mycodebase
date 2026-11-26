@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { PageBanner } from "@/components/banners/PageBanner";
-import { cleanMeasurementId } from "@/lib/analytics";
+import { cleanAdsId, cleanMeasurementId } from "@/lib/analytics";
 import { getSiteSettings } from "@/lib/data/repository";
 import { PAGE_SEO, jsonLdText, pageBreadcrumb, pageMetadata } from "@/lib/seo";
 
@@ -14,6 +14,7 @@ export default async function PoliciesPage() {
   const d = draft ? " (Draft)" : "";
   // Said on this page exactly while analytics is switched on (Admin → Website text → Analytics).
   const analyticsOn = Boolean(cleanMeasurementId(settings.analytics.gaMeasurementId) || cleanMeasurementId(process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID));
+  const adsOn = Boolean(cleanAdsId((settings.analytics as { googleAdsId?: string }).googleAdsId));
 
   return (
     <>
@@ -57,6 +58,12 @@ export default async function PoliciesPage() {
             <p className="text-xs leading-relaxed text-stone-600">
               <strong>Website statistics:</strong> this website uses Google Analytics to count visits and the steps of a booking (a trip opened, seats
               chosen, a reservation started, a booking completed, a WhatsApp link tapped). These counts carry no name, phone number or email.
+            </p>
+          )}
+          {adsOn && (
+            <p className="text-xs leading-relaxed text-stone-600">
+              <strong>Advertising:</strong> we advertise on Google. When you reach this website from a Google ad, Google Ads is told that a booking was
+              completed and its amount, so we can see which ads work. No name, phone number or email is sent.
             </p>
           )}
         </section>

@@ -93,14 +93,14 @@ describe("booking-funnel analytics", () => {
     for (const bad of ["", "UA-12345-1", "GTM-ABC123", "G-", "G-AB12');alert(1);//", "<script>", null, 42, undefined]) {
       expect(cleanMeasurementId(bad)).toBe("");
     }
-    expect(mergeAnalyticsSettings({ gaMeasurementId: "G-AB12CD34EF" })).toEqual({ gaMeasurementId: "G-AB12CD34EF", googleSiteVerification: "", bingSiteVerification: "" });
-    expect(mergeAnalyticsSettings(undefined)).toEqual({ gaMeasurementId: "", googleSiteVerification: "", bingSiteVerification: "" });
-    expect(mergeAnalyticsSettings({ gaMeasurementId: "javascript:alert(1)" })).toEqual({ gaMeasurementId: "", googleSiteVerification: "", bingSiteVerification: "" });
+    expect(mergeAnalyticsSettings({ gaMeasurementId: "G-AB12CD34EF" })).toEqual({ gaMeasurementId: "G-AB12CD34EF", googleSiteVerification: "", bingSiteVerification: "", googleAdsId: "", googleAdsPurchaseLabel: "" });
+    expect(mergeAnalyticsSettings(undefined)).toEqual({ gaMeasurementId: "", googleSiteVerification: "", bingSiteVerification: "", googleAdsId: "", googleAdsPurchaseLabel: "" });
+    expect(mergeAnalyticsSettings({ gaMeasurementId: "javascript:alert(1)" })).toEqual({ gaMeasurementId: "", googleSiteVerification: "", bingSiteVerification: "", googleAdsId: "", googleAdsPurchaseLabel: "" });
   });
 
   it("the admin form saves a valid ID or an empty one, nothing else", () => {
-    expect(analyticsSettingsSchema.parse({ gaMeasurementId: "g-ab12cd34ef" })).toEqual({ gaMeasurementId: "G-AB12CD34EF", googleSiteVerification: "", bingSiteVerification: "" });
-    expect(analyticsSettingsSchema.parse({ gaMeasurementId: "" })).toEqual({ gaMeasurementId: "", googleSiteVerification: "", bingSiteVerification: "" });
+    expect(analyticsSettingsSchema.parse({ gaMeasurementId: "g-ab12cd34ef" })).toEqual({ gaMeasurementId: "G-AB12CD34EF", googleSiteVerification: "", bingSiteVerification: "", googleAdsId: "", googleAdsPurchaseLabel: "" });
+    expect(analyticsSettingsSchema.parse({ gaMeasurementId: "" })).toEqual({ gaMeasurementId: "", googleSiteVerification: "", bingSiteVerification: "", googleAdsId: "", googleAdsPurchaseLabel: "" });
     expect(analyticsSettingsSchema.safeParse({ gaMeasurementId: "UA-1" }).success).toBe(false);
   });
 

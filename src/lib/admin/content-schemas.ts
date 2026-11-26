@@ -4,7 +4,7 @@ import { DEFAULT_DEVELOPER_CREDIT, DEFAULT_DEVELOPER_CREDIT_URL, isHttpsUrl } fr
 import { ICON_KEYS, JOURNEY_STEP_KEYS, THEME_KEYS, TILE_COLOURS } from "@/lib/home-content";
 import { BANNER_PAGES, MAX_TEAM, MAX_TRIP_PHOTOS, MAX_VEHICLE_PHOTOS, isSiteMediaLink, isVideoLink, type BannerPage } from "@/lib/site-media";
 import { MAX_TICKER_LINES, MAX_TICKER_TEXT, TICKER_SPEEDS, isTickerLink } from "@/lib/ad-ticker";
-import { cleanVerificationCode } from "@/lib/analytics";
+import { cleanAdsId, cleanAdsLabel, cleanVerificationCode } from "@/lib/analytics";
 import { z } from "zod";
 
 /** Local file (/media/x.jpg) or an https link. Never http, javascript:, data: or protocol-relative. */
@@ -458,6 +458,18 @@ export const analyticsSettingsSchema = z.object({
     .default("")
     .refine((v) => v === "" || cleanVerificationCode(v) !== "", "Paste the code (or the whole <meta …> tag) from Bing Webmaster Tools → HTML Meta Tag.")
     .transform((v) => cleanVerificationCode(v)),
+  googleAdsId: z
+    .string()
+    .trim()
+    .default("")
+    .refine((v) => v === "" || cleanAdsId(v) !== "", "A Google Ads tag ID looks like AW-123456789 (Google Ads → Goals → Conversions → your action → Tag setup).")
+    .transform((v) => cleanAdsId(v)),
+  googleAdsPurchaseLabel: z
+    .string()
+    .trim()
+    .default("")
+    .refine((v) => v === "" || cleanAdsLabel(v) !== "", "Paste the conversion label, or the whole send_to value (AW-123456789/AbC-D_efG).")
+    .transform((v) => cleanAdsLabel(v)),
 });
 
 /** The moving advertisement strip above the menu: on/off, speed and the owner's own lines. */

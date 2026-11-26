@@ -15,7 +15,7 @@ import { KannadaForm } from "@/components/admin/KannadaForm";
 import { Notice, Panel, useAdminContent } from "@/components/admin/kit";
 import { DEFAULT_DEVELOPER_CREDIT_URL, isHttpsUrl, mergeDeveloperCredit } from "@/lib/developer-credit";
 import { MAX_TICKER_LINES, MAX_TICKER_TEXT, mergeAdTicker } from "@/lib/ad-ticker";
-import { cleanVerificationCode, mergeAnalyticsSettings } from "@/lib/analytics";
+import { cleanAdsId, cleanAdsLabel, cleanVerificationCode, mergeAnalyticsSettings } from "@/lib/analytics";
 import type { SiteSettings } from "@/lib/types";
 
 type Editor = ReturnType<typeof useAdminContent>;
@@ -393,10 +393,39 @@ function AnalyticsForm({ initial, editor, canEdit }: { initial: SiteSettings["an
         />
         {f.bingSiteVerification.trim() !== "" && !cleanVerificationCode(f.bingSiteVerification) && <Notice kind="error">That does not look like a Bing code.</Notice>}
       </div>
+      <div className="space-y-3 rounded-xl border border-stone-200 bg-white p-4">
+        <p className="text-sm font-semibold text-forest-900">Google Ads booking tracking</p>
+        <p className="text-xs leading-relaxed text-stone-600">
+          Counts every finished booking as a Google Ads conversion, so you can see which ads bring bookings. In Google Ads: Goals → Conversions → your
+          “Purchase” action → Tag setup → Install the tag yourself. Copy the <strong>AW-…</strong> ID and the <strong>send_to</strong> value (or just its label).
+        </p>
+        <TextInput
+          label="Google Ads tag ID"
+          placeholder="AW-123456789"
+          value={f.googleAdsId}
+          isDisabled={!canEdit}
+          onChange={(v) => setF({ ...f, googleAdsId: v.trim() })}
+        />
+        {f.googleAdsId.trim() !== "" && !cleanAdsId(f.googleAdsId) && <Notice kind="error">A Google Ads tag ID looks like AW-123456789.</Notice>}
+        <TextInput
+          label="Purchase conversion label"
+          placeholder="AW-123456789/AbC-D_efG"
+          value={f.googleAdsPurchaseLabel}
+          isDisabled={!canEdit}
+          onChange={(v) => setF({ ...f, googleAdsPurchaseLabel: v.trim() })}
+        />
+        {f.googleAdsPurchaseLabel.trim() !== "" && !cleanAdsLabel(f.googleAdsPurchaseLabel) && <Notice kind="error">That does not look like a conversion label.</Notice>}
+      </div>
       <SaveBar
         editor={editor}
         keyName="analytics"
-        value={{ gaMeasurementId: id, googleSiteVerification: cleanVerificationCode(f.googleSiteVerification), bingSiteVerification: cleanVerificationCode(f.bingSiteVerification) }}
+        value={{
+          gaMeasurementId: id,
+          googleSiteVerification: cleanVerificationCode(f.googleSiteVerification),
+          bingSiteVerification: cleanVerificationCode(f.bingSiteVerification),
+          googleAdsId: cleanAdsId(f.googleAdsId),
+          googleAdsPurchaseLabel: cleanAdsLabel(f.googleAdsPurchaseLabel),
+        }}
         canEdit={canEdit}
       />
     </div>

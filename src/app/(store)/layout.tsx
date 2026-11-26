@@ -84,7 +84,11 @@ export default async function StoreLayout({ children }: { children: React.ReactN
       {/* Phones and tablets: Explore, WhatsApp and My Booking at the bottom of every page. */}
       <MobileBar whatsappUrl={whatsappUrl ?? null} />
       {/* Booking-funnel events for Google Analytics 4, only when the owner has set a measurement ID. */}
-      <GoogleAnalytics measurementId={settings.analytics.gaMeasurementId} />
+      <GoogleAnalytics
+        measurementId={settings.analytics.gaMeasurementId}
+        adsId={mergeAnalyticsSettings(settings.analytics).googleAdsId}
+        adsPurchaseLabel={mergeAnalyticsSettings(settings.analytics).googleAdsPurchaseLabel}
+      />
       <PromoPopup promotions={forPlacement(promotions, "popup")} picked={pickedPopup} />
     </div>
     </LanguageProvider>

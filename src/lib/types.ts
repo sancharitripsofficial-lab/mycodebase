@@ -281,6 +281,10 @@ export interface AnalyticsSettings {
   googleSiteVerification: string;
   /** Bing Webmaster Tools ownership code (msvalidate.01); "" when not set. */
   bingSiteVerification: string;
+  /** Google Ads tag ID, "AW-123456789"; "" when not set. */
+  googleAdsId: string;
+  /** Conversion label of the Google Ads "Purchase" action (the part after the slash in send_to). */
+  googleAdsPurchaseLabel: string;
 }
 
 export interface SiteSettings {

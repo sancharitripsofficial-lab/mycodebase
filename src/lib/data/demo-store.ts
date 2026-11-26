@@ -725,7 +725,7 @@ function createInitialDemoState(): DemoDatabaseState {
     blogPosts: DEFAULT_BLOG_POSTS,
     siteMedia: EMPTY_SITE_MEDIA,
     developerCredit: DEFAULT_DEVELOPER_CREDIT,
-    analytics: { gaMeasurementId: "", googleSiteVerification: "", bingSiteVerification: "" },
+    analytics: { gaMeasurementId: "", googleSiteVerification: "", bingSiteVerification: "", googleAdsId: "", googleAdsPurchaseLabel: "" },
     adTicker: { enabled: true, speed: "normal", lines: [] },
     legalDrafts: {
       ownerReviewRequired: true,

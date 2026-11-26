@@ -20,6 +20,22 @@ export type FunnelEvent = "view_trip" | "select_seats" | "begin_checkout" | "pur
 
 export type EventParams = Record<string, string | number | boolean | null | undefined | AnalyticsItem[]>;
 
+/** A valid Google Ads tag ID ("AW-123456789"), or "" for anything else. */
+export function cleanAdsId(value: unknown): string {
+  const id = typeof value === "string" ? value.trim().toUpperCase() : "";
+  return /^AW-\d{6,14}$/.test(id) ? id : "";
+}
+
+/**
+ * A Google Ads conversion label, or "" for anything else. The owner may paste the whole send_to
+ * value ("AW-123456789/AbC-D_efG"): only the part after the slash is kept.
+ */
+export function cleanAdsLabel(value: unknown): string {
+  let v = typeof value === "string" ? value.trim() : "";
+  if (v.includes("/")) v = v.slice(v.lastIndexOf("/") + 1);
+  return /^[A-Za-z0-9_-]{6,40}$/.test(v) ? v : "";
+}
+
 export interface AnalyticsItem {
   item_id: string;
   item_name: string;
@@ -36,6 +52,8 @@ declare global {
     gtag?: (...args: unknown[]) => void;
     /** The last few events, kept in the page so the funnel can be checked without an analytics account. */
     __sanchariEvents?: { name: FunnelEvent; params: EventParams; at: number }[];
+    /** Google Ads purchase conversion target ("AW-…/label"), set by GoogleAnalytics when configured. */
+    __sanchariAdsPurchase?: string;
   }
 }
 
@@ -63,6 +81,8 @@ export function mergeAnalyticsSettings(raw: unknown): AnalyticsSettings {
     gaMeasurementId: cleanMeasurementId(r.gaMeasurementId),
     googleSiteVerification: cleanVerificationCode(r.googleSiteVerification),
     bingSiteVerification: cleanVerificationCode(r.bingSiteVerification),
+    googleAdsId: cleanAdsId(r.googleAdsId),
+    googleAdsPurchaseLabel: cleanAdsLabel(r.googleAdsPurchaseLabel),
   };
 }
 
@@ -95,6 +115,15 @@ export function trackEvent(name: FunnelEvent, params: EventParams = {}): void {
     log.push({ name, params, at: Date.now() });
     if (log.length > 40) log.splice(0, log.length - 40);
     window.gtag?.("event", name, params);
+    // A finished booking also counts as a Google Ads conversion, so ads can be judged by bookings.
+    if (name === "purchase" && window.__sanchariAdsPurchase) {
+      window.gtag?.("event", "conversion", {
+        send_to: window.__sanchariAdsPurchase,
+        value: params.value,
+        currency: params.currency ?? "INR",
+        transaction_id: params.transaction_id,
+      });
+    }
   } catch {
     /* analytics must never break a booking */
   }
