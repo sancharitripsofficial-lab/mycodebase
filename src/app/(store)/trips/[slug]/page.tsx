@@ -59,6 +59,7 @@ import {
   tripStaticSlugs,
 } from "@/lib/seo";
 import { visiblePosts } from "@/lib/blog";
+import { GUIDE_PAGES, tripsForPlaces } from "@/lib/places/guide";
 
 // Served from the CDN; rebuilt at most every 5 minutes, and immediately after bookings / admin edits
 // (lib/revalidate.ts). Not more often: every rebuild is a paid write on the host and a database read.
@@ -217,6 +218,11 @@ export default async function TripDetailPage({
   // Internal links: the other trips, and the stories told about this one (Admin → Blog → trip).
   const otherTrips = allTrips.filter((t) => t.trip.id !== trip.id);
   const stories = visiblePosts(settings.blogPosts ?? []).filter((p) => sameTripSlug(p.tripSlug, trip.slug));
+  // The district and region guides whose places this trip visits: links between the trip and the
+  // guide pages, both ways, help visitors and search engines see how the pages belong together.
+  const areaGuides = GUIDE_PAGES.filter((g) => g.kind !== "category" && tripsForPlaces(g.places, [item]).length > 0)
+    .sort((a, b) => (a.kind === b.kind ? 0 : a.kind === "district" ? -1 : 1))
+    .slice(0, 4);
   const breadcrumb = breadcrumbJsonLd([
     { name: "Home", path: "/" },
     { name: "Trips", path: "/trips" },
@@ -530,7 +536,7 @@ export default async function TripDetailPage({
         canBook={Boolean(nextOpen)}
       />
 
-      {(otherTrips.length > 0 || stories.length > 0) && (
+      {(otherTrips.length > 0 || stories.length > 0 || areaGuides.length > 0) && (
         <div className="mt-14 grid gap-8 md:grid-cols-2">
           {otherTrips.length > 0 && (
             <section aria-labelledby="other-trips" className="space-y-3">
@@ -542,6 +548,22 @@ export default async function TripDetailPage({
                   <li key={other.id}>
                     <Link href={`/trips/${other.slug}`} className="inline-flex min-h-10 items-center gap-1.5 text-sm font-semibold text-forest-900 hover:text-copper-700">
                       {other.title} <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+          {areaGuides.length > 0 && (
+            <section aria-labelledby="area-guides" className="space-y-3">
+              <h2 id="area-guides" className="font-display text-2xl font-semibold text-forest-900">
+                Know the area
+              </h2>
+              <ul className="space-y-2">
+                {areaGuides.map((g) => (
+                  <li key={g.slug}>
+                    <Link href={g.path} className="inline-flex min-h-10 items-center gap-1.5 text-sm font-semibold text-forest-900 hover:text-copper-700">
+                      Places to visit: {g.name} <ArrowRight className="h-4 w-4" aria-hidden="true" />
                     </Link>
                   </li>
                 ))}

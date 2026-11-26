@@ -133,3 +133,17 @@ describe("Google Ads booking tracking", () => {
     delete w.__sanchariAdsPurchase;
   });
 });
+
+describe("trip pages link to the guides of the places they visit", () => {
+  it("each live trip finds its own district guide", async () => {
+    const { GUIDE_PAGES, tripsForPlaces } = await import("@/lib/places/guide");
+    const guidesFor = (t: TripWithDetails) =>
+      GUIDE_PAGES.filter((g) => g.kind !== "category" && tripsForPlaces(g.places, [t]).length > 0).map((g) => g.slug);
+    const ckm = guidesFor(trip({ destination: "Chikmagalur, Karnataka", title: "Chikmagalur Coffee & Mist Trails" }));
+    const coorg = guidesFor(trip({ destination: "Kodagu (Coorg), Karnataka", title: "Kodagu Rainforest & Spice Drive", slug: "coorg-rainforest-spice-drive" }));
+    const mur = guidesFor(trip({ destination: "Murudeshwara, Karnataka", title: "Murudeshwara", slug: "murudeshwara" }));
+    expect(ckm).toContain("chikkamagaluru");
+    expect(coorg).toContain("kodagu");
+    expect(mur).toContain("uttara-kannada");
+  });
+});
