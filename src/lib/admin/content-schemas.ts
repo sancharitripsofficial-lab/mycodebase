@@ -3,6 +3,7 @@ import { isSafeMediaLink } from "@/lib/blog";
 import { DEFAULT_DEVELOPER_CREDIT, DEFAULT_DEVELOPER_CREDIT_URL, isHttpsUrl } from "@/lib/developer-credit";
 import { ICON_KEYS, JOURNEY_STEP_KEYS, THEME_KEYS, TILE_COLOURS } from "@/lib/home-content";
 import { BANNER_PAGES, MAX_TEAM, MAX_TRIP_PHOTOS, MAX_VEHICLE_PHOTOS, isSiteMediaLink, isVideoLink, type BannerPage } from "@/lib/site-media";
+import { MAX_TICKER_LINES, MAX_TICKER_TEXT, TICKER_SPEEDS, isTickerLink } from "@/lib/ad-ticker";
 import { z } from "zod";
 
 /** Local file (/media/x.jpg) or an https link. Never http, javascript:, data: or protocol-relative. */
@@ -446,6 +447,20 @@ export const analyticsSettingsSchema = z.object({
     .refine((v) => v === "" || /^G-[A-Z0-9]{6,14}$/.test(v), "Measurement ID looks like G-XXXXXXXXXX (from Google Analytics → Admin → Data streams). Leave empty to switch analytics off."),
 });
 
+/** The moving advertisement strip above the menu: on/off, speed and the owner's own lines. */
+export const adTickerSchema = z.object({
+  enabled: z.boolean(),
+  speed: z.enum(TICKER_SPEEDS),
+  lines: z
+    .array(
+      z.object({
+        text: z.string().trim().min(2, "Each line needs at least 2 characters").max(MAX_TICKER_TEXT, `Keep each line under ${MAX_TICKER_TEXT} characters`),
+        href: z.string().trim().max(500).refine(isTickerLink, "Link: a page on this site (starts with /) or an https:// link, or leave it empty"),
+      })
+    )
+    .max(MAX_TICKER_LINES, `At most ${MAX_TICKER_LINES} lines`),
+});
+
 export const settingsSaveSchema = z.discriminatedUnion("key", [
   z.object({ key: z.literal("brand_identity"), value: brandIdentitySchema }),
   z.object({ key: z.literal("booking_policy"), value: bookingPolicySchema }),
@@ -459,6 +474,7 @@ export const settingsSaveSchema = z.discriminatedUnion("key", [
   z.object({ key: z.literal("site_media"), value: siteMediaSchema }),
   z.object({ key: z.literal("developer_credit"), value: developerCreditSchema }),
   z.object({ key: z.literal("analytics"), value: analyticsSettingsSchema }),
+  z.object({ key: z.literal("ad_ticker"), value: adTickerSchema }),
 ]);
 
 export const reviewSaveSchema = z

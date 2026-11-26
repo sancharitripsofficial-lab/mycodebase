@@ -1570,5 +1570,9 @@
  "All seats are taken": "ಎಲ್ಲಾ ಸೀಟುಗಳು ಭರ್ತಿಯಾಗಿವೆ",
  "The Sanchari car,": "ಸಂಚಾರಿ ಕಾರು,",
  "A Sanchari trip,": "ಸಂಚಾರಿ ಪ್ರವಾಸ,",
- "where a trip offers an advance, its booking form shows the exact amount to pay now, the balance and the day the balance is due. A trip that leaves too soon for a balance is paid in full when you book.": "ಪ್ರವಾಸಕ್ಕೆ ಮುಂಗಡ ಪಾವತಿ ಇದ್ದರೆ, ಈಗ ಪಾವತಿಸಬೇಕಾದ ನಿಖರ ಮೊತ್ತ, ಬಾಕಿ ಮೊತ್ತ ಮತ್ತು ಬಾಕಿ ಪಾವತಿಸಬೇಕಾದ ದಿನವನ್ನು ಆ ಪ್ರವಾಸದ ಬುಕಿಂಗ್ ಫಾರ್ಮ್ ತೋರಿಸುತ್ತದೆ. ಬಾಕಿಗೆ ಸಮಯವಿಲ್ಲದಷ್ಟು ಬೇಗ ಹೊರಡುವ ಪ್ರವಾಸಕ್ಕೆ ಬುಕ್ ಮಾಡುವಾಗಲೇ ಪೂರ್ತಿ ಮೊತ್ತ ಪಾವತಿಸಬೇಕು."
+ "where a trip offers an advance, its booking form shows the exact amount to pay now, the balance and the day the balance is due. A trip that leaves too soon for a balance is paid in full when you book.": "ಪ್ರವಾಸಕ್ಕೆ ಮುಂಗಡ ಪಾವತಿ ಇದ್ದರೆ, ಈಗ ಪಾವತಿಸಬೇಕಾದ ನಿಖರ ಮೊತ್ತ, ಬಾಕಿ ಮೊತ್ತ ಮತ್ತು ಬಾಕಿ ಪಾವತಿಸಬೇಕಾದ ದಿನವನ್ನು ಆ ಪ್ರವಾಸದ ಬುಕಿಂಗ್ ಫಾರ್ಮ್ ತೋರಿಸುತ್ತದೆ. ಬಾಕಿಗೆ ಸಮಯವಿಲ್ಲದಷ್ಟು ಬೇಗ ಹೊರಡುವ ಪ್ರವಾಸಕ್ಕೆ ಬುಕ್ ಮಾಡುವಾಗಲೇ ಪೂರ್ತಿ ಮೊತ್ತ ಪಾವತಿಸಬೇಕು.",
+ "Offers and news": "ಆಫರ್‌ಗಳು ಮತ್ತು ಸುದ್ದಿ",
+ "Pause the offers strip": "ಆಫರ್ ಪಟ್ಟಿಯನ್ನು ನಿಲ್ಲಿಸಿ",
+ "Play the offers strip": "ಆಫರ್ ಪಟ್ಟಿಯನ್ನು ಮುಂದುವರಿಸಿ",
+ "Hide the offers strip": "ಆಫರ್ ಪಟ್ಟಿಯನ್ನು ಮರೆಮಾಡಿ"
 }

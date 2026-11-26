@@ -3,6 +3,7 @@
 import { Banner } from "@astryxdesign/core/Banner";
 import { Button } from "@astryxdesign/core/Button";
 import { NumberInput } from "@astryxdesign/core/NumberInput";
+import { Selector } from "@astryxdesign/core/Selector";
 import { Switch } from "@astryxdesign/core/Switch";
 import { TextArea } from "@astryxdesign/core/TextArea";
 import { TextInput } from "@astryxdesign/core/TextInput";
@@ -13,10 +14,11 @@ import { HomePageForm } from "@/components/admin/HomePageForm";
 import { KannadaForm } from "@/components/admin/KannadaForm";
 import { Notice, Panel, useAdminContent } from "@/components/admin/kit";
 import { DEFAULT_DEVELOPER_CREDIT_URL, isHttpsUrl, mergeDeveloperCredit } from "@/lib/developer-credit";
+import { MAX_TICKER_LINES, MAX_TICKER_TEXT, mergeAdTicker } from "@/lib/ad-ticker";
 import type { SiteSettings } from "@/lib/types";
 
 type Editor = ReturnType<typeof useAdminContent>;
-type Tab = "home" | "assistant" | "kannada" | "brand" | "social" | "policy" | "faqs" | "legal" | "credit" | "analytics";
+type Tab = "home" | "assistant" | "kannada" | "brand" | "social" | "policy" | "faqs" | "legal" | "credit" | "analytics" | "ticker";
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "home", label: "Home page" },
@@ -29,6 +31,7 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "legal", label: "Legal pages" },
   { key: "credit", label: "Footer credit" },
   { key: "analytics", label: "Analytics" },
+  { key: "ticker", label: "Top ad strip" },
 ];
 
 /** Website words, contact details, booking rules, FAQs and legal text. */
@@ -86,6 +89,7 @@ export function SiteContentManager({ editor }: { editor: Editor }) {
       {tab === "credit" && (
         <DeveloperCreditForm key="c" initial={mergeDeveloperCredit(content.settings.developerCredit)} editor={editor} canEdit={canEdit} />
       )}
+      {tab === "ticker" && <AdTickerForm key="tk" initial={mergeAdTicker(content.settings.adTicker)} editor={editor} canEdit={canEdit} />}
       {tab === "analytics" && <AnalyticsForm key="an" initial={content.settings.analytics ?? { gaMeasurementId: "" }} editor={editor} canEdit={canEdit} />}
     </Panel>
   );
@@ -295,6 +299,46 @@ function FaqForm({ initial, editor, canEdit }: { initial: SiteSettings["faqs"]; 
         />
       )}
       <SaveBar editor={editor} keyName="faqs" value={items} canEdit={canEdit} />
+    </div>
+  );
+}
+
+function AdTickerForm({ initial, editor, canEdit }: { initial: SiteSettings["adTicker"]; editor: Editor; canEdit: boolean }) {
+  const [f, setF] = useState(initial);
+  const setLine = (i: number, patch: Partial<SiteSettings["adTicker"]["lines"][number]>) =>
+    setF({ ...f, lines: f.lines.map((l, j) => (j === i ? { ...l, ...patch } : l)) });
+  return (
+    <div className="space-y-4">
+      <Banner
+        status="info"
+        title="The moving strip above the menu, on every page"
+        description="It runs two things, one after another in an endless loop: every live offer whose place is “Top bar on every page” (make those in Offers & ads, with badge, button and end date), and your own short lines below. Visitors can pause it, tap a line to open its link, or close it."
+        collapsible={false}
+      />
+      <Switch label="Show the moving strip" description="Off hides the strip everywhere, whatever offers are live." value={f.enabled} isDisabled={!canEdit} onChange={(v) => setF({ ...f, enabled: v })} />
+      <Selector
+        label="Speed"
+        value={f.speed}
+        onChange={(v) => setF({ ...f, speed: v as SiteSettings["adTicker"]["speed"] })}
+        options={[
+          { value: "slow", label: "Slow (easy to read)" },
+          { value: "normal", label: "Normal" },
+          { value: "fast", label: "Fast" },
+        ]}
+      />
+      <div className="space-y-3">
+        <p className="text-sm font-semibold text-forest-900">Your own lines</p>
+        <p className="text-xs text-stone-600">Short news or reminders, up to {MAX_TICKER_TEXT} characters each. Only say what is true today; remove a line when it is over.</p>
+        {f.lines.map((l, i) => (
+          <div key={i} className="grid gap-2 rounded-xl border border-stone-200 bg-white p-3 md:grid-cols-[1.4fr_1fr_auto] md:items-end">
+            <TextInput label={`Line ${i + 1}`} value={l.text} isDisabled={!canEdit} onChange={(v) => setLine(i, { text: v.slice(0, MAX_TICKER_TEXT) })} />
+            <TextInput label="Opens (optional)" placeholder="/trips or https://…" value={l.href} isDisabled={!canEdit} onChange={(v) => setLine(i, { href: v.trim() })} />
+            {canEdit && <Button size="sm" variant="ghost" label="Remove" onClick={() => setF({ ...f, lines: f.lines.filter((_, j) => j !== i) })} />}
+          </div>
+        ))}
+        {canEdit && f.lines.length < MAX_TICKER_LINES && <Button size="sm" label="Add a line" onClick={() => setF({ ...f, lines: [...f.lines, { text: "", href: "" }] })} />}
+      </div>
+      <SaveBar editor={editor} keyName="ad_ticker" value={{ ...f, lines: f.lines.map((l) => ({ text: l.text.trim(), href: l.href.trim() })).filter((l) => l.text) }} canEdit={canEdit} />
     </div>
   );
 }

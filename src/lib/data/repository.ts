@@ -36,6 +36,7 @@ import { travelerDetailsComplete, travelerDetailsLock } from "@/lib/traveler-det
 import { mergeBlogPosts } from "@/lib/blog";
 import { mergeDeveloperCredit } from "@/lib/developer-credit";
 import { mergeAnalyticsSettings } from "@/lib/analytics";
+import { mergeAdTicker } from "@/lib/ad-ticker";
 import { cleanSettingsForVisitors, cleanTripForVisitors } from "@/lib/display-text";
 import { expandTripSlugs } from "@/lib/trip-slugs";
 import type {
@@ -144,6 +145,7 @@ export async function getRawSiteSettings(): Promise<{ settings: SiteSettings; is
         siteMedia: mergeSiteMedia(map.get("site_media")),
         developerCredit: mergeDeveloperCredit(map.get("developer_credit")),
         analytics: mergeAnalyticsSettings(map.get("analytics")),
+        adTicker: mergeAdTicker(map.get("ad_ticker")),
       },
     };
   } catch {

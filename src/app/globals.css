@@ -849,3 +849,133 @@ html[data-search-open] [data-mobile-bar-root] {
   .nav-link::after { transition: none; }
   .nav-cta::after { animation: none; }
 }
+
+/* ---------- Moving advertisement strip above the menu (components/promo/PromoTopBar.tsx) ----------
+   One endless right-to-left glide on the compositor (transform only, so scrolling stays smooth).
+   The track holds the lines twice and moves by exactly half its width, so the loop has no seam.
+   Tea-green to lagoon with a slow sunset glow drifting across; edges fade so lines enter softly. */
+.ad-ticker {
+  display: flex;
+  align-items: stretch;
+  min-height: 2.6rem;
+  overflow: hidden;
+  background-color: #0f5f57;
+  background-image:
+    radial-gradient(420px 120px at var(--glow-x, 20%) 120%, rgb(255 138 61 / 0.55), transparent 70%),
+    linear-gradient(100deg, #14523f 0%, #0d6b73 55%, #0b4f5a 100%);
+  animation: ad-ticker-glow 14s ease-in-out infinite alternate;
+  font-size: 0.8125rem;
+}
+@property --glow-x {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 15%;
+}
+@keyframes ad-ticker-glow {
+  from { --glow-x: 10%; }
+  to { --glow-x: 90%; }
+}
+.ad-ticker-label {
+  z-index: 2;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0 0.85rem 0 0.9rem;
+  background: linear-gradient(135deg, #f0701c, #c2470a);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 0.6rem) 100%, 0 100%);
+}
+.ad-ticker-window {
+  position: relative;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 2.2rem, #000 calc(100% - 2.2rem), transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 2.2rem, #000 calc(100% - 2.2rem), transparent);
+}
+.ad-ticker-track {
+  display: flex;
+  width: max-content;
+  height: 100%;
+  animation: ad-ticker-move 40s linear infinite;
+  will-change: transform;
+}
+.ad-ticker-copy { display: flex; }
+@keyframes ad-ticker-move {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
+}
+.ad-ticker-run {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  /* Never shorter than the screen, so two copies always fill it. */
+  min-width: 100vw;
+  justify-content: space-around;
+}
+.ad-ticker-item {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0 0.9rem;
+  white-space: nowrap;
+}
+.ad-ticker-spark {
+  width: 0.4rem;
+  height: 0.4rem;
+  flex-shrink: 0;
+  rotate: 45deg;
+  border-radius: 1px;
+  background: #f5a524;
+  box-shadow: 0 0 0 3px rgb(245 165 36 / 0.22);
+}
+.ad-ticker-link {
+  display: inline-flex;
+  min-height: 2.6rem;
+  align-items: center;
+  gap: 0.55rem;
+}
+a.ad-ticker-link:hover .ad-ticker-cta { background: #fff; color: #0d5f6b; }
+.ad-ticker-badge {
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 0.95);
+  padding: 0.1rem 0.55rem;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  color: #c2470a;
+}
+.ad-ticker-cta {
+  border-radius: 9999px;
+  border: 1px solid rgb(255 255 255 / 0.6);
+  padding: 0.12rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  transition: background-color 180ms ease, color 180ms ease;
+}
+.ad-ticker-tools {
+  z-index: 2;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  padding: 0 0.25rem;
+}
+.ad-ticker-btn {
+  display: inline-flex;
+  height: 2.25rem;
+  width: 2.25rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  color: rgb(255 255 255 / 0.9);
+}
+.ad-ticker-btn:hover { background: rgb(255 255 255 / 0.16); }
+/* Less motion: a still strip that can be swiped sideways; no pause button, one copy only. */
+@media (prefers-reduced-motion: reduce) {
+  .ad-ticker { animation: none; }
+  .ad-ticker-window { overflow-x: auto; scrollbar-width: none; }
+  .ad-ticker-track { animation: none !important; }
+  .ad-ticker-copy, .ad-ticker-motion-only { display: none; }
+}

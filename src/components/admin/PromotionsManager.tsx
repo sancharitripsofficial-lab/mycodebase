@@ -21,7 +21,7 @@ import { tripHasOpenDate } from "@/lib/offer-rules";
 
 const PLACEMENTS: { key: PromoPlacement; label: string; hint: string }[] = [
   { key: "home_banner", label: "Home page banner", hint: "Big banner under the opening video" },
-  { key: "top_bar", label: "Top bar on every page", hint: "Thin rotating line above the menu" },
+  { key: "top_bar", label: "Top bar on every page", hint: "Moving strip above the menu (speed and extra lines: Website text → Top ad strip)" },
   { key: "trips_banner", label: "All trips page", hint: "Banner above the trip list" },
   { key: "trip_page", label: "Trip pages", hint: "On every trip page, or one trip you pick" },
   { key: "popup", label: "Pop-up", hint: "Slides up from the bottom on phones (centre on computers), once per visitor, after 8 seconds. With several pop-up offers the newest shows first, unless you pick one with “Make this the pop-up”." },

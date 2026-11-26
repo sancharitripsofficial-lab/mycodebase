@@ -320,6 +320,8 @@ export interface SiteSettings {
   siteMedia: SiteMedia;
   /** Footer developer credit: on by default (missing setting = shown). */
   developerCredit: DeveloperCreditSettings;
+  /** The moving advertisement strip above the menu (Admin → Website text → Top ad strip). */
+  adTicker: import("@/lib/ad-ticker").AdTickerSettings;
   /** Google Analytics 4 for the booking funnel (Admin → Website text → Analytics). Empty ID = nothing loaded. */
   analytics: AnalyticsSettings;
   legalDrafts: {

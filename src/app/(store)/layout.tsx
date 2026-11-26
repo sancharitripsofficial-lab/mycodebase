@@ -58,7 +58,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
       >
         Skip to main content
       </a>
-      <PromoTopBar promotions={forPlacement(promotions, "top_bar")} />
+      <PromoTopBar promotions={forPlacement(promotions, "top_bar")} ticker={settings.adTicker} />
       <SiteHeader isDemoMode={isDemoFallback} />
       <main id="main-content" className="flex-1">
         {children}
